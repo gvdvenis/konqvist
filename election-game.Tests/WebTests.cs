@@ -1,4 +1,4 @@
-namespace election_game.Tests;
+namespace ElectionGame.Tests;
 
 public class WebTests
 {

@@ -1,4 +1,4 @@
-namespace election_game.Web;
+namespace ElectionGame.Web;
 
 public class WeatherApiClient(HttpClient httpClient)
 {
@@ -12,15 +12,20 @@ public class WeatherApiClient(HttpClient httpClient)
             {
                 break;
             }
-            if (forecast is not null)
-            {
-                forecasts ??= [];
-                forecasts.Add(forecast);
-            }
+
+            if (forecast is null) continue;
+            forecasts ??= [];
+            forecasts.Add(forecast);
         }
 
         return forecasts?.AsQueryable();
     }
+
+    public async Task<string> GetMapDataAsync(CancellationToken cancellationToken = default)
+    {
+       return await httpClient.GetStringAsync("/mapdata", cancellationToken);
+    }
+
 }
 
 public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)

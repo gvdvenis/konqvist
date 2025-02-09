@@ -1,5 +1,5 @@
-using election_game.Web;
-using election_game.Web.Components;
+using ElectionGame.Web;
+using ElectionGame.Web.Components;
 using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);

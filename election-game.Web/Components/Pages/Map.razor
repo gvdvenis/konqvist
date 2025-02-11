@@ -1,12 +1,12 @@
 ﻿@page "/map"
 @rendermode InteractiveServer
+@using ElectionGame.Web.Model
 @using OpenLayers.Blazor
 
 @inject WeatherApiClient ApiClient
 
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
-    <FluentButton @onclick="SetVisibleExtent">Zoom to extents</FluentButton>
     <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton>
     <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox>
     <pre>
@@ -14,11 +14,12 @@
         Last Position: @_lastPosition
         Mouse Position: @_mousePosition
         Visible Extent: @_map?.VisibleExtent
+        Districts: @_districts
         @_info
     </pre>
 </div>
 
-<OpenStreetMap @ref="_map"
+<GameMap @ref="_map"
 @bind-Zoom="_zoom"
 @bind-Rotation="_rotation"
 @bind-Center="_center"
@@ -26,95 +27,36 @@ OnClick="OnMapClick"
 OnPointerMove="OnPointerMove"
 OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
 InteractionsEnabled="_enableInteractions"
-MinZoom="12"
-MaxZoom="18"
 ZoomSliderControl
 FullScreenControl>
-    <Features>
-        <Marker Type="MarkerType.MarkerPin" Coordinate="@_lastPosition" Popup></Marker>
-    </Features>
-</OpenStreetMap>
+</GameMap>
 
 @code {
-    private OpenStreetMap? _map;
+    private GameMap? _map;
     private Coordinate? _mousePosition;
-    private double _zoom = 12;
     private Coordinate _lastPosition;
     private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
+    private double _zoom = 12;
     private string _info = "";
+    private string _districts = "";
     private double _rotation;
     private bool _enableInteractions = true;
 
     private async Task LoadMapDataAsync()
     {
-
         if (_map is null) return;
 
         string data = await ApiClient.GetMapDataAsync();
 
-        var layer = _map.LayersList.FirstOrDefault(p => p.Id == "geo2");
-
-        if (layer is not null) _map.LayersList.Remove(layer);
-
-
-        var geoLayer = new Layer
-        {
-            Id = "geo2",
-            LayerType = LayerType.Vector,
-            SourceType = SourceType.VectorGeoJson,
-            RaiseShapeEvents = true,
-            Projection = "EPSG:4326",
-            Data = data,
-            StyleCallback = GetShapeStyle,
-            SelectionEnabled = true,
-            Declutter = true
-        };
-        await _map.AddLayer(geoLayer);
-
-        await _map.SetSelectionSettings(geoLayer, true, GetSelectionStyle(), false);
-    }
-
-    private static StyleOptions GetSelectionStyle()
-    {
-        return new StyleOptions
-        {
-            Stroke = new StyleOptions.StrokeOptions
-            {
-                Color = "blue",
-                Width = 5,
-                LineDash = [4]
-            },
-            Fill = new StyleOptions.FillOptions
-            {
-                Color = "rgba(255, 50, 50, 0.5)"
-            }
-        };
-    }
-
-    private static StyleOptions GetShapeStyle(Shape shape)
-    {
-        return new StyleOptions
-            {
-                Stroke = new StyleOptions.StrokeOptions
-                {
-                    Color = "red",
-                    Width = 3,
-                    LineDash = [4]
-                },
-                Fill = new StyleOptions.FillOptions
-                {
-                    Color = "rgba(0, 255, 50, 0.5)"
-                }
-            };
+        await _map.LoadMapDataAsync(data);
+        await _map.AddTeamMarker();
+        _districts = _map.Districts.Select(d=>d.Name).Aggregate((a, b) => a + ", " + b);
     }
 
     private Task OnMapClick(Coordinate coordinate)
     {
         _lastPosition = coordinate;
-        _map?.OnInternalRenderComplete();
-        _map?.MarkersList.ToList().ForEach(x => x.UpdateShape());
-
-        return Task.CompletedTask;
+        return _map?.AddTeamMarker(coordinate) ?? Task.CompletedTask;
     }
 
     private void OnPointerMove(Coordinate coordinate)
@@ -125,33 +67,7 @@ FullScreenControl>
     private Task CenterLocation()
     {
         _center = new Coordinate([6.261195479378347, 51.87638698662113]);
-        //await _map.CenterToCurrentGeoLocation();
 
         return Task.CompletedTask;
     }
-
-    private async Task AddMarkLocation()
-    {
-        if (_map != null)
-        {
-            var coordinate = await _map.GetCurrentGeoLocation();
-
-            if (coordinate != null & _map.MarkersList.Count == 0)
-                _map.MarkersList.Add(new Marker { Type = MarkerType.MarkerPin, Coordinate = (Coordinate)coordinate });
-        }
-    }
-
-
-    private async Task SetVisibleExtent()
-    {
-        var layer = _map?.LayersList.FirstOrDefault(p => p.Id == "geo2");
-
-        if (layer is not null) _map?.SetZoomToExtent(layer, [10]);
-        
-        await Task.CompletedTask;
-        
-        // if (_map != null) 
-        //     await _map.SetVisibleExtent(new Extent(2766546.266902437, 1180272.9274316968, 2774559.233529014, 1186045.3471649496));
-    }
-
 }

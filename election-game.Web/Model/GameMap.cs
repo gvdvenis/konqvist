@@ -1,20 +1,18 @@
-﻿using System;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Components.RenderTree;
+﻿using ElectionGame.Web.Model.Helpers;
 using OpenLayers.Blazor;
+using System.Xml.Linq;
 
 namespace ElectionGame.Web.Model;
 
 public class GameMap : OpenStreetMap
-{ 
-    private const string GamemapLayerName = "gameMap";
+{
     private DistrictsLayer? _districtsLayer;
 
     private Func<Shape, StyleOptions?> GetShapeStyle { get; set; }
 
     private Func<StyleOptions?> GetSelectionStyle { get; set; }
 
-    private StyleOptions? GetDefaultShapeStyle(Shape arg)
+    private StyleOptions GetDefaultShapeStyle(Shape arg)
     {
         return new StyleOptions
         {
@@ -31,7 +29,7 @@ public class GameMap : OpenStreetMap
         };
     }
 
-    private StyleOptions? GetDefaultSelectionStyle()
+    private StyleOptions GetDefaultSelectionStyle()
     {
         return new StyleOptions
         {
@@ -47,7 +45,7 @@ public class GameMap : OpenStreetMap
             }
         };
     }
-    
+
     public GameMap()
     {
         Center = new Coordinate([6.261195479378347, 51.87638698662113]);
@@ -56,27 +54,73 @@ public class GameMap : OpenStreetMap
         MaxZoom = 18;
         GetShapeStyle = GetDefaultShapeStyle;
         GetSelectionStyle = GetDefaultSelectionStyle;
+        LayersList.Add(CopsLayer);
     }
+
+    public List<Team> Teams => MarkersList.AsTeamList();
 
     public List<District> Districts => _districtsLayer?.Districts ?? [];
 
-    public async Task AddTeamMarker(Coordinate? position = null)
+    /// <summary>
+    ///     Add a team marker to the game map. If no <paramref name="position"/> is provided,
+    ///     an attempt will be made to use the current location.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public async Task AddTeam(string name, Coordinate? position = null)
     {
         position ??= await GetCurrentGeoLocation();
 
         if (position is null) return;
 
-        Team myTeam = new(position.Value);
+        Team myTeam = new(position.Value, name);
 
-        MarkersList.Clear();
         MarkersList.Add(myTeam);
+    }
+
+    public async Task AddCop(Coordinate? position = null)
+    {
+        position ??= await GetCurrentGeoLocation();
+
+        if (position is null) return;
+
+        Cop aCop = new(position.Value);
+
+        CopsLayer.ShapesList.Add(aCop);
+
+        MarkersList.Add(aCop);
+    }
+
+    public ReactiveLayer CopsLayer { get; private set; } = new();
+
+    public void HideCops()
+    {
+        CopsLayer.Hide();
+        
+        UpdateLayer(CopsLayer);
+    }
+
+    public void ShowCops()
+    {
+        CopsLayer.Show();
+    }
+
+    public void ClearCops()
+    {
+        MarkersList.RemoveRange(MarkersList.OfType<Cop>());
+    }
+
+    public void ClearTeams()
+    {
+        MarkersList.RemoveRange(MarkersList.OfType<Team>().ToList());
     }
 
     public async Task LoadMapDataAsync(string jsonData)
     {
         await SetSelectionSettings(AddDistrictsLayer(jsonData), true, GetSelectionStyle.Invoke(), false);
     }
-    
+
     private DistrictsLayer AddDistrictsLayer(string jsonData)
     {
         var layer = LayersList.OfType<DistrictsLayer>().FirstOrDefault();
@@ -84,70 +128,11 @@ public class GameMap : OpenStreetMap
         if (layer is not null) LayersList.Remove(layer);
 
         var geoLayer = new DistrictsLayer(GetShapeStyle, jsonData);
-        
+
         LayersList.Add(geoLayer);
-        
+
         _districtsLayer = geoLayer;
 
         return geoLayer;
     }
-}
-
-public class Team : Marker
-{
-    public Team(Coordinate position)
-    {
-        Type = MarkerType.MarkerPin;
-        Coordinates = new Coordinates(position);
-        PinColor = PinColor.Blue;
-        UpdateCoordinates();
-    }
-}
-
-public class DistrictsLayer: Layer
-{
-    public DistrictsLayer(Func<Shape, StyleOptions?> getShapeStyle, string shapeData)
-    {
-        Id = "districts";
-        LayerType = LayerType.Vector;
-        SourceType = SourceType.VectorGeoJson;
-        RaiseShapeEvents = true;
-        Projection = "EPSG:4326";
-        StyleCallback = getShapeStyle;
-        SelectionEnabled = true;
-        Declutter = true;
-        Data = shapeData;
-    }
-
-    private bool Predicate(District s)
-    {
-        return s.RegionType != "election-district";
-    }
-
-    public List<District> Districts => ShapesList.Select(s=>new District(s.Coordinates, s.Properties)).ToList();
-}
-
-public class District : Polygon
-{
-    public District(Coordinates coordinates, Dictionary<string, dynamic> properties) : base(coordinates[0])
-    {
-        foreach ((string? key, dynamic? value) in properties)
-        {
-            Properties.TryAdd(key, value);
-        }
-
-    }
-
-    public string Name => Properties.GetValueOrDefault("key")?.ToString() ?? "-";
-    public string RegionType => Properties.GetValueOrDefault("region-type")?.ToString() ?? "-";
-
-    #region Overrides of Object
-
-    /// <inheritdoc />
-    public override string ToString()
-    {
-        return Name;
-    }
-
-    #endregion
 }

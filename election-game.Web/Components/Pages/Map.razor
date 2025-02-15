@@ -15,13 +15,14 @@
         Mouse Position: @_mousePosition
         Visible Extent: @_map?.VisibleExtent
         Districts: @_districts
+        Teams: @_teams
         @_info
     </pre>
 </div>
 
 <GameMap @ref="_map"
-@bind-Zoom="_zoom"
 @bind-Rotation="_rotation"
+@bind-Zoom="_zoom"
 @bind-Center="_center"
 OnClick="OnMapClick"
 OnPointerMove="OnPointerMove"
@@ -39,6 +40,7 @@ FullScreenControl>
     private double _zoom = 12;
     private string _info = "";
     private string _districts = "";
+    private string _teams = "";
     private double _rotation;
     private bool _enableInteractions = true;
 
@@ -49,14 +51,24 @@ FullScreenControl>
         string data = await ApiClient.GetMapDataAsync();
 
         await _map.LoadMapDataAsync(data);
-        await _map.AddTeamMarker();
+
         _districts = _map.Districts.Select(d=>d.Name).Aggregate((a, b) => a + ", " + b);
     }
 
-    private Task OnMapClick(Coordinate coordinate)
+    private async Task OnMapClick(Coordinate coordinate)
     {
+        if (_map is null) return;
+
         _lastPosition = coordinate;
-        return _map?.AddTeamMarker(coordinate) ?? Task.CompletedTask;
+
+        _map.ClearTeams();
+        await _map.AddTeam("Team Gert", coordinate);
+
+        _map.ClearCops();
+        var cc = coordinate with { X = coordinate.X + 0.007 };
+        await _map.AddCop(cc);
+
+        _teams = _map.Teams.Select(t=>t.Name).Aggregate((a, b) => a + ", " + b);
     }
 
     private void OnPointerMove(Coordinate coordinate)
@@ -66,6 +78,10 @@ FullScreenControl>
 
     private Task CenterLocation()
     {
+
+        _map?.HideCops();
+
+
         _center = new Coordinate([6.261195479378347, 51.87638698662113]);
 
         return Task.CompletedTask;

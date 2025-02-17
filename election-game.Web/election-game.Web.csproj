@@ -11,7 +11,7 @@
     <ProjectReference Include="..\election-game.ServiceDefaults\election-game.ServiceDefaults.csproj" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.3" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.11.3" />
-    <PackageReference Include="OpenLayers.Blazor" Version="2.4.0" />
+    <PackageReference Include="OpenLayers.Blazor" Version="2.4.1" />
   </ItemGroup>
 
   <ItemGroup>

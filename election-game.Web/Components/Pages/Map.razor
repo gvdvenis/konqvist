@@ -8,6 +8,7 @@
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
     <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton>
+    <FluentButton @onclick="HideCopsAsync">Show/Hide Cops</FluentButton>
     <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox>
     <pre>
         Center:@_map?.Center
@@ -21,15 +22,15 @@
 </div>
 
 <GameMap @ref="_map"
-@bind-Rotation="_rotation"
-@bind-Zoom="_zoom"
-@bind-Center="_center"
-OnClick="OnMapClick"
-OnPointerMove="OnPointerMove"
-OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
-InteractionsEnabled="_enableInteractions"
-ZoomSliderControl
-FullScreenControl>
+         @bind-Rotation="_rotation"
+         @bind-Zoom="_zoom"
+         @bind-Center="_center"
+         OnClick="OnMapClick"
+         OnPointerMove="OnPointerMove"
+         OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
+         InteractionsEnabled="_enableInteractions"
+         ZoomSliderControl
+         FullScreenControl>
 </GameMap>
 
 @code {
@@ -47,12 +48,17 @@ FullScreenControl>
     private async Task LoadMapDataAsync()
     {
         if (_map is null) return;
+        try
+        {
+            string data = await ApiClient.GetMapDataAsync();
+            await _map.LoadMapDataAsync(data);
 
-        string data = await ApiClient.GetMapDataAsync();
-
-        await _map.LoadMapDataAsync(data);
-
-        _districts = _map.Districts.Select(d=>d.Name).Aggregate((a, b) => a + ", " + b);
+            _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     private async Task OnMapClick(Coordinate coordinate)
@@ -61,14 +67,14 @@ FullScreenControl>
 
         _lastPosition = coordinate;
 
-        _map.ClearTeams();
+        //_map.ClearTeams();
         await _map.AddTeam("Team Gert", coordinate);
 
-        _map.ClearCops();
+        //_map.ClearCops();
         var cc = coordinate with { X = coordinate.X + 0.007 };
         await _map.AddCop(cc);
 
-        _teams = _map.Teams.Select(t=>t.Name).Aggregate((a, b) => a + ", " + b);
+        _teams = _map.Teams.Select(t => t.Name).Aggregate((a, b) => a + ", " + b);
     }
 
     private void OnPointerMove(Coordinate coordinate)
@@ -78,7 +84,6 @@ FullScreenControl>
 
     private Task CenterLocation()
     {
-
         _map?.HideCops();
 
 
@@ -86,4 +91,10 @@ FullScreenControl>
 
         return Task.CompletedTask;
     }
+
+    private Task HideCopsAsync(MouseEventArgs arg)
+    {
+        return _map?.HideCops() ?? Task.CompletedTask;
+    }
+
 }

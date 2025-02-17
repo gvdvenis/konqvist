@@ -114,7 +114,7 @@
       },
       "properties": {
         "key": "sheerenbergh",
-        "region-type": "gameplan"
+        "region-type": "gameplan"        
       }
     },
     {
@@ -146,7 +146,8 @@
       },
       "properties": {
         "key": "Hagedoorn",
-        "region-type": "election-district"
+        "region-type": "election-district",
+        "owner": "red"
       }
     },
     {
@@ -200,7 +201,8 @@
       },
       "properties": {
         "region-type": "election-district",
-        "key": "Korte Straat"
+        "key": "Korte Straat",
+        "owner": "blue"
       }
     },
     {
@@ -262,7 +264,8 @@
       },
       "properties": {
         "key": "Loveringbos",
-        "region-type": "election-district"
+        "region-type": "election-district",
+        "owner": "green"
       }
     },
     {

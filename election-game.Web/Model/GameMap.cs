@@ -1,65 +1,27 @@
-﻿using ElectionGame.Web.Model.Helpers;
-using OpenLayers.Blazor;
-using System.Xml.Linq;
+﻿using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
 public class GameMap : OpenStreetMap
 {
-    private DistrictsLayer? _districtsLayer;
+    private DistrictsLayer DistrictsLayer { get; set; } = new();
 
-    private Func<Shape, StyleOptions?> GetShapeStyle { get; set; }
-
-    private Func<StyleOptions?> GetSelectionStyle { get; set; }
-
-    private StyleOptions GetDefaultShapeStyle(Shape arg)
-    {
-        return new StyleOptions
-        {
-            Stroke = new StyleOptions.StrokeOptions
-            {
-                Color = "red",
-                Width = 3,
-                LineDash = [4]
-            },
-            Fill = new StyleOptions.FillOptions
-            {
-                Color = "rgba(0, 255, 50, 0.5)"
-            }
-        };
-    }
-
-    private StyleOptions GetDefaultSelectionStyle()
-    {
-        return new StyleOptions
-        {
-            Stroke = new StyleOptions.StrokeOptions
-            {
-                Color = "blue",
-                Width = 5,
-                LineDash = [4]
-            },
-            Fill = new StyleOptions.FillOptions
-            {
-                Color = "rgba(255, 50, 50, 0.5)"
-            }
-        };
-    }
+    private CopsLayer CopsLayer { get; set; } = new();
 
     public GameMap()
     {
         Center = new Coordinate([6.261195479378347, 51.87638698662113]);
         Zoom = 16;
-        MinZoom = 12;
+        MinZoom = 14;
         MaxZoom = 18;
-        GetShapeStyle = GetDefaultShapeStyle;
-        GetSelectionStyle = GetDefaultSelectionStyle;
+
         LayersList.Add(CopsLayer);
+        LayersList.Add(DistrictsLayer);
     }
 
     public List<Team> Teams => MarkersList.AsTeamList();
 
-    public List<District> Districts => _districtsLayer?.Districts ?? [];
+    public List<District> Districts => DistrictsLayer.Districts;
 
     /// <summary>
     ///     Add a team marker to the game map. If no <paramref name="position"/> is provided,
@@ -75,7 +37,7 @@ public class GameMap : OpenStreetMap
         if (position is null) return;
 
         Team myTeam = new(position.Value, name);
-
+        
         MarkersList.Add(myTeam);
     }
 
@@ -86,24 +48,26 @@ public class GameMap : OpenStreetMap
         if (position is null) return;
 
         Cop aCop = new(position.Value);
-
-        CopsLayer.ShapesList.Add(aCop);
-
-        MarkersList.Add(aCop);
-    }
-
-    public ReactiveLayer CopsLayer { get; private set; } = new();
-
-    public void HideCops()
-    {
-        CopsLayer.Hide();
         
-        UpdateLayer(CopsLayer);
+        ShapesList.Remove(ShapesList.OfType<Cop>().Last());
+        ShapesList.Add(aCop);
+        CopsLayer.ShapesList.Add(aCop);
+        await CopsLayer.Show();
+        
+        await UpdateLayer(CopsLayer);
+        //MarkersList.Add(aCop);
     }
 
-    public void ShowCops()
+    public async Task HideCops()
     {
-        CopsLayer.Show();
+        await CopsLayer.Hide();
+        await UpdateLayer(CopsLayer);
+    }
+
+    public async Task ShowCops()
+    {
+        await CopsLayer.Show();
+        await UpdateLayer(CopsLayer);
     }
 
     public void ClearCops()
@@ -118,21 +82,20 @@ public class GameMap : OpenStreetMap
 
     public async Task LoadMapDataAsync(string jsonData)
     {
-        await SetSelectionSettings(AddDistrictsLayer(jsonData), true, GetSelectionStyle.Invoke(), false);
-    }
+        
+        await DistrictsLayer.SetJsonData(jsonData, this);
 
-    private DistrictsLayer AddDistrictsLayer(string jsonData)
-    {
-        var layer = LayersList.OfType<DistrictsLayer>().FirstOrDefault();
-
-        if (layer is not null) LayersList.Remove(layer);
-
-        var geoLayer = new DistrictsLayer(GetShapeStyle, jsonData);
-
-        LayersList.Add(geoLayer);
-
-        _districtsLayer = geoLayer;
-
-        return geoLayer;
+        LayersList.Remove(DistrictsLayer);
+        LayersList.Add(DistrictsLayer);
+        try
+        {
+            await UpdateLayer(DistrictsLayer);
+            await SetSelectionSettings(DistrictsLayer, true, MapStyles.SelectedDistrictStyle, false);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            
+        }
     }
 }

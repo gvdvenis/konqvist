@@ -22,15 +22,15 @@
 </div>
 
 <GameMap @ref="_map"
-         @bind-Rotation="_rotation"
-         @bind-Zoom="_zoom"
-         @bind-Center="_center"
-         OnClick="OnMapClick"
-         OnPointerMove="OnPointerMove"
-         OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
-         InteractionsEnabled="_enableInteractions"
-         ZoomSliderControl
-         FullScreenControl>
+@bind-Rotation="_rotation"
+@bind-Zoom="_zoom"
+@bind-Center="_center"
+OnClick="OnMapClick"
+OnPointerMove="OnPointerMove"
+OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
+InteractionsEnabled="_enableInteractions"
+ZoomSliderControl
+FullScreenControl>
 </GameMap>
 
 @code {
@@ -67,14 +67,13 @@
 
         _lastPosition = coordinate;
 
-        //_map.ClearTeams();
-        await _map.AddTeam("Team Gert", coordinate);
-
-        //_map.ClearCops();
-        var cc = coordinate with { X = coordinate.X + 0.007 };
-        await _map.AddCop(cc);
+        await _map.AddActor(coordinate, new Team("Team Gert"));
 
         _teams = _map.Teams.Select(t => t.Name).Aggregate((a, b) => a + ", " + b);
+
+        var cc = coordinate with { X = coordinate.X + 0.007 };
+        await _map.AddActor(cc, new Cop());
+
     }
 
     private void OnPointerMove(Coordinate coordinate)
@@ -84,7 +83,7 @@
 
     private Task CenterLocation()
     {
-        _map?.HideCops();
+        //_map?.HideCops();
 
 
         _center = new Coordinate([6.261195479378347, 51.87638698662113]);
@@ -94,7 +93,8 @@
 
     private Task HideCopsAsync(MouseEventArgs arg)
     {
-        return _map?.HideCops() ?? Task.CompletedTask;
+        //return _map?.HideCops() ?? Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
 }

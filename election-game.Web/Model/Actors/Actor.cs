@@ -1,15 +1,19 @@
-﻿using OpenLayers.Blazor;
+﻿using System.Runtime.CompilerServices;
+using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
 public abstract class Actor : Marker
 {
-    protected Actor(Coordinate position)
+    protected Actor(Coordinate position) : this()
+    {
+        Coordinates = new Coordinates(position);
+    }
+
+    protected Actor()
     {
         Id = GetType().Name + "_" + Guid.NewGuid();
-        Coordinates = new Coordinates(position);
         Type = MarkerType.MarkerPin;
-        UpdateCoordinates();
     }
 
     public Task UpdateLocation(Coordinate position)

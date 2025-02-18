@@ -25,7 +25,6 @@ public class WeatherApiClient(HttpClient httpClient)
     {
        return await httpClient.GetStringAsync("/mapdata", cancellationToken);
     }
-
 }
 
 public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)

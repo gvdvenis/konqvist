@@ -1,4 +1,5 @@
-﻿using OpenLayers.Blazor;
+﻿using System.Diagnostics;
+using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
@@ -15,11 +16,15 @@ public class DistrictsLayer : ReactiveLayer
 
     public async Task SetJsonData(string shapeData, GameMap gameMap)
     {
-        Map = gameMap;
+        gameMap.LayersList.Remove(this);
+
         ShapesList.Clear();
         Data = shapeData;
-        await Map.SetSelectionSettings(this, true, MapStyles.SelectedDistrictStyle, false);
+        gameMap.LayersList.Add(this);
+
         await UpdateLayer();
+        await gameMap.UpdateLayer(this);
+        await gameMap.SetSelectionSettings(this, true, MapStyles.SelectedDistrictStyle, false);
     }
     
     private static StyleOptions GetDistrictStyle(Shape arg)
@@ -31,13 +36,4 @@ public class DistrictsLayer : ReactiveLayer
 
     public List<District> Districts => ShapesList.ToDistrictList();
 
-    #region Overrides of ReactiveLayer
-
-    /// <inheritdoc />
-    protected override bool IncludeInLayer(Shape shape)
-    {
-        return shape.IsDistrict();
-    }
-
-    #endregion
 }

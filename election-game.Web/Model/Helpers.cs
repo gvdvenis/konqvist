@@ -8,4 +8,14 @@ public static class Helpers
     {
         return markers?.OfType<Team>().ToList() ?? [];
     }
+
+    public static void RemoveActorsOfType<TActor>(this GameMap map) where TActor: Actor
+    {
+        var cops = map.FeaturesList.OfType<TActor>().ToList();
+
+        if (cops.Count <= 0) return;
+
+        map.ShapesList.RemoveRange(cops);
+        map.MarkersList.RemoveRange(cops);
+    }
 }

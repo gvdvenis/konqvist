@@ -1,4 +1,5 @@
-﻿using OpenLayers.Blazor;
+﻿using System.Diagnostics;
+using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
@@ -23,51 +24,15 @@ public class GameMap : OpenStreetMap
 
     public List<District> Districts => DistrictsLayer.Districts;
 
-    /// <summary>
-    ///     Add a team marker to the game map. If no <paramref name="position"/> is provided,
-    ///     an attempt will be made to use the current location.
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="position"></param>
-    /// <returns></returns>
-    public async Task AddTeam(string name, Coordinate? position = null)
+    public async Task AddActor<TActor>(Coordinate? position, TActor actor) where TActor : Actor
     {
         position ??= await GetCurrentGeoLocation();
 
-        if (position is null) return;
+        if (position is not { } coord) return;
 
-        Team myTeam = new(position.Value, name);
-        
-        MarkersList.Add(myTeam);
-    }
+        await actor.UpdateLocation(coord);
 
-    public async Task AddCop(Coordinate? position = null)
-    {
-        position ??= await GetCurrentGeoLocation();
-
-        if (position is null) return;
-
-        Cop aCop = new(position.Value);
-        
-        ShapesList.Remove(ShapesList.OfType<Cop>().Last());
-        ShapesList.Add(aCop);
-        CopsLayer.ShapesList.Add(aCop);
-        await CopsLayer.Show();
-        
-        await UpdateLayer(CopsLayer);
-        //MarkersList.Add(aCop);
-    }
-
-    public async Task HideCops()
-    {
-        await CopsLayer.Hide();
-        await UpdateLayer(CopsLayer);
-    }
-
-    public async Task ShowCops()
-    {
-        await CopsLayer.Show();
-        await UpdateLayer(CopsLayer);
+        MarkersList.Add(actor);
     }
 
     public void ClearCops()
@@ -82,20 +47,16 @@ public class GameMap : OpenStreetMap
 
     public async Task LoadMapDataAsync(string jsonData)
     {
-        
-        await DistrictsLayer.SetJsonData(jsonData, this);
-
-        LayersList.Remove(DistrictsLayer);
-        LayersList.Add(DistrictsLayer);
         try
         {
-            await UpdateLayer(DistrictsLayer);
-            await SetSelectionSettings(DistrictsLayer, true, MapStyles.SelectedDistrictStyle, false);
+            var sw = Stopwatch.StartNew();
+            await DistrictsLayer.SetJsonData(jsonData, this);
+            sw.Stop();
+            Debug.WriteLine(sw.ElapsedMilliseconds);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            
         }
     }
 }

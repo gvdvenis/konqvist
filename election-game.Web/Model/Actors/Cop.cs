@@ -4,7 +4,7 @@ namespace ElectionGame.Web.Model;
 
 public class Cop : Actor
 {
-    public Cop(Coordinate position) : base(position)
+    public Cop()
     {
         PinColor = PinColor.Blue;
     }

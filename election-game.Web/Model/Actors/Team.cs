@@ -6,7 +6,7 @@ public class Team : Actor
 {
     public string Name { get; }
 
-    public Team(Coordinate position, string name) : base(position)
+    public Team(string name)
     {
         Name = name;
         PinColor = PinColor.Red;

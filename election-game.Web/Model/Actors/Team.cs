@@ -1,4 +1,5 @@
-﻿using OpenLayers.Blazor;
+﻿using election_game.Data.Model.MapElements;
+using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
@@ -6,11 +7,13 @@ public class Team : Actor
 {
     public string Name { get; }
 
-    public Team(string name)
+    public Team(string teamName)
     {
-        Name = name;
+        Name = teamName;
         PinColor = PinColor.Red;
     }
+
+    public Team(TeamData teamData) : this(teamData.Name) { }
 
     #region Overrides of Object
 

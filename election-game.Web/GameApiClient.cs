@@ -1,6 +1,8 @@
+using election_game.Data.Model.MapElements;
+
 namespace ElectionGame.Web;
 
-public class WeatherApiClient(HttpClient httpClient)
+public class GameApiClient(HttpClient httpClient)
 {
     public async Task<IQueryable<WeatherForecast>?> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
     {
@@ -21,9 +23,16 @@ public class WeatherApiClient(HttpClient httpClient)
         return forecasts?.AsQueryable();
     }
 
-    public async Task<string> GetMapDataAsync(CancellationToken cancellationToken = default)
+    public async Task<MapData> GetMapDataAsync(CancellationToken cancellationToken = default)
     {
-       return await httpClient.GetStringAsync("/mapdata", cancellationToken);
+        var map = await httpClient.GetFromJsonAsync<MapData>("/mapdata", cancellationToken);
+
+        if (map is null)
+        {
+            throw new InvalidOperationException("Map data is null");
+        }
+
+        return map;
     }
 }
 

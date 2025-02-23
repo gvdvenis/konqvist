@@ -1,14 +1,15 @@
-﻿@page "/map"
+﻿@page "/"
+@page "/map"
 @rendermode InteractiveServer
+@using election_game.Data.Model.MapElements
 @using ElectionGame.Web.Model
 @using OpenLayers.Blazor
 
-@inject WeatherApiClient ApiClient
+@inject GameApiClient ApiClient
 
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
     <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton>
-    <FluentButton @onclick="HideCopsAsync">Show/Hide Cops</FluentButton>
     <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox>
     <pre>
         Center:@_map?.Center
@@ -50,7 +51,7 @@ FullScreenControl>
         if (_map is null) return;
         try
         {
-            string data = await ApiClient.GetMapDataAsync();
+            MapData data = await ApiClient.GetMapDataAsync();
             await _map.LoadMapDataAsync(data);
 
             _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
@@ -90,11 +91,4 @@ FullScreenControl>
 
         return Task.CompletedTask;
     }
-
-    private Task HideCopsAsync(MouseEventArgs arg)
-    {
-        //return _map?.HideCops() ?? Task.CompletedTask;
-        return Task.CompletedTask;
-    }
-
 }

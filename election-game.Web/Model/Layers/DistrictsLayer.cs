@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using election_game.Data.Model.MapElements;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
@@ -11,29 +11,25 @@ public class DistrictsLayer : ReactiveLayer
         SourceType = SourceType.VectorGeoJson;
         Projection = "EPSG:4326";
         SelectionEnabled = true;
-        StyleCallback = GetDistrictStyle;
     }
 
-    public async Task SetJsonData(string shapeData, GameMap gameMap)
+    public List<District> Districts => ShapesList.OfType<District>().ToList();
+
+    public async Task AddDistricts(List<DistrictData> mapDataDistricts, GameMap gameMap)
     {
-        gameMap.LayersList.Remove(this);
-
+        if (!gameMap.LayersList.Contains(this)) gameMap.LayersList.Add(this);
+        
         ShapesList.Clear();
-        Data = shapeData;
-        gameMap.LayersList.Add(this);
 
-        await UpdateLayer();
+        foreach (var district in mapDataDistricts.Select(districtData => new District(districtData)))
+        {
+            ShapesList.AddRange([
+                district, 
+                district.TriggerCircle
+            ]);
+        }
+
         await gameMap.UpdateLayer(this);
         await gameMap.SetSelectionSettings(this, true, MapStyles.SelectedDistrictStyle, false);
     }
-    
-    private static StyleOptions GetDistrictStyle(Shape arg)
-    {
-        return arg.ToDistrict() is not { } district
-            ? new StyleOptions()
-            : MapStyles.DistrictOwnerStyle(district.Owner);
-    }
-
-    public List<District> Districts => ShapesList.ToDistrictList();
-
 }

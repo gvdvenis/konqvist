@@ -114,7 +114,7 @@
       },
       "properties": {
         "key": "sheerenbergh",
-        "region-type": "gameplan"        
+        "region-type": "gameplan"
       }
     },
     {
@@ -147,21 +147,11 @@
       "properties": {
         "key": "Hagedoorn",
         "region-type": "election-district",
-        "owner": "red"
+        "owner": "red",
+        "triggerCoordinate": [ 51.88275195864145, 6.253352114824452 ]
       }
     },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [ 51.88275195864145, 6.253352114824452 ]
-      },
-      "properties": {
-        "key": "Hagedoorn",
-        "region-type": "district-trigger"
-      }
-    },
-    {
+     {
       "type": "Feature",
       "geometry": {
         "type": "Polygon",
@@ -202,18 +192,8 @@
       "properties": {
         "region-type": "election-district",
         "key": "Korte Straat",
-        "owner": "blue"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [ 51.8799326545122, 6.250138074304516 ]
-      },
-      "properties": {
-        "region-type": "district-trigger",
-        "key": "Korte Straaat"
+        "owner": "blue",
+        "triggerCoordinate": [ 51.8799326545122, 6.250138074304516 ]
       }
     },
     {
@@ -265,18 +245,8 @@
       "properties": {
         "key": "Loveringbos",
         "region-type": "election-district",
-        "owner": "green"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [ 51.88193455460092, 6.256480536926574 ]
-      },
-      "properties": {
-        "key": "Loveringbos",
-        "region-type": "district-trigger"
+        "owner": "green",
+        "triggerCoordinate": [ 51.88193455460092, 6.256480536926574 ]
       }
     }
   ],

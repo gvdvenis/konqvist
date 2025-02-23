@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using election_game.Data.Model.MapElements;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
@@ -45,12 +46,14 @@ public class GameMap : OpenStreetMap
         MarkersList.RemoveRange(MarkersList.OfType<Team>().ToList());
     }
 
-    public async Task LoadMapDataAsync(string jsonData)
+    public async Task LoadMapDataAsync(MapData mapData)
     {
         try
         {
             var sw = Stopwatch.StartNew();
-            await DistrictsLayer.SetJsonData(jsonData, this);
+
+            await DistrictsLayer.AddDistricts(mapData.Districts, this);
+
             sw.Stop();
             Debug.WriteLine(sw.ElapsedMilliseconds);
         }

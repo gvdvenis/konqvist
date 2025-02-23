@@ -8,10 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\election-game.Data\election-game.Data.csproj" />
     <ProjectReference Include="..\election-game.ServiceDefaults\election-game.ServiceDefaults.csproj" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.5" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.11.5" />
-    <PackageReference Include="OpenLayers.Blazor" Version="2.4.1-alpha.0.2" />
+    <PackageReference Include="OpenLayers.Blazor" Version="2.4.1" />
   </ItemGroup>
 
   <ItemGroup>

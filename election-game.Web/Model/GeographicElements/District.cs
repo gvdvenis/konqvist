@@ -1,16 +1,22 @@
-﻿using OpenLayers.Blazor;
+﻿using election_game.Data.Model.MapElements;
+using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
 public class District : Region
 {
-    public District(Coordinates coordinates, Dictionary<string, dynamic> properties) : base(coordinates, properties)
+    public District(DistrictData districtData) : base(new Coordinates(districtData.Coordinates))
     {
-        if (!this.IsDistrict())
-            throw new ArgumentException("The region is not a district.");
-
-        Owner = Properties.GetValueOrDefault("owner")?.ToString() ?? "";
+        Name = districtData.Name;
+        Owner = new Team(districtData.Owner);
+        TriggerCircle = new Circle(districtData.TriggerCircleCenter, 25)
+        {
+            Styles = [MapStyles.DistrictTriggerStyle]
+        };
+        Styles = [MapStyles.DistrictOwnerStyle(Owner.Name)];
     }
 
-    public string Owner { get; }
+    public string Name { get; }
+    public Team Owner { get; }
+    public Circle TriggerCircle { get; }
 }

@@ -5,10 +5,24 @@ namespace ElectionGame.Web.Model;
 public static class MapStyles
 {
     public static StyleOptions SelectedDistrictStyle { get; } = new SelectedDistrictStyle();
-
+    public static StyleOptions DistrictTriggerStyle { get; } = new DistritcTriggerStyle();
     public static StyleOptions DistrictOwnerStyle(string owner)
     {
         return new DistrictOwnerStyle(owner);
+    }
+}
+
+file class DistritcTriggerStyle : StyleOptions
+{
+    public DistritcTriggerStyle()
+    {
+        ZIndex = 2000;
+        Stroke = new StrokeOptions
+        {
+            Color = "red",
+            Width = 5
+        };
+        Fill = null;
     }
 }
 
@@ -48,9 +62,5 @@ file class SelectedDistrictStyle : StyleOptions
             Width = 5
         };
         Fill = null;
-        // Fill = new FillOptions
-        // {
-        //     Color = "rgba(100, 215, 0, 0.5)" 
-        // };
     }
 }

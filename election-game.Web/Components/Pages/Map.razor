@@ -51,7 +51,7 @@ FullScreenControl>
         if (_map is null) return;
         try
         {
-            MapData data = await ApiClient.GetMapDataAsync();
+            var data = await ApiClient.GetMapDataAsync();
             await _map.LoadMapDataAsync(data);
 
             _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
@@ -74,7 +74,6 @@ FullScreenControl>
 
         var cc = coordinate with { X = coordinate.X + 0.007 };
         await _map.AddActor(cc, new Cop());
-
     }
 
     private void OnPointerMove(Coordinate coordinate)
@@ -84,9 +83,6 @@ FullScreenControl>
 
     private Task CenterLocation()
     {
-        //_map?.HideCops();
-
-
         _center = new Coordinate([6.261195479378347, 51.87638698662113]);
 
         return Task.CompletedTask;

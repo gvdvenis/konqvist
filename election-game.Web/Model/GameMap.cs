@@ -7,7 +7,7 @@ namespace ElectionGame.Web.Model;
 public class GameMap : OpenStreetMap
 {
     private DistrictsLayer DistrictsLayer { get; set; } = new();
-
+    private MapLayer MapLayer { get; set; } = new();
     private CopsLayer CopsLayer { get; set; } = new();
 
     public GameMap()
@@ -17,13 +17,13 @@ public class GameMap : OpenStreetMap
         MinZoom = 14;
         MaxZoom = 18;
 
-        LayersList.Add(CopsLayer);
-        LayersList.Add(DistrictsLayer);
+        //LayersList.Add(CopsLayer);
+        //LayersList.Add(DistrictsLayer);
     }
 
     public List<Team> Teams => MarkersList.AsTeamList();
 
-    public List<District> Districts => DistrictsLayer.Districts;
+    public List<District> Districts => DistrictsLayer.Items;
 
     public async Task AddActor<TActor>(Coordinate? position, TActor actor) where TActor : Actor
     {
@@ -52,7 +52,8 @@ public class GameMap : OpenStreetMap
         {
             var sw = Stopwatch.StartNew();
 
-            await DistrictsLayer.AddDistricts(mapData.Districts, this);
+            await MapLayer.InitializeWithData([mapData], this);
+            await DistrictsLayer.InitializeWithData(mapData.Districts, this, MapStyles.SelectedDistrictStyle );
 
             sw.Stop();
             Debug.WriteLine(sw.ElapsedMilliseconds);

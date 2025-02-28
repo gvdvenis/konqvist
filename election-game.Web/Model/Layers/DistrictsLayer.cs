@@ -3,33 +3,48 @@ using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
-public class DistrictsLayer : ReactiveLayer
+public class MapLayer : ReactiveLayer<MapData, Polygon>
 {
-    public DistrictsLayer()
+    public MapLayer()
     {
-        Id = "districts";
-        SourceType = SourceType.VectorGeoJson;
-        Projection = "EPSG:4326";
+        Id = "gameMapLayer";
+    }
+
+    #region Overrides of ReactiveLayer<MapData, Polygon>
+
+    /// <inheritdoc />
+    protected override Shape[] ShapeInitializer(MapData shapeData)
+    {
+        return [
+            new Polygon(shapeData.Coordinates.ToList())
+        ];
+    }
+
+    #endregion
+}
+
+public class DistrictsLayer : ReactiveLayer<DistrictData, District>
+{
+
+    public DistrictsLayer(): base()
+    {
+        Id = "districtsLayer";
+        RaiseShapeEvents = true;
         SelectionEnabled = true;
     }
+    
+    #region Overrides of ReactiveLayer<DistrictData,District>
 
-    public List<District> Districts => ShapesList.OfType<District>().ToList();
-
-    public async Task AddDistricts(List<DistrictData> mapDataDistricts, GameMap gameMap)
+    /// <inheritdoc />
+    protected override Shape[] ShapeInitializer(DistrictData shapeData)
     {
-        if (!gameMap.LayersList.Contains(this)) gameMap.LayersList.Add(this);
-        
-        ShapesList.Clear();
+        var district = new District(shapeData);
 
-        foreach (var district in mapDataDistricts.Select(districtData => new District(districtData)))
-        {
-            ShapesList.AddRange([
-                district, 
-                district.TriggerCircle
-            ]);
-        }
-
-        await gameMap.UpdateLayer(this);
-        await gameMap.SetSelectionSettings(this, true, MapStyles.SelectedDistrictStyle, false);
+        return [
+            district,
+            district.TriggerCircle
+        ];
     }
+
+    #endregion
 }

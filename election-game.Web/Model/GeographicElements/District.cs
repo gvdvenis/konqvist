@@ -5,10 +5,11 @@ namespace ElectionGame.Web.Model;
 
 public class District : Region
 {
-    public District(DistrictData districtData) : base(new Coordinates(districtData.Coordinates))
+    public District(DistrictData districtData) : base(new Coordinates(districtData.Coordinates.ToList()))
     {
         Name = districtData.Name;
         Owner = new Team(districtData.Owner);
+        
         TriggerCircle = new Circle(districtData.TriggerCircleCenter, 25)
         {
             Styles = [MapStyles.DistrictTriggerStyle]

@@ -16,7 +16,6 @@ file class DistritcTriggerStyle : StyleOptions
 {
     public DistritcTriggerStyle()
     {
-        ZIndex = 2000;
         Stroke = new StrokeOptions
         {
             Color = "red",
@@ -30,7 +29,6 @@ file class DistrictOwnerStyle : StyleOptions
 {
     public DistrictOwnerStyle(string owner)
     {
-        ZIndex = 1000;
         Stroke = new StrokeOptions
         {
             Color = "black",
@@ -55,12 +53,14 @@ file class SelectedDistrictStyle : StyleOptions
 {
     public SelectedDistrictStyle()
     {
-        ZIndex = 2000;
         Stroke = new StrokeOptions
         {
             Color = "gold",
             Width = 5
         };
-        Fill = null;
+        Fill = new FillOptions()
+        {
+            Color = "Black"
+        };
     }
 }

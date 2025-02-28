@@ -1,0 +1,22 @@
+Elke regio heeft verschillende eigenschappen
+Per ronde zijn andere eigenschappen van belang
+Gedurende de verzamelronden duiken er willekeurig "agenten" op. Hun geschatte locatie wordt 
+	als een grote cirkel op de kaart aangeduid
+Agenten duiken op verschillende momenten op en zijn slechts gedurende korte tijd op de 
+	kaart te zien.
+Tussen de "verzamelronden" is er een stemronde waar elk team kan stemmen over een casus
+Er zijn gedurende de verzamelronden kanskaarten te verdien met opdrachten uitvoeren
+Kanskaarten kunnen voordelen en/of nadelen voor een ander team opleveren
+Kanskaarten kunnen worden opgespaard en kunnen strategisch worden ingezet.
+	- Een wijk naar keuze "overnemen" of "innemen"
+	- Een andere groep verplichten tot melden
+	- Een andere groep verplichten tot het drinken van een glas melk
+	- Een andere groep verplichten tot het insturen van een foto van een specifiek object
+	- Het verdubbelen van alle grondstofwaarden van een wijk naar keuze
+	- Ruil een wijk naar keuze met een ander team
+	- De locatie van agenten wordt gedurende een ronde exacter zichtbaar (cirkel kleiner)
+	- De stemkracht van een team voor een stemming halveren
+Kanskaarten kunnen worden ingezet voorafgaand aan een stemming, maar nadat duidelijk is gemaakt waar de stemming over gaat.
+Opdrachten worden in principe "analoog" uitgevoerd of mbv een tweede telefoon/camera etc.
+Winnaar van het spel is het team dat gedurende alle rondes in totaal de meeste stemkracht heeft verzameld
+Er is een pagina met een leaderboard waarop na elke stemronde een overzicht te zien is van de stand van zaken.

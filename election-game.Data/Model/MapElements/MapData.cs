@@ -3,10 +3,10 @@ using OpenLayers.Blazor;
 
 namespace election_game.Data.Model.MapElements;
 
-public class MapData
+public class MapData: IShapeData
 {
-    [JsonPropertyName("coordinates"), JsonConverter(typeof(CoordinateArrayConverter))]
-    public List<Coordinate> Coordinates { get; set; } 
+    //[JsonPropertyName("coordinates"), JsonConverter(typeof(CoordinateArrayConverter))]
+    public required IEnumerable<Coordinate> Coordinates { get; set; } 
 
     public List<DistrictData> Districts { get; set; }
 }

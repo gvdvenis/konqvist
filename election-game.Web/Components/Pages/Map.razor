@@ -2,9 +2,12 @@
 @page "/map"
 @rendermode InteractiveServer
 @using election_game.Data.Model.MapElements
+@using ElectionGame.Web.Hubs
+@using Microsoft.AspNetCore.SignalR.Client;
 @using ElectionGame.Web.Model
 @using OpenLayers.Blazor
 
+@inject NavigationManager NavigationManager
 @inject GameApiClient ApiClient
 
 <div>
@@ -45,6 +48,9 @@ FullScreenControl>
     private string _teams = "";
     private double _rotation;
     private bool _enableInteractions = true;
+    private HubConnection _hubConnection;
+    private string _hubUrl;
+    private string _username = "Gert";
 
     private async Task LoadMapDataAsync()
     {
@@ -62,18 +68,73 @@ FullScreenControl>
         }
     }
 
-    private async Task OnMapClick(Coordinate coordinate)
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await CreateHubClientConnection();
+        }
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadMapDataAsync();
+    }
+
+    private async Task CreateHubClientConnection()
+    {
+        string baseUrl = NavigationManager.BaseUri;
+
+        _hubUrl = baseUrl.TrimEnd('/') + BlazorChatSampleHub.HubUrl;
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(_hubUrl)
+            .Build();
+
+        _hubConnection.On<string, Coordinate>("BroadcastNewLocation", OnBroadcastLocation);
+
+        await _hubConnection.StartAsync();
+
+        await SendAsync($"[Notice] {_username} joined chat room.");
+    }
+
+    private async Task OnBroadcastLocation(string userName, Coordinate coordinate)
     {
         if (_map is null) return;
 
         _lastPosition = coordinate;
-
         await _map.AddActor(coordinate, new Team("Team Gert"));
 
-        _teams = _map.Teams.Select(t => t.Name).Aggregate((a, b) => a + ", " + b);
+        _teams = _map.Teams
+            .Select(t => t.Name)
+            .Aggregate((a, b) => a + ", " + b);
 
         var cc = coordinate with { X = coordinate.X + 0.007 };
         await _map.AddActor(cc, new Cop());
+    }
+
+    private async Task SendAsync(string message)
+    {
+        await _hubConnection.SendAsync("Broadcast", _username, message);
+    }
+
+    private async Task BroadcastNewLocation(Coordinate coordinate)
+    {
+        await _hubConnection.SendAsync("BroadcastNewLocation", _username, coordinate);
+    }
+
+    #endregion
+
+    private async Task OnMapClick(Coordinate coordinate)
+    {
+        await BroadcastNewLocation(coordinate);
     }
 
     private void OnPointerMove(Coordinate coordinate)

@@ -1,5 +1,4 @@
 using election_game.Data;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +34,6 @@ if (app.Environment.IsDevelopment())
     {
         config.SwaggerEndpoint("/openapi/v1.json", "Election API");
     });
-
-    app.MapScalarApiReference();
 }
 
 app.UseCors();

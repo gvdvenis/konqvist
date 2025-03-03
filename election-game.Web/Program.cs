@@ -1,5 +1,6 @@
 using ElectionGame.Web;
 using ElectionGame.Web.Components;
+using ElectionGame.Web.Hubs;
 using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
@@ -42,5 +44,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapDefaultEndpoints();
+
+app.MapHub<BlazorChatSampleHub>(BlazorChatSampleHub.HubUrl);
 
 app.Run();

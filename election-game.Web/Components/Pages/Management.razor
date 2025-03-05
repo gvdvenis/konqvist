@@ -1,0 +1,42 @@
+﻿@page "/management"
+@using System.Security.Claims
+@attribute [Authorize( Roles = "Admin")]
+
+<h3>Management</h3>
+
+<p>Welcome @TeamName</p>
+
+@code {
+
+    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    public string TeamName { get; set; } = "";
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // we should not be able to reach this page without being authorized
+        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
+        
+        var authState = await AuthenticationStateTask ;
+        TeamName = authState.User.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.UserData)?.Value ?? "Unknown";
+    }
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
+        
+        var authState = await AuthenticationStateTask ;
+        TeamName = authState.User.Identity?.Name ?? TeamName;
+    }
+
+    #endregion
+
+}

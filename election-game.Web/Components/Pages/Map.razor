@@ -1,11 +1,12 @@
 ﻿@page "/"
 @page "/map"
 @rendermode InteractiveServer
-@using election_game.Data.Model.MapElements
 @using ElectionGame.Web.Hubs
 @using Microsoft.AspNetCore.SignalR.Client;
 @using ElectionGame.Web.Model
 @using OpenLayers.Blazor
+
+@attribute [Authorize]
 
 @inject NavigationManager NavigationManager
 @inject GameApiClient ApiClient
@@ -48,8 +49,8 @@ FullScreenControl>
     private string _teams = "";
     private double _rotation;
     private bool _enableInteractions = true;
-    private HubConnection _hubConnection;
-    private string _hubUrl;
+    private HubConnection? _hubConnection;
+    private string? _hubUrl;
     private string _username = "Gert";
 
     private async Task LoadMapDataAsync()
@@ -92,17 +93,15 @@ FullScreenControl>
     {
         string baseUrl = NavigationManager.BaseUri;
 
-        _hubUrl = baseUrl.TrimEnd('/') + BlazorChatSampleHub.HubUrl;
+        _hubUrl ??= baseUrl.TrimEnd('/') + BlazorChatSampleHub.HubUrl;
 
-        _hubConnection = new HubConnectionBuilder()
+        _hubConnection ??= new HubConnectionBuilder()
             .WithUrl(_hubUrl)
             .Build();
 
-        _hubConnection.On<string, Coordinate>("BroadcastNewLocation", OnBroadcastLocation);
+        _hubConnection.On<string, Coordinate>(nameof(BroadcastNewLocation), OnBroadcastLocation);
 
         await _hubConnection.StartAsync();
-
-        await SendAsync($"[Notice] {_username} joined chat room.");
     }
 
     private async Task OnBroadcastLocation(string userName, Coordinate coordinate)
@@ -120,15 +119,12 @@ FullScreenControl>
         await _map.AddActor(cc, new Cop());
     }
 
-    private async Task SendAsync(string message)
-    {
-        await _hubConnection.SendAsync("Broadcast", _username, message);
-    }
-
     private async Task BroadcastNewLocation(Coordinate coordinate)
     {
-        await _hubConnection.SendAsync("BroadcastNewLocation", _username, coordinate);
+        if (_hubConnection != null) 
+            await _hubConnection.SendAsync(nameof(BroadcastNewLocation), _username, coordinate);
     }
+
 
     #endregion
 

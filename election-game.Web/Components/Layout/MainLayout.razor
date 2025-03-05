@@ -1,11 +1,12 @@
-﻿@inherits LayoutComponentBase
+﻿@using System.Security.Claims
+@inherits LayoutComponentBase
 
 <FluentLayout>
     <FluentHeader>
-        The Election Game
+        The Election Game: Team @_teamName
     </FluentHeader>
     <FluentStack Class="main" Orientation="Orientation.Horizontal" Width="100%">
-        <NavMenu />
+        <NavMenu/>
         <FluentBodyContent Class="body-content">
             <div class="content">
                 @Body
@@ -20,3 +21,27 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+
+    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string _teamName = "";
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // we should not be able to reach this page without being authorized
+        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
+
+        var authState = await AuthenticationStateTask;
+        _teamName = authState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value ?? "Unknown";
+    }
+
+    #endregion
+
+}

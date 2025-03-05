@@ -1,6 +1,7 @@
 using ElectionGame.Web;
 using ElectionGame.Web.Components;
 using ElectionGame.Web.Hubs;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,21 @@ builder.Services.AddHttpClient<GameApiClient>(client =>
         client.BaseAddress = new Uri("https+http://apiservice");
     });
 
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "ElectionGame.Auth";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.MaxAge = TimeSpan.FromHours(3);
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+        options.AccessDeniedPath = "/access-denied";
+
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -31,6 +47,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseAuthentication();
+
+app.UseAuthorization();
 
 app.UseHttpsRedirection();
 

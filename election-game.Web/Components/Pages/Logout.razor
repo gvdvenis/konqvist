@@ -1,0 +1,29 @@
+﻿@page "/logout"
+@inject NavigationManager NavigationManager
+
+<h3>You've successfully logged out. Thank you for playing.</h3>
+
+@code {
+
+    [CascadingParameter] HttpContext? HttpContext { get; set; }
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (HttpContext is not { } ctx) return;
+
+        if (ctx.User.Identity is { IsAuthenticated: true })
+        {
+            await HttpContext.SignOutAsync();
+            NavigationManager.NavigateTo("/logout", true);
+        }
+
+    }
+
+    #endregion
+
+}

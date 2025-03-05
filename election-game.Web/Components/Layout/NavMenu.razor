@@ -1,9 +1,27 @@
 ﻿<div class="navmenu">
     <input type="checkbox" title="Menu expand/collapse toggle" id="navmenu-toggle" class="navmenu-icon" />
-    <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new Icons.Regular.Size20.Navigation())" Color="Color.Fill" /></label>
+    <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new NavIcons.Navigation())" Color="Color.Fill" /></label>
     <nav class="sitenav" aria-labelledby="main-menu">
         <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="_expanded" CustomToggle="true">
-            <FluentNavLink Href="map" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Map())" IconColor="Color.Accent">Map</FluentNavLink>
+            <AuthorizeView Roles="Admin, Player">
+                <Authorized>
+                    <FluentNavLink Href="map" Match="NavLinkMatch.All" Icon="@(new NavIcons.Map())" IconColor="Color.Accent">Map</FluentNavLink>
+                    <FluentNavLink Href="logout" Match="NavLinkMatch.All" Icon="@(new NavIcons.ArrowExit())" IconColor="Color.Accent">Logout</FluentNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Admin">
+                <Authorized>
+                    <FluentNavLink Href="management" Match="NavLinkMatch.All" Icon="@(new NavIcons.ScanDash())" IconColor="Color.Accent">Management</FluentNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <FluentNavLink Href="login" Match="NavLinkMatch.All" Icon="@(new NavIcons.LockClosed())" IconColor="Color.Accent">Login</FluentNavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+
         </FluentNavMenu>
     </nav>
 </div>

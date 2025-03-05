@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Hubs;
@@ -8,11 +6,6 @@ namespace ElectionGame.Web.Hubs;
 public class BlazorChatSampleHub : Hub
 {
     public const string HubUrl = "/chat";
-
-    public async Task Broadcast(string username, string message)
-    {
-        await Clients.All.SendAsync("Broadcast", username, message);
-    }
 
     public async Task BroadcastNewLocation(string username, Coordinate newLocation)
     {

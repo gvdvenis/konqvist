@@ -34,6 +34,16 @@ body {
     width: 100dvw;
 }
 
+.ol-box {
+    box-sizing: border-box;
+    border-radius: 5px;
+    min-height: 100px;
+    min-width: 300px;
+    padding: 10px;
+    border: 4px solid var(--ol-background-color);
+    background-color: var(--ol-partial-background-color);
+}
+
 footer {
     background: var(--neutral-layer-4);
     color: var(--neutral-foreground-rest);

@@ -16,9 +16,6 @@ public class GameMap : OpenStreetMap
         Zoom = 16;
         MinZoom = 14;
         MaxZoom = 18;
-
-        //LayersList.Add(CopsLayer);
-        //LayersList.Add(DistrictsLayer);
     }
 
     public List<Team> Teams => MarkersList.AsTeamList();

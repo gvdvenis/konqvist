@@ -1,6 +1,6 @@
 ﻿@page "/"
 @page "/map"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using ElectionGame.Web.Hubs
 @using Microsoft.AspNetCore.SignalR.Client;
 @using ElectionGame.Web.Model
@@ -27,16 +27,33 @@
 </div>
 
 <GameMap @ref="_map"
-@bind-Rotation="_rotation"
-@bind-Zoom="_zoom"
-@bind-Center="_center"
-OnClick="OnMapClick"
-OnPointerMove="OnPointerMove"
-OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
-InteractionsEnabled="_enableInteractions"
-ZoomSliderControl
-FullScreenControl>
+         @bind-Rotation="_rotation"
+         @bind-Zoom="_zoom"
+         @bind-Center="_center"
+         OnClick="OnMapClick"
+         OnPointerMove="OnPointerMove"
+         OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
+         InteractionsEnabled="_enableInteractions"
+         ZoomSliderControl
+         FullScreenControl
+         >
+    <Popup>
+        <div id="popup" class="ol-box">
+            @if (context is District district)
+            {
+                <h4>@district.Name</h4>
+                <ul>
+                    @foreach (var prop in district.Resources)
+                    {
+                        <li>@prop.Key: @prop.Value</li>
+                    }
+                </ul>
+                <p>Owner: Team @district.Owner</p>
+            }
+        </div>
+    </Popup>
 </GameMap>
+
 
 @code {
     private GameMap? _map;
@@ -121,16 +138,20 @@ FullScreenControl>
 
     private async Task BroadcastNewLocation(Coordinate coordinate)
     {
-        if (_hubConnection != null) 
+        if (_hubConnection != null)
             await _hubConnection.SendAsync(nameof(BroadcastNewLocation), _username, coordinate);
     }
 
 
     #endregion
 
+    private bool _added;
     private async Task OnMapClick(Coordinate coordinate)
     {
-        await BroadcastNewLocation(coordinate);
+        if (!_added)
+            await BroadcastNewLocation(coordinate);
+
+        _added = true;
     }
 
     private void OnPointerMove(Coordinate coordinate)

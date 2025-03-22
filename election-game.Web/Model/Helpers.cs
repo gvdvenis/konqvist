@@ -9,6 +9,11 @@ public static class Helpers
         return markers?.OfType<Team>().ToList() ?? [];
     }
 
+    public static IEnumerable<District> AsDistrictsList(this ObservableRangeCollection<Shape>? shapes)
+    {
+        return shapes?.OfType<District>() ?? [];
+    }
+
     public static void RemoveActorsOfType<TActor>(this GameMap map) where TActor: Actor
     {
         var cops = map.FeaturesList.OfType<TActor>().ToList();

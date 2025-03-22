@@ -6,9 +6,9 @@ public static class MapStyles
 {
     public static StyleOptions SelectedDistrictStyle { get; } = new SelectedDistrictStyle();
     public static StyleOptions DistrictTriggerStyle { get; } = new DistritcTriggerStyle();
-    public static StyleOptions DistrictOwnerStyle(string owner)
+    public static StyleOptions DistrictOwnerStyle(string ownerColor)
     {
-        return new DistrictOwnerStyle(owner);
+        return new DistrictOwnerStyle(ownerColor);
     }
 }
 
@@ -19,7 +19,7 @@ file class DistritcTriggerStyle : StyleOptions
         Stroke = new StrokeOptions
         {
             Color = "red",
-            Width = 5
+            Width = 3
         };
         Fill = null;
     }
@@ -27,7 +27,7 @@ file class DistritcTriggerStyle : StyleOptions
 
 file class DistrictOwnerStyle : StyleOptions
 {
-    public DistrictOwnerStyle(string owner)
+    public DistrictOwnerStyle(string ownerColor)
     {
         Stroke = new StrokeOptions
         {
@@ -38,13 +38,17 @@ file class DistrictOwnerStyle : StyleOptions
         };
         Fill = new FillOptions
         {
-            Color = owner switch
-            {
-                "red" => "rgba(255, 50, 50, 0.5)",
-                "blue" => "rgba(50, 50, 255, 0.5)",
-                "green" => "rgba(50, 255, 50, 0.5)",
-                _ => "rgba(50, 50, 50, 0.5)"
-            }
+            Color = ownerColor
+            //    Color = ownerColor switch
+            //{
+            //    "red" => "rgba(255, 50, 50, 0.5)",
+            //    "blue" => "rgba(50, 50, 255, 0.5)",
+            //    "green" => "rgba(50, 255, 50, 0.5)",
+            //    "magenta" => "rgba(255, 50, 255, 0.5)",
+            //    "yellow" => "rgba(255, 255, 50, 0.5)",
+            //    "cyan" => "rgba(50, 255, 255, 0.5)",
+            //    _ => "rgba(50, 50, 50, 0.5)"
+            //}
         };
     }
 }
@@ -56,11 +60,11 @@ file class SelectedDistrictStyle : StyleOptions
         Stroke = new StrokeOptions
         {
             Color = "gold",
-            Width = 5
+            Width = 2
         };
         Fill = new FillOptions()
         {
-            Color = "Black"
+            Color = "rgba(0, 0, 0, 0.3)"
         };
     }
 }

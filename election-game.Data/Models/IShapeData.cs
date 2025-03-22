@@ -1,7 +1,7 @@
-﻿using OpenLayers.Blazor;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using OpenLayers.Blazor;
 
-namespace election_game.Data.Model.MapElements;
+namespace election_game.Data.Models;
 
 public interface IShapeData
 {

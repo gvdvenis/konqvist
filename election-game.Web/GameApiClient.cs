@@ -1,42 +1,18 @@
-using election_game.Data.Model.MapElements;
-
 namespace ElectionGame.Web;
 
-public class GameApiClient(HttpClient httpClient)
-{
-    public async Task<IQueryable<WeatherForecast>?> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
-    {
-        List<WeatherForecast>? forecasts = null;
+//public class GameApiClient(HttpClient httpClient)
+//{
+//    //public async Task<MapData> GetMapDataAsync(CancellationToken cancellationToken = default)
+//    //{
+//    //    var map = await httpClient.GetFromJsonAsync<MapData>("/mapdata", cancellationToken);
 
-        await foreach (var forecast in httpClient.GetFromJsonAsAsyncEnumerable<WeatherForecast>("/weatherforecast", cancellationToken))
-        {
-            if (forecasts?.Count >= maxItems)
-            {
-                break;
-            }
+//    //    return map ?? throw new InvalidOperationException("Map data is null");
+//    //}
 
-            if (forecast is null) continue;
-            forecasts ??= [];
-            forecasts.Add(forecast);
-        }
+//    //public async Task<TeamData[]> GetTeamsAsync(CancellationToken cancellationToken = default)
+//    //{
+//    //    var teams = await httpClient.GetFromJsonAsync<TeamData[]>("/teams", cancellationToken);
 
-        return forecasts?.AsQueryable();
-    }
-
-    public async Task<MapData> GetMapDataAsync(CancellationToken cancellationToken = default)
-    {
-        var map = await httpClient.GetFromJsonAsync<MapData>("/mapdata", cancellationToken);
-
-        if (map is null)
-        {
-            throw new InvalidOperationException("Map data is null");
-        }
-
-        return map;
-    }
-}
-
-public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+//    //    return teams ?? throw new InvalidOperationException("Teams data is null");
+//    //}
+//}

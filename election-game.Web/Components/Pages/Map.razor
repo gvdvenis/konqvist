@@ -1,15 +1,19 @@
 ﻿@page "/"
 @page "/map"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-@using ElectionGame.Web.Hubs
-@using Microsoft.AspNetCore.SignalR.Client;
+
+@using election_game.Data.Contracts
+@using election_game.Data.Models
 @using ElectionGame.Web.Model
+@using ElectionGame.Web.SignalR
+@using ElectionGame.Web.State
 @using OpenLayers.Blazor
+
+@implements IAsyncDisposable;
 
 @attribute [Authorize]
 
-@inject NavigationManager NavigationManager
-@inject GameApiClient ApiClient
+@inject IGameHubClient GameHubClient;
 
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
@@ -22,6 +26,7 @@
         Visible Extent: @_map?.VisibleExtent
         Districts: @_districts
         Teams: @_teams
+        Session Team: @Session?.TeamName
         @_info
     </pre>
 </div>
@@ -35,8 +40,7 @@
          OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
          InteractionsEnabled="_enableInteractions"
          ZoomSliderControl
-         FullScreenControl
-         >
+         FullScreenControl>
     <Popup>
         <div id="popup" class="ol-box">
             @if (context is District district)
@@ -54,8 +58,10 @@
     </Popup>
 </GameMap>
 
-
 @code {
+
+    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
     private GameMap? _map;
     private Coordinate? _mousePosition;
     private Coordinate _lastPosition;
@@ -66,25 +72,37 @@
     private string _teams = "";
     private double _rotation;
     private bool _enableInteractions = true;
-    private HubConnection? _hubConnection;
-    private string? _hubUrl;
-    private string _username = "Gert";
 
-    private async Task LoadMapDataAsync()
-    {
-        if (_map is null) return;
-        try
-        {
-            var data = await ApiClient.GetMapDataAsync();
-            await _map.LoadMapDataAsync(data);
+    private Session? Session { get; set; }
 
-            _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-    }
+    // private async Task LoadTeamsDataAsync()
+    // {
+    //     try
+    //     {
+    //         if (_map is null) return;
+    //         var teamsData = await ApiClient.GetTeamsAsync();
+    //         await _map.LoadTeamsDataAsync(teamsData);
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Console.WriteLine(e);
+    //     }
+    // }
+
+    // private async Task LoadMapDataAsync(MapData mapData)
+    // {
+    //     try
+    //     {
+    //         if (_map is null) return;
+    //         await _map.SetMapDataAsync(mapData);
+
+    //         _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Console.WriteLine(e);
+    //     }
+    // }
 
     #region Overrides of ComponentBase
 
@@ -95,61 +113,77 @@
 
         if (firstRender)
         {
-            await CreateHubClientConnection();
+            await GameHubClient.StartAsync();
         }
     }
 
     /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            //GameHubClient.NewLocationReceived = new EventCallback<ActorLocation>(this, OnNewLocationReceived);
+            //GameHubClient.InitializeMapData = new EventCallback<MapData>(this, InitializeMapData);
+            
+            Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
+            await GameHubClient.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+
         await base.OnInitializedAsync();
-        await LoadMapDataAsync();
     }
 
-    private async Task CreateHubClientConnection()
+
+    private async Task InitializeMapData(MapData mapData)
     {
-        string baseUrl = NavigationManager.BaseUri;
+        try
+        {
+            if (_map is null) return;
+            await _map.SetMapDataAsync(mapData);
 
-        _hubUrl ??= baseUrl.TrimEnd('/') + BlazorChatSampleHub.HubUrl;
-
-        _hubConnection ??= new HubConnectionBuilder()
-            .WithUrl(_hubUrl)
-            .Build();
-
-        _hubConnection.On<string, Coordinate>(nameof(BroadcastNewLocation), OnBroadcastLocation);
-
-        await _hubConnection.StartAsync();
+            _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
-    private async Task OnBroadcastLocation(string userName, Coordinate coordinate)
+    private async Task OnNewLocationReceived(ActorLocation actorLocation)
     {
         if (_map is null) return;
 
-        _lastPosition = coordinate;
-        await _map.AddActor(coordinate, new Team("Team Gert"));
+        _lastPosition = actorLocation.Location;
+        await _map.AddActor(_lastPosition, new Team("Bravo"));
 
         _teams = _map.Teams
             .Select(t => t.Name)
             .Aggregate((a, b) => a + ", " + b);
 
-        var cc = coordinate with { X = coordinate.X + 0.007 };
+        var cc = _lastPosition with { X = _lastPosition.X + 0.007 };
         await _map.AddActor(cc, new Cop());
     }
-
-    private async Task BroadcastNewLocation(Coordinate coordinate)
-    {
-        if (_hubConnection != null)
-            await _hubConnection.SendAsync(nameof(BroadcastNewLocation), _username, coordinate);
-    }
-
 
     #endregion
 
     private bool _added;
+
     private async Task OnMapClick(Coordinate coordinate)
     {
         if (!_added)
-            await BroadcastNewLocation(coordinate);
+            await GameHubClient.Server.BroadcastNewLocation(new ActorLocation("Gert", coordinate));
+
+        if (_map is null) return;
+
+        var districtAtLocation = await _map.TryGetDistrictAtCurrentLocation(coordinate);
+
+        if (districtAtLocation is not null)
+        {
+            await GameHubClient.Server.BroadcastDistrictOwnerChange(new DistrictOwner(Session?.TeamName, districtAtLocation.Name));
+        }
 
         _added = true;
     }
@@ -165,4 +199,20 @@
 
         return Task.CompletedTask;
     }
+
+    #region IDisposable
+
+    public async ValueTask DisposeAsync()
+    {
+        if (GameHubClient != null) await GameHubClient.StopAsync();
+        if (_map != null) await _map.DisposeAsync();
+    }
+
+    #endregion
+
+    private Task LoadMapDataAsync()
+    {
+        throw new NotImplementedException();
+    }
+
 }

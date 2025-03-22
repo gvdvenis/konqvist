@@ -131,7 +131,7 @@
         [ 6.250742448036135, 51.88372609637068 ]
       ],
       "name": "Hagedoorn",
-      "owner": { "name": "red" },
+      "owner": null,
       "triggerCircleCenter": [ 6.253352114824452, 51.88275195864145 ],
       "resources": {
         "r1": 10,
@@ -173,7 +173,7 @@
         [ 6.254552425826404, 51.87920630308025 ]
       ],
       "name": "Korte Straat",
-      "owner": { "name": "blue" },
+      "owner": null,
       "triggerCircleCenter": [ 6.250138074304516, 51.8799326545122 ],
       "resources": {
         "r1": 20,
@@ -223,7 +223,7 @@
         [ 6.2592235344072265, 51.88249575341803 ]
       ],
       "name": "Loveringbos",
-      "owner": { "name": "green" },
+      "owner": null,
       "triggerCircleCenter": [ 6.256480536926574, 51.88193455460092 ],
       "resources": {
         "r1": 30,

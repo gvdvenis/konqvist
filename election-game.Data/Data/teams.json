@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Alpha",
+    "color": "#880000" // red
+  },
+  {
+    "name": "Bravo",
+    "color": "#000088" // blue
+  },
+  {
+    "name": "Charly",
+    "color": "#008000" // green
+  },
+  {
+    "name": "Delta",
+    "color": "#888800" // yellow
+  },
+  {
+    "name": "Echo",
+    "color": "#800080" // purple
+  },
+  {
+    "name": "Foxtrot",
+    "color": "#FFA500" // orange
+  },
+  {
+    "name": "Golf",
+    "color": "#FFC0CB" // pink
+  },
+  {
+    "name": "Hotel",
+    "color": "#A52A2A" // brown
+  },
+  {
+    "name": "India",
+    "color": "#000000" // black
+  }
+]

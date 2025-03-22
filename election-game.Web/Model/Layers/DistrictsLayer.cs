@@ -1,4 +1,4 @@
-﻿using election_game.Data.Model.MapElements;
+﻿using election_game.Data.Models;
 using Microsoft.AspNetCore.Components;
 using OpenLayers.Blazor;
 
@@ -27,14 +27,13 @@ public class MapLayer : ReactiveLayer<MapData, Polygon>
 public class DistrictsLayer : ReactiveLayer<DistrictData, District>
 {
 
-    public DistrictsLayer(): base()
+    public DistrictsLayer()
     {
         Id = "districtsLayer";
         RaiseShapeEvents = true;
         SelectionEnabled = true;
-        
         SelectedShapeChanged = EventCallback.Factory.Create<Shape>(this, LayerSelectedShapeChanged);
-        SelectionChanged = EventCallback.Factory.Create<SelectionChangedArgs>(this, LayerSelectionChanged);
+        //SelectionChanged = EventCallback.Factory.Create<SelectionChangedArgs>(this, LayerSelectionChanged);
     }
 
     private static Task LayerSelectionChanged(SelectionChangedArgs arg)
@@ -46,6 +45,7 @@ public class DistrictsLayer : ReactiveLayer<DistrictData, District>
     {
         if (shape is not District district) return;
         await district.ShowPopup();
+        return;// Task.CompletedTask;
     }
 
     #region Overrides of ReactiveLayer<DistrictData,District>
@@ -62,4 +62,15 @@ public class DistrictsLayer : ReactiveLayer<DistrictData, District>
     }
 
     #endregion
+
+    public async Task SetOwnerFor(string districtName, Team team)
+    {
+        var district = Items.FirstOrDefault(d => d.Name == districtName);
+
+        if (district is not null)
+        {
+            await district.SetOwner(team);
+            await AddOrReplaceShape(district);
+        }
+    }
 }

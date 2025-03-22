@@ -1,6 +1,6 @@
 ﻿using OpenLayers.Blazor;
-using System.Collections.Specialized;
-using election_game.Data.Model.MapElements;
+using System.ComponentModel.Design;
+using election_game.Data.Models;
 
 namespace ElectionGame.Web.Model;
 
@@ -17,7 +17,6 @@ public abstract class ReactiveLayer : Layer
 
 public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : Shape where TShapeData : IShapeData
 {
-    private GameMap? _gameMap;
 
     protected ReactiveLayer()
     {
@@ -26,29 +25,10 @@ public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : S
         SourceType = SourceType.Vector;
         Projection = "EPSG:4326";
         RaiseShapeEvents = true;
-        ShapesList.CollectionChanged += ShapesList_CollectionChanged;
     }
 
-    public List<TShape> Items => ShapesList.OfType<TShape>().ToList();
-
-    protected void SetGameMap(GameMap gameMap)
-    {
-        _gameMap = gameMap;
-    }
-
-    private void ShapesList_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (_gameMap is null) throw new MissingMemberException("GameMap has to be set before you can add shapes. Call the SetGameMap(GameMap) protected method first");
-
-        // first remove existing Districts from the maps list
-        if (e.OldItems != null)
-            _gameMap.ShapesList.RemoveRange(e.OldItems.Cast<Shape>());
-
-        // now add the e.NewItems to the _maps shapesList
-        if (e.NewItems != null)
-            _gameMap.ShapesList.AddRange(e.NewItems.Cast<Shape>());
-    }
-
+    public IEnumerable<TShape> Items => ShapesList.OfType<TShape>();
+    
     /// <summary>
     ///     Call this method to initialize the layer with a list of shapeData.
     ///     It (re)creates all shapeData in <paramref name="shapeDataList"/> on the layer and takes
@@ -62,8 +42,6 @@ public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : S
     /// <returns></returns>
     public async Task InitializeWithData(IEnumerable<TShapeData> shapeDataList, GameMap gameMap, StyleOptions? selectionStyles = null)
     {
-        SetGameMap(gameMap);
-
         if (!gameMap.LayersList.Contains(this))
             gameMap.LayersList.Add(this);
 
@@ -73,8 +51,23 @@ public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : S
         
         ShapesList.AddRange(shapesToAdd);
 
-        await gameMap.UpdateLayer(this);
         await gameMap.SetSelectionSettings(this, SelectionEnabled, selectionStyles, false);
+    }
+
+    protected async Task AddOrReplaceShape(Shape? shape)
+    {
+        if (Map is null) return;
+        if (shape is null) return;
+
+        var existingShape = Items.FirstOrDefault(s => s == shape);
+
+        if (existingShape is not null)
+        {
+            ShapesList.Remove(existingShape);
+        }
+
+        ShapesList.Add(shape);
+        await Map.SetSelectionSettings(this, SelectionEnabled, MapStyles.SelectedDistrictStyle, false);
     }
 
     /// <summary>

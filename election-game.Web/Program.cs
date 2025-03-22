@@ -1,6 +1,7 @@
+using election_game.Data.Stores;
 using ElectionGame.Web;
 using ElectionGame.Web.Components;
-using ElectionGame.Web.Hubs;
+using ElectionGame.Web.SignalR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
 
@@ -16,12 +17,13 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddFluentUIComponents();
 
-builder.Services.AddHttpClient<GameApiClient>(client =>
-    {
-        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
-        // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
-        client.BaseAddress = new Uri("https+http://apiservice");
-    });
+builder.Services.AddScoped<IGameHubClient, GameHubClient>();
+//builder.Services.AddHttpClient<GameApiClient>(client =>
+//    {
+//        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
+//        // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
+//        client.BaseAddress = new Uri("https+http://apiservice");
+//    });
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -37,6 +39,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+
+// Add to your existing service registration section
+builder.Services.AddSingleton(_ =>  MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
 
 var app = builder.Build();
 
@@ -64,6 +69,6 @@ app.MapRazorComponents<App>()
 
 app.MapDefaultEndpoints();
 
-app.MapHub<BlazorChatSampleHub>(BlazorChatSampleHub.HubUrl);
+app.MapHub<GameHubServer>(GameHubServer.HubUrl);
 
 app.Run();

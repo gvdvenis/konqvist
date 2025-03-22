@@ -39,7 +39,8 @@
         {
             new(ClaimTypes.Name, loginuser.Name),
             new(ClaimTypes.Role, loginuser.Role.ToString()),
-            new(ClaimTypes.UserData, loginuser.TeamName)
+            new(ClaimTypes.UserData, loginuser.TeamName),
+            new(ClaimTypes.NameIdentifier, loginuser.TeamName)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -53,9 +54,9 @@
     { 
         return Password switch
         {
-            "123" => new User("Gert", Password, Role.Admin, "Team Spelleiding"),
-            "234" => new User("John", Password, Role.Player, "Team A: Player"),
-            "2345" => new User("Jane", Password, Role.TeamLeader, "Team A: Leader"),
+            "b" => new User("Gert", Password, Role.Admin, "Bravo"),
+            "c" => new User("John", Password, Role.Player, "Charly"),
+            "d" => new User("Jane", Password, Role.TeamLeader, "Delta"),
             _ => null
         };
     }

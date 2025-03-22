@@ -1,4 +1,4 @@
-﻿using election_game.Data.Model.MapElements;
+﻿using election_game.Data.Models;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
@@ -8,7 +8,7 @@ public class District : Region
     public District(DistrictData districtData) : base(new Coordinates(districtData.Coordinates.ToList()))
     {
         Name = districtData.Name;
-        Owner = new Team(districtData.Owner);
+        Owner = Team.CreateFromDataOrDefault(districtData.Owner);
 
         TriggerCircle = new Circle(districtData.TriggerCircleCenter, 25)
         {
@@ -22,10 +22,9 @@ public class District : Region
             {"Oil", districtData.Resources.R4}
         };
 
-        Styles = [MapStyles.DistrictOwnerStyle(Owner.Name)];
+        Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
     }
-
-
+    
     public async Task ShowPopup()
     {
         if (Map is null) return;
@@ -33,8 +32,17 @@ public class District : Region
     }
 
     public string Name { get; }
-    public Team Owner { get; }
+    public Team? Owner { get; private set; }
     public Circle TriggerCircle { get; }
     public Dictionary<string, int> Resources { get; }
+
+    internal Task SetOwner(Team newOwner)
+    {
+        Owner ??= newOwner;
+        Owner.TextColor = newOwner.TextColor;
+        Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
+
+        return Task.CompletedTask;
+    }
 }
 

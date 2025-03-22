@@ -1,4 +1,5 @@
 using election_game.Data;
+using election_game.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,13 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 
 app.MapGet("/mapdata", MapDataHelper.GetMapData);
+app.MapGet("/teams", MapDataHelper.GetTeamsData);
+app.MapPut("/mapdata/district/{districtName}/owner", UpdateDistrictOwner);
+
+async Task UpdateDistrictOwner(string districtName, TeamData teamData)
+{
+    throw new NotImplementedException();
+}
 
 app.MapDefaultEndpoints();
 

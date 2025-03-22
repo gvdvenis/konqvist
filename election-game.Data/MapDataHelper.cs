@@ -1,28 +1,47 @@
 ﻿using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using election_game.Data.Model.MapElements;
+using election_game.Data.Models;
 using OpenLayers.Blazor;
 
 namespace election_game.Data;
 
 public static class MapDataHelper
 {
+    private static readonly string DataFolder =
+        Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)!, "Data");
 
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
         Converters = { new CoordinateConverter(), new CoordinateArrayConverter() }
     };
 
     public static async Task<MapData?> GetMapData()
     {
-        string rootPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-        string str = await File.ReadAllTextAsync(Path.Combine(rootPath, "Data","map.json"));
+        string str = await File.ReadAllTextAsync(Path.Combine(DataFolder, "map.json"));
         
         var map = JsonSerializer.Deserialize<MapData>(str, Options);
         
-        return map;
+        return map ?? MapData.Empty;
+    }
+
+    public static async Task<TeamData[]> GetTeamsData()
+    {
+        try
+        {
+            string str = await File.ReadAllTextAsync(Path.Combine(DataFolder, "teams.json"));
+
+            var teams = JsonSerializer.Deserialize<TeamData[]>(str, Options);
+
+            return teams ?? [];
+        }
+        catch (Exception ex)
+        {
+            return [];
+        }
     }
 }
 

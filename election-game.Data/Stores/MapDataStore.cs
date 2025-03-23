@@ -23,9 +23,6 @@ public class MapDataStore
     private MapData _mapData = MapData.Empty;
     private TeamData[] _teamsData = [];
 
-    // Events for notifying subscribers of data changes
-    public event Func<string, string, Task>? DistrictOwnerChanged;
-
     private async Task InitializeAsync()
     {
         var mapData = await MapDataHelper.GetMapData().ConfigureAwait(false);
@@ -139,12 +136,6 @@ public class MapDataStore
             }
 
             district.Owner = newOwner;
-
-            // Notify subscribers
-            if (DistrictOwnerChanged != null)
-            {
-                await DistrictOwnerChanged.Invoke(districtName, teamName ?? "");
-            }
 
             return true;
         }

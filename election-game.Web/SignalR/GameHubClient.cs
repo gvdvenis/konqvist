@@ -8,7 +8,7 @@ namespace ElectionGame.Web.SignalR;
 /// <summary>
 ///     Client for interacting with the game hub via SignalR.
 /// </summary>
-public class GameHubClient : IBindableHubClient, IGameHubServer
+public class GameHubClient : IBindableHubClient, IAsyncDisposable
 {
     private readonly HubConnection _hubConnection;
 
@@ -27,7 +27,7 @@ public class GameHubClient : IBindableHubClient, IGameHubServer
 
         RegisterEvents();
 
-        //_hubConnection.StartAsync().GetAwaiter().GetResult();
+        _hubConnection.StartAsync().GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -48,11 +48,11 @@ public class GameHubClient : IBindableHubClient, IGameHubServer
 
     #region IGameHubServer implements
 
-    public Task BroadcastNewLocation(ActorLocation actorLocation) =>
-        _hubConnection.SendAsync(nameof(IGameHubServer.BroadcastNewLocation), actorLocation);
+    public Task BroadcastNewLocation(ActorLocation actorLocation) => 
+        _hubConnection.SendAsync(nameof(BroadcastNewLocation), actorLocation);
 
     public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner) =>
-        _hubConnection.SendAsync(nameof(IGameHubServer.BroadcastDistrictOwnerChange), districtOwner);
+        _hubConnection.SendAsync(nameof(BroadcastDistrictOwnerChange), districtOwner);
 
     #endregion
 
@@ -94,7 +94,17 @@ public class GameHubClient : IBindableHubClient, IGameHubServer
 
     public async Task StopAsync() => await _hubConnection.StopAsync();
 
-    public IGameHubServer Server => this;
+
+    #endregion
+
+
+    #region IDisposable
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        await _hubConnection.DisposeAsync();
+    }
 
     #endregion
 }

@@ -5,15 +5,12 @@ namespace ElectionGame.Web.Model;
 
 public class District : Region
 {
-    public District(DistrictData districtData) : base(new Coordinates(districtData.Coordinates.ToList()))
+    public District(DistrictData districtData) : base(districtData.Coordinates)
     {
         Name = districtData.Name;
         Owner = Team.CreateFromDataOrDefault(districtData.Owner);
 
-        TriggerCircle = new Circle(districtData.TriggerCircleCenter, 25)
-        {
-            Styles = [MapStyles.DistrictTriggerStyle]
-        };
+        TriggerCircle = new TriggerCircle(districtData.TriggerCircleCenter);
         Resources = new Dictionary<string, int>
         {
             {"Gold", districtData.Resources.R1},
@@ -33,16 +30,25 @@ public class District : Region
 
     public string Name { get; }
     public Team? Owner { get; private set; }
-    public Circle TriggerCircle { get; }
+    public TriggerCircle TriggerCircle { get; }
     public Dictionary<string, int> Resources { get; }
 
-    internal Task SetOwner(Team newOwner)
+    internal async Task SetOwner(Team newOwner)
     {
-        Owner ??= newOwner;
+        Owner = newOwner;
         Owner.TextColor = newOwner.TextColor;
         Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
+        await UpdateShape();
+    }
 
-        return Task.CompletedTask;
+    /// <summary>
+    ///     Check if the given location is within the trigger circle of this district
+    /// </summary>
+    /// <param name="location"></param>
+    /// <returns></returns>
+    public bool IsAtLocation(Coordinate location)
+    {
+        return location.DistanceTo(TriggerCircle.Center) * 1000 < TriggerCircle.Radius;
     }
 }
 

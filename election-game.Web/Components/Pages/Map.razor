@@ -2,49 +2,45 @@
 @page "/map"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-@using election_game.Data.Contracts
-@using election_game.Data.Models
 @using ElectionGame.Web.Model
-@using ElectionGame.Web.SignalR
 @using ElectionGame.Web.State
 @using OpenLayers.Blazor
 
-@implements IAsyncDisposable;
-
 @attribute [Authorize]
-
-@inject IBindableHubClient GameHubClient;
 
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
-    <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton>
+    @* <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton> *@
     <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox>
     <pre>
-        Center:@_map?.Center
-        Last Position: @_lastPosition
+        @* Center:@_map?.Center *@
+        @* Last Position: @_lastPosition *@
         Mouse Position: @_mousePosition
-        Visible Extent: @_map?.VisibleExtent
-        Districts: @_districts
-        Teams: @_teams
+        @* Visible Extent: @_map?.VisibleExtent *@
+        @* Districts: @_districts *@
+        @* Teams: @_teams *@
         Session Team: @Session?.TeamName
         @_info
     </pre>
 </div>
 
-<GameMap @ref="_map"
-         @bind-Rotation="_rotation"
-         @bind-Zoom="_zoom"
-         @bind-Center="_center"
-         OnClick="OnMapClick"
-         OnPointerMove="OnPointerMove"
-         OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
-         InteractionsEnabled="_enableInteractions"
-         ZoomSliderControl
-         FullScreenControl>
-    <Features>
-        <CopsLayer></CopsLayer>
-        <DistrictsLayer></DistrictsLayer>
-    </Features>
+<OpenStreetMap @bind-Rotation="_rotation"
+               @bind-Center="_center"
+               OnClick="OnMapClick"
+               OnPointerMove="OnPointerMove"
+               OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
+               InteractionsEnabled="_enableInteractions"
+               ZoomSliderControl
+               InitialCenter="@_center"
+               InitialZoom="14"
+               MinZoom="14"
+               MaxZoom="18"
+               FullScreenControl>
+    <Layers>
+        <MapLayer />
+        <DistrictsLayer @ref="_districtsLayer" />
+        <TriggerCirclesLayer />
+    </Layers>
     <Popup>
         <div id="popup" class="ol-box">
             @if (context is District district)
@@ -60,149 +56,41 @@
             }
         </div>
     </Popup>
-</GameMap>
+</OpenStreetMap>
 
 @code {
 
     [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-    private GameMap? _map;
     private Coordinate? _mousePosition;
-    private Coordinate _lastPosition;
     private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
-    private double _zoom = 12;
     private string _info = "";
-    private string _districts = "";
-    private string _teams = "";
     private double _rotation;
     private bool _enableInteractions = true;
-
+    private DistrictsLayer? _districtsLayer;
     private Session? Session { get; set; }
-
-    // private async Task LoadTeamsDataAsync()
-    // {
-    //     try
-    //     {
-    //         if (_map is null) return;
-    //         var teamsData = await ApiClient.GetTeamsAsync();
-    //         await _map.LoadTeamsDataAsync(teamsData);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //     }
-    // }
-
-    // private async Task LoadMapDataAsync(MapData mapData)
-    // {
-    //     try
-    //     {
-    //         if (_map is null) return;
-    //         await _map.SetMapDataAsync(mapData);
-
-    //         _districts = string.Join(", ", _map.Districts.Select(d => d.Name));
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //     }
-    // }
 
     #region Overrides of ComponentBase
 
     /// <inheritdoc />
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await base.OnAfterRenderAsync(firstRender);
-
-        if (firstRender)
-        {
-            await GameHubClient.StartAsync();
-        }
-    }
-
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            GameHubClient.OnNewLocationReceived = new EventCallback<ActorLocation>(this, NewLocationReceived);
-            GameHubClient.OnInitializeMapData = new EventCallback<MapData>(this, InitializeMapData);
-            
-            Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-        }
-
         await base.OnInitializedAsync();
-    }
-
-
-    private async Task InitializeMapData(MapData mapData)
-    {
-        try
-        {
-            if (_map is null) return;
-            await _map.SetMapDataAsync(mapData);
-
-            //_districts = string.Join(", ", _map.Districts.Select(d => d.Name));
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-    }
-
-    private async Task NewLocationReceived(ActorLocation actorLocation)
-    {
-        if (_map is null) return;
-
-        _lastPosition = actorLocation.Location;
-        await _map.AddActor(_lastPosition, new Team("Bravo"));
-
-        _teams = _map.Teams
-            .Select(t => t.Name)
-            .Aggregate((a, b) => a + ", " + b);
-
-        var cc = _lastPosition with { X = _lastPosition.X + 0.007 };
-        await _map.AddActor(cc, new Cop());
+        Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
     }
 
     #endregion
 
-    private bool _added;
-
     private async Task OnMapClick(Coordinate coordinate)
     {
-        if (!_added)
-            await GameHubClient.Server.BroadcastNewLocation(new ActorLocation("Gert", coordinate));
-
-        if (_map is null)
-        {
-            return;
-        }
-
-        var districtAtLocation = await _map.TryGetDistrictAtCurrentLocation(coordinate);
-
-        if (districtAtLocation is not null)
-        {
-            await GameHubClient.Server.BroadcastDistrictOwnerChange(new DistrictOwner(Session?.TeamName, districtAtLocation.Name));
-        }
-        else
-        {
-            //load map first
-            if (!_map.Districts.Any())
-                await GameHubClient.Server.BroadcastDistrictOwnerChange(new DistrictOwner(Session?.TeamName, ""));
-        }
-
-        _added = true;
+        if (Session is not null && _districtsLayer is not null) 
+            await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
     }
 
-    private void OnPointerMove(Coordinate coordinate)
+    private Task OnPointerMove(Coordinate coordinate)
     {
         _mousePosition = coordinate;
+        return Task.CompletedTask;
     }
 
     private Task CenterLocation()
@@ -214,17 +102,8 @@
 
     #region IDisposable
 
-    public async ValueTask DisposeAsync()
-    {
-        if (GameHubClient != null) await GameHubClient.StopAsync();
-        if (_map != null) await _map.DisposeAsync();
-    }
+
 
     #endregion
-
-    private Task LoadMapDataAsync()
-    {
-        throw new NotImplementedException();
-    }
 
 }

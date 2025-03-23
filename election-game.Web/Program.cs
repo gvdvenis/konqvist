@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
-builder.AddRedisOutputCache("cache");
+//builder.AddRedisOutputCache("cache");
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -16,7 +16,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddFluentUIComponents();
 
-builder.Services.AddScoped<IBindableHubClient,GameHubClient>();
+builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
 
 //builder.Services.AddHttpClient<GameApiClient>(client =>
@@ -61,7 +61,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.UseOutputCache();
+//app.UseOutputCache();
 
 app.MapStaticAssets();
 

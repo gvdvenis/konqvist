@@ -4,7 +4,13 @@ using Microsoft.AspNetCore.Components;
 
 namespace ElectionGame.Web.SignalR;
 
-public interface IBindableHubClient: IGameHubClient
+public interface IGameHubServer
+{
+    public Task BroadcastNewLocation(ActorLocation actorLocation);
+    public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner);
+}
+
+public interface IBindableHubClient: IGameHubClient, IGameHubServer
 {
     public EventCallback<string> OnUserDisconnected { get; set; }
     
@@ -15,9 +21,7 @@ public interface IBindableHubClient: IGameHubClient
     public EventCallback<DistrictOwner> OnDistrictOwnerChanged { get; set; }
 
     public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
-
-    public IGameHubServer Server { get; }
-
+    
     Task StartAsync();
 
     Task StopAsync();
@@ -34,4 +38,5 @@ public interface IGameHubClient
     public Task DistrictOwnerChanged(DistrictOwner districtOwner);
 
     public Task NewLocationReceived(ActorLocation actorLocation);
+
 }

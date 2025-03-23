@@ -1,76 +1,69 @@
-﻿using election_game.Data.Models;
+﻿using election_game.Data.Contracts;
+using election_game.Data.Stores;
+using ElectionGame.Web.SignalR;
 using Microsoft.AspNetCore.Components;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 
-public class MapLayer : ReactiveLayer<MapData, Polygon>
+public class DistrictsLayer : Layer
 {
-    public MapLayer()
+    private readonly MapDataStore _mapDataStore;
+    private List<District> _districts = [];
+    private readonly IBindableHubClient _hubClient;
+
+    public DistrictsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient)
     {
-        Id = "gameMapLayer";
-    }
-
-    #region Overrides of ReactiveLayer<MapData, Polygon>
-
-    /// <inheritdoc />
-    protected override Shape[] ShapeInitializer(MapData shapeData)
-    {
-        return [
-            new Polygon(shapeData.Coordinates.ToList())
-        ];
-    }
-
-    #endregion
-}
-
-public class DistrictsLayer : ReactiveLayer<DistrictData, District>
-{
-
-    public DistrictsLayer()
-    {
-        Id = "districtsLayer";
-        RaiseShapeEvents = true;
+        _mapDataStore = mapDataStore;
+        _hubClient = hubClient;
+        Id = nameof(DistrictsLayer);
+        SelectionStyle = MapStyles.SelectedDistrictStyle;
+        LayerType = LayerType.Vector;
         SelectionEnabled = true;
-        SelectedShapeChanged = EventCallback.Factory.Create<Shape>(this, LayerSelectedShapeChanged);
-        //SelectionChanged = EventCallback.Factory.Create<SelectionChangedArgs>(this, LayerSelectionChanged);
+
+        hubClient.OnDistrictOwnerChanged = new EventCallback<DistrictOwner>(this, DistrictOwnerChanged);
+        SelectionChanged = new EventCallback<SelectionChangedArgs>(this, ShowPopup);
     }
 
-    private static Task LayerSelectionChanged(SelectionChangedArgs arg)
+    private static async Task ShowPopup(SelectionChangedArgs sca)
     {
-        return Task.CompletedTask;
-    }
-
-    private static async Task LayerSelectedShapeChanged(Shape shape)
-    {
-        if (shape is not District district) return;
-        await district.ShowPopup();
-        return;// Task.CompletedTask;
-    }
-
-    #region Overrides of ReactiveLayer<DistrictData,District>
-
-    /// <inheritdoc />
-    protected override Shape[] ShapeInitializer(DistrictData shapeData)
-    {
-        var district = new District(shapeData);
-
-        return [
-            district,
-            district.TriggerCircle
-        ];
-    }
-
-    #endregion
-
-    public async Task SetOwnerFor(string districtName, Team team)
-    {
-        var district = Items.FirstOrDefault(d => d.Name == districtName);
-
-        if (district is not null)
+        if (sca.SelectedShapes.OfType<District>().FirstOrDefault() is { } district)
         {
-            await district.SetOwner(team);
-            await AddOrReplaceShape(district);
+            await district.ShowPopup();
         }
+    }
+
+    public async Task<bool> TryClaimDistrict(Coordinate location, string teamName)
+    {
+        var foundDistrict = _districts
+            .FirstOrDefault(d => d.IsAtLocation(location));
+
+        Console.WriteLine($">>> Try claim district {foundDistrict?.Name ?? "NO DISTRICT"} by team '{teamName}'");
+        if (foundDistrict is null || foundDistrict.Owner?.Name == teamName) return false;
+
+        Console.WriteLine(">>> Broadcast District Owner Changed");
+        await _hubClient.BroadcastDistrictOwnerChange(new DistrictOwner(teamName, foundDistrict.Name));
+
+        return true;
+    }
+
+    private async Task DistrictOwnerChanged(DistrictOwner districtOwner)
+    {
+        await InitLayer();
+        Console.WriteLine($"<<< District '{districtOwner.DistrictName}' now owned by {districtOwner.TeamName}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await InitLayer();
+    }
+
+    private async Task InitLayer()
+    {
+        var mapData = await _mapDataStore.GetMapDataAsync();
+        _districts = mapData.Districts.Select(d => new District(d)).ToList();
+        ShapesList.Clear();
+        ShapesList.AddRange(_districts);
     }
 }

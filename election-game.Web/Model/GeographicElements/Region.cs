@@ -2,7 +2,7 @@
 
 namespace ElectionGame.Web.Model;
 
-public abstract class Region(Coordinates coordinates) : Polygon(coordinates[0])
+public abstract class Region(IEnumerable<Coordinate> boundary) : Polygon(boundary.ToList())
 {
     #region Overrides of Object
 

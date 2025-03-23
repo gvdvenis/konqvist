@@ -12,7 +12,7 @@ public class MapDataStore
     {
         if (_instance != null) return _instance;
         _instance = new MapDataStore();
-        await _instance.InitializeAsync();
+        await _instance.InitializeAsync().ConfigureAwait(false);
         return _instance;
     }
 
@@ -28,7 +28,7 @@ public class MapDataStore
 
     private async Task InitializeAsync()
     {
-        var mapData = await MapDataHelper.GetMapData() ?? MapData.Empty;
+        var mapData = await MapDataHelper.GetMapData().ConfigureAwait(false);
         await InitializeMapDataAsync(mapData);
 
         var teamsData = await MapDataHelper.GetTeamsData();

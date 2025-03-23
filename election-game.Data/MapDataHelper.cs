@@ -19,13 +19,21 @@ public static class MapDataHelper
         Converters = { new CoordinateConverter(), new CoordinateArrayConverter() }
     };
 
-    public static async Task<MapData?> GetMapData()
+    public static async Task<MapData> GetMapData()
     {
-        string str = await File.ReadAllTextAsync(Path.Combine(DataFolder, "map.json"));
-        
-        var map = JsonSerializer.Deserialize<MapData>(str, Options);
-        
-        return map ?? MapData.Empty;
+        try
+        {
+            string str = await File.ReadAllTextAsync(Path.Combine(DataFolder, "map.json")).ConfigureAwait(false);
+
+            var map = JsonSerializer.Deserialize<MapData>(str, Options);
+
+            return map ?? MapData.Empty;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return MapData.Empty;
+        }
     }
 
     public static async Task<TeamData[]> GetTeamsData()

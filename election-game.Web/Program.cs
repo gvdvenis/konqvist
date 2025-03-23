@@ -1,5 +1,4 @@
 using election_game.Data.Stores;
-using ElectionGame.Web;
 using ElectionGame.Web.Components;
 using ElectionGame.Web.SignalR;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -17,7 +16,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddFluentUIComponents();
 
-builder.Services.AddScoped<IGameHubClient, GameHubClient>();
+builder.Services.AddScoped<IBindableHubClient,GameHubClient>();
+builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
+
 //builder.Services.AddHttpClient<GameApiClient>(client =>
 //    {
 //        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.

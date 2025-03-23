@@ -4,29 +4,23 @@ using election_game.Data.Stores;
 
 namespace ElectionGame.Web.SignalR;
 
-public class GameHubServer : Hub<IGameHubClient>, IGameHubServer
+public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameHubServer
 {
-    private readonly MapDataStore _dataStore;
-
-    public GameHubServer(MapDataStore dataStore)
-    {
-        _dataStore = dataStore;
-    }
-
     public const string HubUrl = "/chat";
 
     public async Task BroadcastNewLocation(ActorLocation actorLocation)
     {
-        await Clients.All.NewLocationReceived.InvokeAsync(actorLocation); //NewLocationReceived(username, newLocation);
+        await Clients.All.NewLocationReceived(actorLocation); 
     }
 
     public async Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner)
     {
         // Update the data store first
-        await _dataStore.SetDistrictOwnerAsync(districtOwner);
+        await dataStore.SetDistrictOwnerAsync(districtOwner);
         
         // Then broadcast to clients
-        await Clients.All.DistrictOwnerChanged.InvokeAsync(districtOwner);
+        await Clients.All.InitializeMapData(await dataStore.GetMapDataAsync());
+        //await Clients.All.DistrictOwnerChanged(districtOwner);
     }
 
     public override async Task OnConnectedAsync()
@@ -35,12 +29,12 @@ public class GameHubServer : Hub<IGameHubClient>, IGameHubServer
         await base.OnConnectedAsync();
 
         // Send the map data to initialize the client
-        var mapData = await _dataStore.GetMapDataAsync();
-        var teamsData = await _dataStore.GetTeamsDataAsync();
+        var mapData = await dataStore.GetMapDataAsync();
+        var teamsData = await dataStore.GetTeamsDataAsync();
 
         // Instruct the caller client to initialize the map and teams data
-        await Clients.Caller.InitializeMapData.InvokeAsync(mapData);
-        await Clients.Caller.InitializeTeamsData.InvokeAsync(teamsData);
+        await Clients.Caller.InitializeTeamsData(teamsData);
+        //await Clients.Caller.InitializeMapData(mapData);
     }
 
     public override async Task OnDisconnectedAsync(Exception? e)
@@ -48,6 +42,6 @@ public class GameHubServer : Hub<IGameHubClient>, IGameHubServer
         Console.WriteLine($"Disconnected {e?.Message} {Context.ConnectionId}");
         await base.OnDisconnectedAsync(e);
 
-        await Clients.All.UserDisconnected.InvokeAsync(Context.ConnectionId);
+        await Clients.All.UserDisconnected(Context.ConnectionId);
     }
 }

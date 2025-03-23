@@ -51,7 +51,13 @@ public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : S
         
         ShapesList.AddRange(shapesToAdd);
 
-        await gameMap.SetSelectionSettings(this, SelectionEnabled, selectionStyles, false);
+        await Task.CompletedTask;
+        //await gameMap.SetSelectionSettings(this, SelectionEnabled, selectionStyles, false);
+    }
+
+    public Task SetSelectionStyles(GameMap gameMap, StyleOptions? selectionStyles = null)
+    {
+        return gameMap.SetSelectionSettings(this, SelectionEnabled, selectionStyles, false);
     }
 
     protected async Task AddOrReplaceShape(Shape? shape)
@@ -67,7 +73,7 @@ public abstract class ReactiveLayer<TShapeData, TShape> : Layer where TShape : S
         }
 
         ShapesList.Add(shape);
-        await Map.SetSelectionSettings(this, SelectionEnabled, MapStyles.SelectedDistrictStyle, false);
+        //await Map.SetSelectionSettings(this, SelectionEnabled, MapStyles.SelectedDistrictStyle, false);
     }
 
     /// <summary>

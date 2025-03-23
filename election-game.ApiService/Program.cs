@@ -41,12 +41,6 @@ app.UseCors();
 
 app.MapGet("/mapdata", MapDataHelper.GetMapData);
 app.MapGet("/teams", MapDataHelper.GetTeamsData);
-app.MapPut("/mapdata/district/{districtName}/owner", UpdateDistrictOwner);
-
-async Task UpdateDistrictOwner(string districtName, TeamData teamData)
-{
-    throw new NotImplementedException();
-}
 
 app.MapDefaultEndpoints();
 

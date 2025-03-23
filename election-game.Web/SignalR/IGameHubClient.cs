@@ -4,21 +4,34 @@ using Microsoft.AspNetCore.Components;
 
 namespace ElectionGame.Web.SignalR;
 
-public interface IGameHubClient
+public interface IBindableHubClient: IGameHubClient
 {
+    public EventCallback<string> OnUserDisconnected { get; set; }
+    
+    public EventCallback<MapData> OnInitializeMapData { get; set; }
+
+    public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
+
+    public EventCallback<DistrictOwner> OnDistrictOwnerChanged { get; set; }
+
+    public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
+
+    public IGameHubServer Server { get; }
+
     Task StartAsync();
 
     Task StopAsync();
-    
-    public EventCallback<string> UserDisconnected { get; set; }
-    
-    public EventCallback<MapData> InitializeMapData { get; set; }
+}
 
-    public EventCallback<TeamData[]> InitializeTeamsData { get; set; }
+public interface IGameHubClient
+{
+    public Task InitializeMapData(MapData mapData);
 
-    public EventCallback<DistrictOwner> DistrictOwnerChanged { get; set; }
+    public Task UserDisconnected(string userId);
 
-    public EventCallback<ActorLocation> NewLocationReceived { get; set; }
+    public Task InitializeTeamsData(TeamData[] teamData);
 
-    public IGameHubServer Server { get; }
+    public Task DistrictOwnerChanged(DistrictOwner districtOwner);
+
+    public Task NewLocationReceived(ActorLocation actorLocation);
 }

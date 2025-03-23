@@ -8,7 +8,7 @@ namespace ElectionGame.Web.SignalR;
 /// <summary>
 ///     Client for interacting with the game hub via SignalR.
 /// </summary>
-public class GameHubClient : IGameHubClient, IGameHubServer
+public class GameHubClient : IBindableHubClient, IGameHubServer
 {
     private readonly HubConnection _hubConnection;
 
@@ -26,6 +26,8 @@ public class GameHubClient : IGameHubClient, IGameHubServer
             .Build();
 
         RegisterEvents();
+
+        //_hubConnection.StartAsync().GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -33,15 +35,15 @@ public class GameHubClient : IGameHubClient, IGameHubServer
     /// </summary>
     private void RegisterEvents()
     {
-        _hubConnection.On<string, Task>(nameof(UserDisconnected), UserDisconnected.InvokeAsync);
+        _hubConnection.On<string, Task>(nameof(UserDisconnected), UserDisconnected);
         
-        _hubConnection.On<MapData, Task>(nameof(InitializeMapData), InitializeMapData.InvokeAsync);
+        _hubConnection.On<MapData, Task>(nameof(InitializeMapData), InitializeMapData);
 
-        _hubConnection.On<TeamData[], Task>(nameof(InitializeTeamsData), InitializeTeamsData.InvokeAsync);
+        _hubConnection.On<TeamData[], Task>(nameof(InitializeTeamsData), InitializeTeamsData);
 
-        _hubConnection.On<DistrictOwner, Task>(nameof(DistrictOwnerChanged), DistrictOwnerChanged.InvokeAsync);
+        _hubConnection.On<DistrictOwner, Task>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
 
-        _hubConnection.On<ActorLocation, Task>(nameof(NewLocationReceived), NewLocationReceived.InvokeAsync);
+        _hubConnection.On<ActorLocation, Task>(nameof(NewLocationReceived), NewLocationReceived);
     }
 
     #region IGameHubServer implements
@@ -51,25 +53,42 @@ public class GameHubClient : IGameHubClient, IGameHubServer
 
     public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner) =>
         _hubConnection.SendAsync(nameof(IGameHubServer.BroadcastDistrictOwnerChange), districtOwner);
-    
+
     #endregion
 
     #region IGameHubClient implements
-    
-    /// <inheritdoc />
-    public EventCallback<string> UserDisconnected { get; set; }
 
     /// <inheritdoc />
-    public EventCallback<MapData> InitializeMapData { get; set; }
+    public Task UserDisconnected(string userId)=> OnUserDisconnected.InvokeAsync(userId);
 
     /// <inheritdoc />
-    public EventCallback<TeamData[]> InitializeTeamsData { get; set; }
+    public Task InitializeMapData(MapData mapData) => OnInitializeMapData.InvokeAsync(mapData);
 
     /// <inheritdoc />
-    public EventCallback<DistrictOwner> DistrictOwnerChanged { get; set; }
+    public Task InitializeTeamsData(TeamData[] teamData) => OnInitializeTeamsData.InvokeAsync(teamData);
 
     /// <inheritdoc />
-    public EventCallback<ActorLocation> NewLocationReceived { get; set; }
+    public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged.InvokeAsync(districtOwner);
+
+    /// <inheritdoc />
+    public Task NewLocationReceived(ActorLocation actorLocation) => OnNewLocationReceived.InvokeAsync(actorLocation);
+
+
+    /// <inheritdoc />
+    public EventCallback<string> OnUserDisconnected { get; set; }
+
+    /// <inheritdoc />
+    public EventCallback<MapData> OnInitializeMapData { get; set; }
+
+    /// <inheritdoc />
+    public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
+
+    /// <inheritdoc />
+    public EventCallback<DistrictOwner> OnDistrictOwnerChanged { get; set; }
+
+    /// <inheritdoc />
+    public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
+
 
     public async Task StartAsync() => await _hubConnection.StartAsync();
 

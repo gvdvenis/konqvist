@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel.Design;
+using System.Diagnostics;
 using election_game.Data.Models;
 using election_game.Data.Stores;
 using ElectionGame.Web.SignalR;
@@ -98,12 +99,14 @@ public class GameMap : OpenStreetMap
     {
         try
         {
-            var sw = Stopwatch.StartNew();
+            //var sw = Stopwatch.StartNew();
             await MapLayer.InitializeWithData([mapData], this);
             await DistrictsLayer.InitializeWithData(mapData.Districts, this, MapStyles.SelectedDistrictStyle);
-            sw.Stop();
 
-            Debug.WriteLine($"Loading mapdata took {sw.ElapsedMilliseconds}ms");
+            //await DistrictsLayer.SetSelectionStyles(this, MapStyles.SelectedDistrictStyle);
+            //sw.Stop();
+
+            //Debug.WriteLine($"Loading mapdata took {sw.ElapsedMilliseconds}ms");
         }
         catch (Exception ex)
         {

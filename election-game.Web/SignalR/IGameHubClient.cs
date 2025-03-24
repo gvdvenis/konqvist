@@ -18,7 +18,7 @@ public interface IBindableHubClient: IGameHubClient, IGameHubServer
 
     public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
 
-    public EventCallback<DistrictOwner> OnDistrictOwnerChanged { get; set; }
+    public Func<DistrictOwner, Task> OnDistrictOwnerChanged { get; set; }
 
     public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
     

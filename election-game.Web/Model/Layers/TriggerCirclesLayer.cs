@@ -1,4 +1,7 @@
-﻿using election_game.Data.Stores;
+﻿using election_game.Data.Contracts;
+using election_game.Data.Stores;
+using ElectionGame.Web.SignalR;
+using Microsoft.AspNetCore.Components;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
@@ -7,12 +10,23 @@ public class TriggerCirclesLayer : Layer
 {
     private readonly MapDataStore _mapDataStore;
 
-    public TriggerCirclesLayer(MapDataStore mapDataStore)
+    public TriggerCirclesLayer(MapDataStore mapDataStore, IBindableHubClient hubClient)
     {
         _mapDataStore = mapDataStore;
         Id = nameof(TriggerCirclesLayer);
         LayerType = LayerType.Vector;
         SelectionEnabled = false;
+
+        hubClient.OnDistrictOwnerChanged += DistrictOwnerChanged;
+    }
+
+    private Task DistrictOwnerChanged(DistrictOwner districtOwner)
+    {
+        var triggerCircleToRemove = ShapesList.OfType<TriggerCircle>().FirstOrDefault(tc => tc.DistrictName == districtOwner.DistrictName);
+
+        if (triggerCircleToRemove is not null) ShapesList.Remove(triggerCircleToRemove);
+
+        return Task.CompletedTask;
     }
 
     #region Overrides of ComponentBase
@@ -28,8 +42,8 @@ public class TriggerCirclesLayer : Layer
 
     private async Task InitLayer()
     {
-        var mapData = await _mapDataStore.GetMapDataAsync();
-        var triggerCircles = mapData.Districts.Select(d => new TriggerCircle(d.TriggerCircleCenter)).ToList();
+        var districts = await _mapDataStore.GetAllDistrictsAsync();
+        var triggerCircles = districts.Select(d => new TriggerCircle(d));
         ShapesList.AddRange(triggerCircles);
     }
 }

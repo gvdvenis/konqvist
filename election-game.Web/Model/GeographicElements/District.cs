@@ -9,8 +9,9 @@ public class District : Region
     {
         Name = districtData.Name;
         Owner = Team.CreateFromDataOrDefault(districtData.Owner);
-
-        TriggerCircle = new TriggerCircle(districtData.TriggerCircleCenter);
+        IsClaimable = districtData.IsClaimable;
+        
+        TriggerCircle = new TriggerCircle(districtData);
         Resources = new Dictionary<string, int>
         {
             {"Gold", districtData.Resources.R1},
@@ -21,7 +22,9 @@ public class District : Region
 
         Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
     }
-    
+
+    public bool IsClaimable { get; set; }
+
     public async Task ShowPopup()
     {
         if (Map is null) return;

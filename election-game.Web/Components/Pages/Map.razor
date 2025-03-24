@@ -11,16 +11,16 @@
 <div>
     <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
     @* <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton> *@
-    <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox>
+    @* <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox> *@
     <pre>
         @* Center:@_map?.Center *@
         @* Last Position: @_lastPosition *@
-        Mouse Position: @_mousePosition
+        @* Mouse Position: @_mousePosition *@
         @* Visible Extent: @_map?.VisibleExtent *@
         @* Districts: @_districts *@
         @* Teams: @_teams *@
-        Session Team: @Session?.TeamName
-        @_info
+        @* Session Team: @Session?.TeamName *@
+        @* @_info *@
     </pre>
 </div>
 

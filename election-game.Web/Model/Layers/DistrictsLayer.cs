@@ -21,8 +21,8 @@ public class DistrictsLayer : Layer
         LayerType = LayerType.Vector;
         SelectionEnabled = true;
 
-        hubClient.OnDistrictOwnerChanged = new EventCallback<DistrictOwner>(this, DistrictOwnerChanged);
-        SelectionChanged = new EventCallback<SelectionChangedArgs>(this, ShowPopup);
+        hubClient.OnDistrictOwnerChanged += DistrictOwnerChanged;
+        SelectionChanged = EventCallback.Factory.Create<SelectionChangedArgs>(this, ShowPopup);
     }
 
     private static async Task ShowPopup(SelectionChangedArgs sca)
@@ -61,8 +61,8 @@ public class DistrictsLayer : Layer
 
     private async Task InitLayer()
     {
-        var mapData = await _mapDataStore.GetMapDataAsync();
-        _districts = mapData.Districts.Select(d => new District(d)).ToList();
+        var districts = await _mapDataStore.GetAllDistrictsAsync();
+        _districts = districts.Select(d => new District(d)).ToList();
         ShapesList.Clear();
         ShapesList.AddRange(_districts);
     }

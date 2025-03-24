@@ -9,4 +9,5 @@ public class DistrictData : IShapeData
     public TeamData? Owner { get; set; }
     public string Name { get; set; }
     public DistrictResourcesData Resources { get; set; }
+    public bool IsClaimable { get; set; } = true;
 }

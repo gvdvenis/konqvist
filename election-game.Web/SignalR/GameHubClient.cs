@@ -68,7 +68,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task InitializeTeamsData(TeamData[] teamData) => OnInitializeTeamsData.InvokeAsync(teamData);
 
     /// <inheritdoc />
-    public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged.InvokeAsync(districtOwner);
+    public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged(districtOwner);
 
     /// <inheritdoc />
     public Task NewLocationReceived(ActorLocation actorLocation) => OnNewLocationReceived.InvokeAsync(actorLocation);
@@ -84,7 +84,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
 
     /// <inheritdoc />
-    public EventCallback<DistrictOwner> OnDistrictOwnerChanged { get; set; }
+    public Func<DistrictOwner, Task> OnDistrictOwnerChanged { get; set; }
 
     /// <inheritdoc />
     public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }

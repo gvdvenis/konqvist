@@ -4,32 +4,24 @@
 
 @using ElectionGame.Web.Model
 @using ElectionGame.Web.State
+@using Microsoft.FluentUI.AspNetCore.Components.Icons.Regular
 @using OpenLayers.Blazor
+
+@implements IAsyncDisposable
 
 @attribute [Authorize]
 
-<div>
-    <FluentButton @onclick="CenterLocation">Center to current location</FluentButton>
-    @* <FluentButton @onclick="LoadMapDataAsync">Load Map Data</FluentButton> *@
-    @* <FluentCheckbox Id="btninteract" @bind-Value="_enableInteractions">Interactive</FluentCheckbox> *@
-    <pre>
-        @* Center:@_map?.Center *@
-        @* Last Position: @_lastPosition *@
-        @* Mouse Position: @_mousePosition *@
-        @* Visible Extent: @_map?.VisibleExtent *@
-        @* Districts: @_districts *@
-        @* Teams: @_teams *@
-        @* Session Team: @Session?.TeamName *@
-        @* @_info *@
-    </pre>
-</div>
+@inject IGeolocationService GeolocationService
+@inject IToastService ToastService
+
+<SectionContent SectionName="HeaderContentSection">
+    <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
+</SectionContent>
 
 <OpenStreetMap @bind-Rotation="_rotation"
                @bind-Center="_center"
                OnClick="OnMapClick"
-               OnPointerMove="OnPointerMove"
-               OnRenderComplete="@(() => { _info = "Render complete: " + DateTime.Now.ToString("h:mm:ss.ms"); })"
-               InteractionsEnabled="_enableInteractions"
+               OnRenderComplete="@(() => _ = "for some reason this makes the popup work" )"
                ZoomSliderControl
                InitialCenter="@_center"
                InitialZoom="14"
@@ -62,13 +54,11 @@
 
     [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-    private Coordinate? _mousePosition;
     private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
-    private string _info = "";
     private double _rotation;
-    private bool _enableInteractions = true;
     private DistrictsLayer? _districtsLayer;
     private Session? Session { get; set; }
+    private double _watchId;
 
     #region Overrides of ComponentBase
 
@@ -77,32 +67,52 @@
     {
         await base.OnInitializedAsync();
         Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
+
+        _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
+            {
+                MaximumAge = 5000,
+                EnableHighAccuracy = true,
+                Timeout = 10000
+            });
+    }
+
+    private void OnLocationError(GeolocationPositionError positionError)
+    {
+        Console.WriteLine($"*** Position Error: {positionError.Message}");
+        ToastService.ShowError(positionError.Message);
+    }
+
+    private void OnLocationChanged(GeolocationPosition obj)
+    {
+        Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
+        OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
     }
 
     #endregion
 
+
     private async Task OnMapClick(Coordinate coordinate)
     {
-        if (Session is not null && _districtsLayer is not null) 
+        if (Session is not null && _districtsLayer is not null)
             await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
-    }
-
-    private Task OnPointerMove(Coordinate coordinate)
-    {
-        _mousePosition = coordinate;
-        return Task.CompletedTask;
     }
 
     private Task CenterLocation()
     {
         _center = new Coordinate([6.261195479378347, 51.87638698662113]);
 
+        ToastService.ShowInfo("Kaart gecentreerd");
+
         return Task.CompletedTask;
     }
 
-    #region IDisposable
+    #region Implementation of IAsyncDisposable
 
-
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        await GeolocationService.ClearWatchAsync(_watchId);
+    }
 
     #endregion
 

@@ -9,12 +9,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\election-game.Data\election-game.Data.csproj" />
-    <ProjectReference Include="..\election-game.ServiceDefaults\election-game.ServiceDefaults.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
 
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.7" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.11.7" />
     <PackageReference Include="OpenLayers.Blazor" Version="2.4.1" />
+    <PackageReference Include="Blazor.Geolocation" Version="9.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +25,10 @@
     <Content Update="Components\Pages\Map.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

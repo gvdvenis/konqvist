@@ -6,8 +6,6 @@ using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
-builder.AddServiceDefaults();
 //builder.AddRedisOutputCache("cache");
 
 // Add services to the container.
@@ -18,14 +16,6 @@ builder.Services.AddFluentUIComponents();
 
 builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
-
-//builder.Services.AddHttpClient<GameApiClient>(client =>
-//    {
-//        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
-//        // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
-//        client.BaseAddress = new Uri("https+http://apiservice");
-//    });
-
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -40,6 +30,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddGeolocationServices();
 
 // Add to your existing service registration section
 builder.Services.AddSingleton(_ =>  MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
@@ -67,8 +58,6 @@ app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-app.MapDefaultEndpoints();
 
 app.MapHub<GameHubServer>(GameHubServer.HubUrl);
 

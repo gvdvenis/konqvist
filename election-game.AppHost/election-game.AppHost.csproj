@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <Sdk Name="Aspire.AppHost.Sdk"
-         Version="9.0.0" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -14,15 +13,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\election-game.ApiService\election-game.ApiService.csproj" />
         <ProjectReference Include="..\election-game.Web\election-game.Web.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost"
-                          Version="9.0.0" />
-        <PackageReference Include="Aspire.Hosting.Redis"
-                          Version="9.0.0" />
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+        <PackageReference Include="Aspire.Hosting.Redis" Version="9.0.0" />
     </ItemGroup>
 
 </Project>

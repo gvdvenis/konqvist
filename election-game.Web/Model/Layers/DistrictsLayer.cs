@@ -61,7 +61,7 @@ public class DistrictsLayer : Layer
 
     private async Task InitLayer()
     {
-        var districts = await _mapDataStore.GetAllDistrictsAsync();
+        var districts = await _mapDataStore.GetAllDistricts();
         _districts = districts.Select(d => new District(d)).ToList();
         ShapesList.Clear();
         ShapesList.AddRange(_districts);

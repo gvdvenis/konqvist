@@ -16,9 +16,11 @@
 
 <SectionContent SectionName="HeaderContentSection">
     <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
+    <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
 </SectionContent>
 
-<OpenStreetMap @bind-Rotation="_rotation"
+<OpenStreetMap @ref="_map"
+    @bind-Rotation="_rotation"
                @bind-Center="_center"
                OnClick="OnMapClick"
                OnRenderComplete="@(() => _ = "for some reason this makes the popup work" )"
@@ -32,6 +34,7 @@
         <MapLayer />
         <DistrictsLayer @ref="_districtsLayer" />
         <TriggerCirclesLayer />
+        <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams" />
     </Layers>
     <Popup>
         <div id="popup" class="ol-box">
@@ -59,6 +62,9 @@
     private DistrictsLayer? _districtsLayer;
     private Session? Session { get; set; }
     private double _watchId;
+    private bool _showTeams = true;
+    private OpenStreetMap _map;
+    private TeamsLayer? _teamsLayer;
 
     #region Overrides of ComponentBase
 
@@ -85,16 +91,18 @@
     private void OnLocationChanged(GeolocationPosition obj)
     {
         Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
-        OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
+        //OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
     }
 
     #endregion
-
-
+    
     private async Task OnMapClick(Coordinate coordinate)
     {
         if (Session is not null && _districtsLayer is not null)
             await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
+
+        _teamsLayer.UpdateTeamPosition(Session.TeamName, coordinate);
+
     }
 
     private Task CenterLocation()

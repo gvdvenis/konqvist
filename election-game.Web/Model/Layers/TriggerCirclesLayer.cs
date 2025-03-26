@@ -42,8 +42,10 @@ public class TriggerCirclesLayer : Layer
 
     private async Task InitLayer()
     {
-        var districts = await _mapDataStore.GetAllDistrictsAsync();
-        var triggerCircles = districts.Select(d => new TriggerCircle(d));
+        var districts = await _mapDataStore.GetAllDistricts();
+        var triggerCircles = districts
+            .Where(d=> d.IsClaimable)
+            .Select(d => new TriggerCircle(d));
         ShapesList.AddRange(triggerCircles);
     }
 }

@@ -25,7 +25,7 @@ public class MapLayer : Layer
 
     private async Task InitLayer()
     {
-        var mapData = await _mapDataStore.GetMapDataAsync();
+        var mapData = await _mapDataStore.GetMapData();
         var mapShape = new Polygon(mapData.Coordinates.ToList());
         ShapesList.AddRange([mapShape]);
     }

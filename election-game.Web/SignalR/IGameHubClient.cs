@@ -1,42 +1,28 @@
 ﻿using election_game.Data.Contracts;
-using election_game.Data.Models;
-using Microsoft.AspNetCore.Components;
 
 namespace ElectionGame.Web.SignalR;
 
 public interface IGameHubServer
 {
-    public Task BroadcastNewLocation(ActorLocation actorLocation);
-    public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner);
-}
-
-public interface IBindableHubClient: IGameHubClient, IGameHubServer
-{
-    public EventCallback<string> OnUserDisconnected { get; set; }
+    Task BroadcastActorMove(ActorLocation actorLocation);
     
-    public EventCallback<MapData> OnInitializeMapData { get; set; }
-
-    public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
-
-    public Func<DistrictOwner, Task> OnDistrictOwnerChanged { get; set; }
-
-    public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
-    
-    Task StartAsync();
-
-    Task StopAsync();
+    Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner);
 }
 
 public interface IGameHubClient
 {
-    public Task InitializeMapData(MapData mapData);
+   Task DistrictOwnerChanged(DistrictOwner districtOwner);
 
-    public Task UserDisconnected(string userId);
+   Task ActorMoved(ActorLocation actorLocation);
+}
 
-    public Task InitializeTeamsData(TeamData[] teamData);
+public interface IBindableHubClient: IGameHubClient, IGameHubServer
+{
+   Func<DistrictOwner, Task>? OnDistrictOwnerChanged { get; set; }
+   
+   Func<ActorLocation, Task>? OnActorMoved { get; set; }
+   
+   Task StartAsync();
 
-    public Task DistrictOwnerChanged(DistrictOwner districtOwner);
-
-    public Task NewLocationReceived(ActorLocation actorLocation);
-
+   Task StopAsync();
 }

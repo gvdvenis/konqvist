@@ -36,11 +36,3 @@ public record Session
         };
     }
 }
-
-public enum Role
-{
-    Anonymous,
-    Admin,
-    Player,
-    TeamLeader
-}

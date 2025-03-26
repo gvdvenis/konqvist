@@ -2,7 +2,7 @@ namespace ElectionGame.Web;
 
 //public class GameApiClient(HttpClient httpClient)
 //{
-//    //public async Task<MapData> GetMapDataAsync(CancellationToken cancellationToken = default)
+//    //public async Task<MapData> GetMapData(CancellationToken cancellationToken = default)
 //    //{
 //    //    var map = await httpClient.GetFromJsonAsync<MapData>("/mapdata", cancellationToken);
 

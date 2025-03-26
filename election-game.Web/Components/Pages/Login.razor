@@ -2,10 +2,13 @@
 @page "/login/{Password}"
 
 @using System.Security.Claims
+@using election_game.Data.Models
+@using election_game.Data.Stores
 @using ElectionGame.Web.State
 @using Microsoft.AspNetCore.Authentication.Cookies
 
 @inject NavigationManager NavigationManager
+@inject MapDataStore MapDataStore
 
 <h3>Please scan the QR-code to login</h3>
 
@@ -19,7 +22,7 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        
+
         if (Password is not null)
             await TryLogin();
     }
@@ -29,7 +32,7 @@
     private async Task TryLogin()
     {
 
-        if (HttpContext is null || VerifyPassword() is not { } loginuser)
+        if (HttpContext is null || await VerifyPassword() is not { } loginuser)
         {
             NavigationManager.NavigateTo("/access-denied");
             return;
@@ -50,15 +53,28 @@
         NavigationManager.NavigateTo("/map");
     }
 
-    private User? VerifyPassword()
-    { 
-        return Password switch
-        {
-            "b" => new User("Gert", Password, Role.Admin, "Bravo"),
-            "c" => new User("John", Password, Role.Player, "Charly"),
-            "d" => new User("Jane", Password, Role.TeamLeader, "Delta"),
-            _ => null
-        };
+    private async Task<User?> VerifyPassword()
+    {
+        (TeamData? teamData, TeamMemberRole role)? login = await MapDataStore.TryLoginTeamMember(Password);
+
+        return login is null 
+            ? null 
+            : UserFromTeamDataLogin(login.Value);
     }
 
+    private User UserFromTeamDataLogin((TeamData? teamData, TeamMemberRole role) login)
+    {
+        // map the login data to a user object
+        return new User (
+            Name: login.teamData?.Name ?? "Unknown",
+            Password: Password ?? string.Empty,
+            Role: login.role switch
+            {
+                TeamMemberRole.Observer => Role.Anonymous,
+                TeamMemberRole.TeamCaptain => Role.Admin,
+                _ => Role.Player
+            },
+            TeamName: login.teamData?.Name ?? "Unknown"
+        );
+    }
 }

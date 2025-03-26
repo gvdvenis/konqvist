@@ -1,6 +1,4 @@
-﻿using System.Xml;
-using election_game.Data.Models;
-using Microsoft.FluentUI.AspNetCore.Components;
+﻿using election_game.Data.Models;
 using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
@@ -20,13 +18,16 @@ public class Team : Actor
     public Team(string teamName)
     {
         Name = teamName;
+        Fill = "white";
         Type = MarkerType.MarkerAwesome;
-        Text = "\uf007";
+        Text = "\uf5de";
+        TextScale = 1.2;
     }
 
     public Team(TeamData teamData) : this(teamData.Name)
     {
         TextColor = teamData.Color;
+        Coordinate = teamData.Location;
     }
 
     #region Overrides of Object

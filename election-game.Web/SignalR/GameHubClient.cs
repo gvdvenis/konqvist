@@ -1,5 +1,4 @@
 ﻿using election_game.Data.Contracts;
-using election_game.Data.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -35,21 +34,18 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// </summary>
     private void RegisterEvents()
     {
-        _hubConnection.On<string, Task>(nameof(UserDisconnected), UserDisconnected);
-        
-        _hubConnection.On<MapData, Task>(nameof(InitializeMapData), InitializeMapData);
-
-        _hubConnection.On<TeamData[], Task>(nameof(InitializeTeamsData), InitializeTeamsData);
-
         _hubConnection.On<DistrictOwner, Task>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
 
-        _hubConnection.On<ActorLocation, Task>(nameof(NewLocationReceived), NewLocationReceived);
+        _hubConnection.On<ActorLocation, Task>(nameof(ActorMoved), ActorMoved);
     }
 
     #region IGameHubServer implements
 
-    public Task BroadcastNewLocation(ActorLocation actorLocation) => 
+    public Task BroadcastNewLocation(ActorLocation actorLocation) =>
         _hubConnection.SendAsync(nameof(BroadcastNewLocation), actorLocation);
+
+    public Task BroadcastActorMove(ActorLocation actorLocation) =>
+        _hubConnection.SendAsync(nameof(BroadcastActorMove), actorLocation);
 
     public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner) =>
         _hubConnection.SendAsync(nameof(BroadcastDistrictOwnerChange), districtOwner);
@@ -58,49 +54,25 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     #region IGameHubClient implements
 
-    /// <inheritdoc />
-    public Task UserDisconnected(string userId)=> OnUserDisconnected.InvokeAsync(userId);
+    public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged?.Invoke(districtOwner) ?? Task.CompletedTask;
 
-    /// <inheritdoc />
-    public Task InitializeMapData(MapData mapData) => OnInitializeMapData.InvokeAsync(mapData);
+    public Task ActorMoved(ActorLocation actorLocation) => OnActorMoved?.Invoke(actorLocation) ?? Task.CompletedTask;
 
-    /// <inheritdoc />
-    public Task InitializeTeamsData(TeamData[] teamData) => OnInitializeTeamsData.InvokeAsync(teamData);
+    public Func<ActorLocation, Task>? OnActorMoved { get; set; }
 
-    /// <inheritdoc />
-    public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged(districtOwner);
-
-    /// <inheritdoc />
-    public Task NewLocationReceived(ActorLocation actorLocation) => OnNewLocationReceived.InvokeAsync(actorLocation);
-
-
-    /// <inheritdoc />
-    public EventCallback<string> OnUserDisconnected { get; set; }
-
-    /// <inheritdoc />
-    public EventCallback<MapData> OnInitializeMapData { get; set; }
-
-    /// <inheritdoc />
-    public EventCallback<TeamData[]> OnInitializeTeamsData { get; set; }
-
-    /// <inheritdoc />
-    public Func<DistrictOwner, Task> OnDistrictOwnerChanged { get; set; }
-
-    /// <inheritdoc />
-    public EventCallback<ActorLocation> OnNewLocationReceived { get; set; }
-
+    public Func<DistrictOwner, Task>? OnDistrictOwnerChanged { get; set; }
 
     public async Task StartAsync() => await _hubConnection.StartAsync();
 
     public async Task StopAsync() => await _hubConnection.StopAsync();
 
-
     #endregion
+
+
 
 
     #region IDisposable
 
-    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         await _hubConnection.DisposeAsync();

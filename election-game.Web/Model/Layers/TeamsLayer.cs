@@ -1,18 +1,29 @@
-﻿using election_game.Data.Stores;
-using OpenLayers.Blazor;
+﻿namespace ElectionGame.Web.Model;
 
-namespace ElectionGame.Web.Model;
-
-public class TeamsLayer: Layer
+public class TeamsLayer : Layer
 {
     private readonly MapDataStore _mapDataStore;
+    private readonly IBindableHubClient _hubClient;
 
-    public TeamsLayer(MapDataStore mapDataStore)
+    public TeamsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient)
     {
         _mapDataStore = mapDataStore;
+        _hubClient = hubClient;
+
+        _hubClient.OnActorMoved += OnActorMoved;
+        _hubClient.OnNewRunnerLoggedIn += InitLayer;
+
         Id = nameof(TeamsLayer);
         LayerType = LayerType.Vector;
         SelectionEnabled = false;
+    }
+
+    private async Task OnActorMoved(ActorLocation arg)
+    {
+        if (ShapesList.OfType<Team>().FirstOrDefault(t => t.Name == arg.Name) is { } localTeam)
+        {
+            await localTeam.UpdateLocation(arg.Location);
+        }
     }
 
     #region Overrides of ComponentBase
@@ -32,10 +43,8 @@ public class TeamsLayer: Layer
 
     #endregion
 
-    public async Task UpdateTeamPosition(string sessionTeamName, Coordinate coordinate)
+    public async Task BroadcastNewLocation(string teamName, Coordinate newLocation)
     {
-        await _mapDataStore.UpdateTeamPosition(sessionTeamName, coordinate);
-        var localTeam = ShapesList.OfType<Team>().FirstOrDefault(t => t.Name == sessionTeamName);
-        localTeam?.UpdateLocation(coordinate);
+        await _hubClient.BroadcastActorMove(new ActorLocation(teamName, newLocation));
     }
 }

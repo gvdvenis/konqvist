@@ -1,6 +1,4 @@
-﻿using OpenLayers.Blazor;
-
-namespace ElectionGame.Web.Model;
+﻿namespace ElectionGame.Web.Model;
 
 public static class MapStyles
 {

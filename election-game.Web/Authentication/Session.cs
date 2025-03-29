@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace ElectionGame.Web.State;
+namespace ElectionGame.Web.Authentication;
 
 public record Session
 {
@@ -10,7 +10,7 @@ public record Session
 
     public bool IsAuthenticated { get; private init; }
     public bool IsAdmin => GameRole == GameRole.GameMaster;
-    public bool IsPlayer => GameRole == GameRole.Player;
+    public bool IsPlayer => GameRole == GameRole.Runner;
     public bool IsTeamLeader => GameRole == GameRole.TeamLeader;
 
     public static Session Empty { get; } = new();

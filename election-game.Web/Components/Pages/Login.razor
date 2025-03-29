@@ -2,13 +2,11 @@
 @page "/login/{Password}"
 
 @using System.Security.Claims
-@using election_game.Data.Models
-@using election_game.Data.Stores
-@using ElectionGame.Web.State
 @using Microsoft.AspNetCore.Authentication.Cookies
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
+@inject IBindableHubClient HubClient
 
 <h3>Please scan the QR-code to login</h3>
 
@@ -50,6 +48,7 @@
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
 
+        if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastNewRunnerLogin();
         NavigationManager.NavigateTo("/map");
     }
 
@@ -73,7 +72,7 @@
                 TeamMemberRole.GameMaster => GameRole.GameMaster,
                 TeamMemberRole.Observer => GameRole.Anonymous,
                 TeamMemberRole.TeamCaptain => GameRole.TeamLeader,
-                _ => GameRole.Player
+                _ => GameRole.Runner
             },
             TeamName: login.teamData?.Name ?? "Unknown"
         );

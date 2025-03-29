@@ -1,11 +1,8 @@
 ﻿@page "/"
 @page "/map"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-
 @using ElectionGame.Web.Model
-@using ElectionGame.Web.State
 @using Microsoft.FluentUI.AspNetCore.Components.Icons.Regular
-@using OpenLayers.Blazor
 
 @implements IAsyncDisposable
 
@@ -103,7 +100,7 @@
         await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
 
         if (_teamsLayer is not null)
-            await _teamsLayer.UpdateTeamPosition(Session.TeamName, coordinate);
+            await _teamsLayer.BroadcastNewLocation(Session.TeamName, coordinate);
     }
 
     private Task CenterLocation()

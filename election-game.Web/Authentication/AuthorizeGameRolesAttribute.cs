@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Authorization;
-
-namespace ElectionGame.Web.State;
-
+﻿namespace ElectionGame.Web.Authentication;
 
 internal class AuthorizeGameRolesAttribute : AuthorizeAttribute
 {
@@ -10,12 +6,4 @@ internal class AuthorizeGameRolesAttribute : AuthorizeAttribute
     {
         Roles = string.Join(",", roles.Select(r => r.ToString()));
     }
-}
-
-public enum GameRole
-{
-    Anonymous,
-    GameMaster,
-    Player,
-    TeamLeader
 }

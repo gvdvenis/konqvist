@@ -1,5 +1,4 @@
 ﻿using election_game.Data.Models;
-using OpenLayers.Blazor;
 
 namespace ElectionGame.Web.Model;
 

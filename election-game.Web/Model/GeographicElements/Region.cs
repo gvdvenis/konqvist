@@ -1,6 +1,4 @@
-﻿using OpenLayers.Blazor;
-
-namespace ElectionGame.Web.Model;
+﻿namespace ElectionGame.Web.Model;
 
 public abstract class Region(IEnumerable<Coordinate> boundary) : Polygon(boundary.ToList())
 {

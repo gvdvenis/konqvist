@@ -1,10 +1,4 @@
-﻿using election_game.Data.Contracts;
-using election_game.Data.Stores;
-using ElectionGame.Web.SignalR;
-using Microsoft.AspNetCore.Components;
-using OpenLayers.Blazor;
-
-namespace ElectionGame.Web.Model;
+﻿namespace ElectionGame.Web.Model;
 
 public class DistrictsLayer : Layer
 {

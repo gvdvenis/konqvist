@@ -1,7 +1,4 @@
-﻿using election_game.Data.Stores;
-using OpenLayers.Blazor;
-
-namespace ElectionGame.Web.Model;
+﻿namespace ElectionGame.Web.Model;
 
 public class MapLayer : Layer
 {

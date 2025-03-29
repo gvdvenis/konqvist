@@ -1,7 +1,4 @@
-﻿using election_game.Data.Contracts;
-using Microsoft.AspNetCore.SignalR;
-using election_game.Data.Stores;
-using ElectionGame.Web.State;
+﻿using Microsoft.AspNetCore.SignalR;
 
 namespace ElectionGame.Web.SignalR;
 
@@ -19,6 +16,12 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await Clients.All.DistrictOwnerChanged(districtOwner);
     }
 
+    /// <inheritdoc />
+    public async Task BroadcastNewRunnerLogin()
+    {
+        await Clients.All.NewRunnerLoggedIn();
+    }
+    
     /// <summary>
     ///     Broadcasts the new location of an actor
     /// </summary>
@@ -26,7 +29,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     /// <returns></returns>
     public async Task BroadcastActorMove(ActorLocation actorLocation)
     {
-        //await Clients.Group(Role.Admin.ToString()).ActorMoved(actorLocation);
+        await dataStore.UpdateTeamPosition(actorLocation.Name, actorLocation.Location);
         await Clients.All.ActorMoved(actorLocation);
     }
     

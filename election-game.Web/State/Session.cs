@@ -4,14 +4,14 @@ namespace ElectionGame.Web.State;
 
 public record Session
 {
-    public Role Role { get; private init; }
+    public GameRole GameRole { get; private init; }
     public string UserName { get; private init; } = string.Empty;
     public string TeamName { get; private init; } = string.Empty;
 
     public bool IsAuthenticated { get; private init; }
-    public bool IsAdmin => Role == Role.Admin;
-    public bool IsPlayer => Role == Role.Player;
-    public bool IsTeamLeader => Role == Role.TeamLeader;
+    public bool IsAdmin => GameRole == GameRole.GameMaster;
+    public bool IsPlayer => GameRole == GameRole.Player;
+    public bool IsTeamLeader => GameRole == GameRole.TeamLeader;
 
     public static Session Empty { get; } = new();
 
@@ -29,7 +29,7 @@ public record Session
         
         return new Session
         {
-            Role = Enum.Parse<Role>(user.FindFirst(ClaimTypes.Role)?.Value ?? nameof(Role.Anonymous)),
+            GameRole = Enum.Parse<GameRole>(user.FindFirst(ClaimTypes.Role)?.Value ?? nameof(GameRole.Anonymous)),
             UserName = user.Identity?.Name ?? string.Empty,
             IsAuthenticated = user.Identity?.IsAuthenticated ?? false,
             TeamName = user.FindFirst(ClaimTypes.UserData)?.Value ?? string.Empty

@@ -200,6 +200,8 @@ public class MapDataStore
 
         (TeamData? teamData, TeamMemberRole role)? td = password switch
         {
+            "agm" => (TeamByName("Alpha"), TeamMemberRole.GameMaster),
+            
             "btc" => (TeamByName("Bravo"), TeamMemberRole.TeamCaptain),
             "br" => (TeamByName("Bravo"), TeamMemberRole.Runner),
             "b" => (TeamByName("Bravo"), TeamMemberRole.Observer),

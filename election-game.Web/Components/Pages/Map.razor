@@ -15,15 +15,16 @@
 @inject IToastService ToastService
 
 <SectionContent SectionName="HeaderContentSection">
-    <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
-    <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
+    <FluentToolbar id="toolbar-fluent-components">
+        <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation"/>
+        <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)"/>
+    </FluentToolbar>
 </SectionContent>
 
-<OpenStreetMap @ref="_map"
-    @bind-Rotation="_rotation"
+<OpenStreetMap @bind-Rotation="_rotation"
                @bind-Center="_center"
                OnClick="OnMapClick"
-               OnRenderComplete="@(() => _ = "for some reason this makes the popup work" )"
+               OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
                ZoomSliderControl
                InitialCenter="@_center"
                InitialZoom="14"
@@ -31,10 +32,10 @@
                MaxZoom="18"
                FullScreenControl>
     <Layers>
-        <MapLayer />
-        <DistrictsLayer @ref="_districtsLayer" />
-        <TriggerCirclesLayer />
-        <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams" />
+        <MapLayer/>
+        <DistrictsLayer @ref="_districtsLayer"/>
+        <TriggerCirclesLayer/>
+        <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams"/>
     </Layers>
     <Popup>
         <div id="popup" class="ol-box">
@@ -47,7 +48,7 @@
                         <li>@prop.Key: @prop.Value</li>
                     }
                 </ul>
-                <p>Owner: Team @district.Owner</p>
+                <p>Owner: @district.Owner</p>
             }
         </div>
     </Popup>
@@ -63,7 +64,6 @@
     private Session? Session { get; set; }
     private double _watchId;
     private bool _showTeams = true;
-    private OpenStreetMap _map;
     private TeamsLayer? _teamsLayer;
 
     #region Overrides of ComponentBase
@@ -75,11 +75,11 @@
         Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
 
         _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
-            {
-                MaximumAge = 5000,
-                EnableHighAccuracy = true,
-                Timeout = 10000
-            });
+        {
+            MaximumAge = 5000,
+            EnableHighAccuracy = true,
+            Timeout = 10000
+        });
     }
 
     private void OnLocationError(GeolocationPositionError positionError)
@@ -95,14 +95,15 @@
     }
 
     #endregion
-    
+
     private async Task OnMapClick(Coordinate coordinate)
     {
-        if (Session is not null && _districtsLayer is not null)
-            await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
+        if (Session is null || _districtsLayer is null) return;
+        
+        await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
 
-        _teamsLayer.UpdateTeamPosition(Session.TeamName, coordinate);
-
+        if (_teamsLayer is not null)
+            await _teamsLayer.UpdateTeamPosition(Session.TeamName, coordinate);
     }
 
     private Task CenterLocation()

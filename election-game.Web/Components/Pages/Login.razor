@@ -41,7 +41,7 @@
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, loginuser.Name),
-            new(ClaimTypes.Role, loginuser.Role.ToString()),
+            new(ClaimTypes.Role, loginuser.GameRole.ToString()),
             new(ClaimTypes.UserData, loginuser.TeamName),
             new(ClaimTypes.NameIdentifier, loginuser.TeamName)
         };
@@ -68,11 +68,12 @@
         return new User (
             Name: login.teamData?.Name ?? "Unknown",
             Password: Password ?? string.Empty,
-            Role: login.role switch
+            GameRole: login.role switch
             {
-                TeamMemberRole.Observer => Role.Anonymous,
-                TeamMemberRole.TeamCaptain => Role.Admin,
-                _ => Role.Player
+                TeamMemberRole.GameMaster => GameRole.GameMaster,
+                TeamMemberRole.Observer => GameRole.Anonymous,
+                TeamMemberRole.TeamCaptain => GameRole.TeamLeader,
+                _ => GameRole.Player
             },
             TeamName: login.teamData?.Name ?? "Unknown"
         );

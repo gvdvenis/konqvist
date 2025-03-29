@@ -1,31 +1,44 @@
-﻿<div class="navmenu">
+﻿@using ElectionGame.Web.State
+
+<div class="navmenu">
     <input type="checkbox" title="Menu expand/collapse toggle" id="navmenu-toggle" class="navmenu-icon" />
     <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new NavIcons.Navigation())" Color="Color.Fill" /></label>
     <nav class="sitenav" aria-labelledby="main-menu">
         <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="_expanded" CustomToggle="true">
-            <AuthorizeView Roles="Admin, Player">
-                <Authorized>
-                    <FluentNavLink Href="map" Match="NavLinkMatch.All" Icon="@(new NavIcons.Map())" IconColor="Color.Accent">Map</FluentNavLink>
-                    <FluentNavLink Href="logout" Match="NavLinkMatch.All" Icon="@(new NavIcons.ArrowExit())" IconColor="Color.Accent">Logout</FluentNavLink>
-                </Authorized>
-            </AuthorizeView>
-
-            <AuthorizeView Roles="Admin">
-                <Authorized>
-                    <FluentNavLink Href="management" Match="NavLinkMatch.All" Icon="@(new NavIcons.ScanDash())" IconColor="Color.Accent">Management</FluentNavLink>
-                </Authorized>
-            </AuthorizeView>
-
             <AuthorizeView>
                 <NotAuthorized>
                     <FluentNavLink Href="login" Match="NavLinkMatch.All" Icon="@(new NavIcons.LockClosed())" IconColor="Color.Accent">Login</FluentNavLink>
                 </NotAuthorized>
             </AuthorizeView>
 
+            <AuthorizeView>
+                <Authorized>
+                    <FluentNavLink Href="map" Match="NavLinkMatch.All" Icon="@(new NavIcons.Map())" IconColor="Color.Accent">Map</FluentNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="@(GameRoles(GameRole.TeamLeader, GameRole.GameMaster))">
+                <Authorized>
+                    <FluentNavLink Href="stats" Match="NavLinkMatch.All" Icon="@(new NavIcons.RealEstate())" IconColor="Color.Accent">Statistics</FluentNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="@(GameRoles(GameRole.GameMaster))">
+                <Authorized>
+                    <FluentNavLink Href="management" Match="NavLinkMatch.All" Icon="@(new NavIcons.ScanDash())" IconColor="Color.Accent">Management</FluentNavLink>
+                </Authorized>
+            </AuthorizeView> 
+            
+            <AuthorizeView>
+                <Authorized>
+                    <FluentNavLink Href="logout" Match="NavLinkMatch.All" Icon="@(new NavIcons.ArrowExit())" IconColor="Color.Accent">Logout</FluentNavLink>
+                </Authorized>
+            </AuthorizeView>
         </FluentNavMenu>
-    </nav>
-</div>
+    </nav></div>
 
 @code {
     private bool _expanded = true;
+
+    private string GameRoles(params GameRole[] roles) => string.Join(",", roles.Select(r => r.ToString()));
 }

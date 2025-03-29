@@ -6,6 +6,12 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
 {
     public const string HubUrl = "/chat";
 
+    /// <inheritdoc />
+    public async Task BroadcastRunnerLogout()
+    {
+        await Clients.All.RunnerLoggedInOrOut();
+    }
+
     public async Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner)
     {
         // Update the data store first
@@ -17,9 +23,9 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     }
 
     /// <inheritdoc />
-    public async Task BroadcastNewRunnerLogin()
+    public async Task BroadcastRunnerLogin()
     {
-        await Clients.All.NewRunnerLoggedIn();
+        await Clients.All.RunnerLoggedInOrOut();
     }
     
     /// <summary>

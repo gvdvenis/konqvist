@@ -8,7 +8,9 @@ public interface IGameHubServer
     ///     Signals all clients that a new runner should be added to the map.
     /// </summary>
     /// <returns></returns>
-    Task BroadcastNewRunnerLogin();
+    Task BroadcastRunnerLogin();
+
+    Task BroadcastRunnerLogout();
 
     Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner);
 }

@@ -6,5 +6,5 @@ public interface IGameHubClient
 
    Task ActorMoved(ActorLocation actorLocation);
 
-   Task NewRunnerLoggedIn();
+   Task RunnerLoggedInOrOut();
 }

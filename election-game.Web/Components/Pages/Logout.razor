@@ -2,6 +2,7 @@
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
+@inject IBindableHubClient HubClient
 
 @attribute [Authorize]
 
@@ -27,9 +28,13 @@
         {
             await HttpContext.SignOutAsync();
 
-            if (session.IsPlayer) await MapDataStore.LogoutTeamMember(session.TeamName);
+            if (session.IsPlayer)
+            {
+                await MapDataStore.LogoutTeamMember(session.TeamName);
+                await HubClient.BroadcastRunnerLogout();
+            } 
 
-            NavigationManager.NavigateTo("/logout", true);
+            NavigationManager.NavigateTo("/login", true);
         }
     }
 

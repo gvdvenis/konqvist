@@ -36,7 +36,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
         _hubConnection.On<ActorLocation, Task>(nameof(ActorMoved), ActorMoved);
 
-        _hubConnection.On<Task>(nameof(NewRunnerLoggedIn), NewRunnerLoggedIn);
+        _hubConnection.On<Task>(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
     }
 
     #region IGameHubServer implements
@@ -47,8 +47,11 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task BroadcastActorMove(ActorLocation actorLocation) =>
         _hubConnection.SendAsync(nameof(BroadcastActorMove), actorLocation);
 
-    public Task BroadcastNewRunnerLogin() => 
-        _hubConnection.SendAsync(nameof(BroadcastNewRunnerLogin));
+    public Task BroadcastRunnerLogin() => 
+        _hubConnection.SendAsync(nameof(BroadcastRunnerLogin));
+
+    public Task BroadcastRunnerLogout() => 
+        _hubConnection.SendAsync(nameof(BroadcastRunnerLogin));
 
     public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner) =>
         _hubConnection.SendAsync(nameof(BroadcastDistrictOwnerChange), districtOwner);
@@ -62,14 +65,14 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task ActorMoved(ActorLocation actorLocation) => OnActorMoved?.Invoke(actorLocation) ?? Task.CompletedTask;
 
-    public Task NewRunnerLoggedIn() => OnNewRunnerLoggedIn?.Invoke() ?? Task.CompletedTask;
+    public Task RunnerLoggedInOrOut() => OnRunnerLoggedInOrOut?.Invoke() ?? Task.CompletedTask;
 
     #endregion
 
 
     #region IBindableHubClient implements
 
-    public Func<Task>? OnNewRunnerLoggedIn { get; set; }
+    public Func<Task>? OnRunnerLoggedInOrOut { get; set; }
 
     public Func<ActorLocation, Task>? OnActorMoved { get; set; }
 

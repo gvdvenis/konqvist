@@ -48,7 +48,7 @@
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
 
-        if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastNewRunnerLogin();
+        if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastRunnerLogin();
         NavigationManager.NavigateTo("/map");
     }
 

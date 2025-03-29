@@ -6,7 +6,7 @@ public interface IBindableHubClient: IGameHubClient, IGameHubServer
    
     Func<ActorLocation, Task>? OnActorMoved { get; set; }
 
-    Func<Task>? OnNewRunnerLoggedIn { get; set; }
+    Func<Task>? OnRunnerLoggedInOrOut { get; set; }
 
     Task StartAsync();
 

@@ -11,7 +11,7 @@ public class TeamsLayer : Layer
         _hubClient = hubClient;
 
         _hubClient.OnActorMoved += OnActorMoved;
-        _hubClient.OnNewRunnerLoggedIn += InitLayer;
+        _hubClient.OnRunnerLoggedInOrOut += InitLayer;
 
         Id = nameof(TeamsLayer);
         LayerType = LayerType.Vector;
@@ -36,6 +36,8 @@ public class TeamsLayer : Layer
 
     private async Task InitLayer()
     {
+        
+        ShapesList.Clear();
         var teamData = await _mapDataStore.GetTeams(true);
         var teams = teamData.Select(td => new Team(td));
         ShapesList.AddRange(teams);

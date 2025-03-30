@@ -2,9 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "election-game.Web", "election-game.Web\election-game.Web.csproj", "{256234CE-E15D-48F1-8E5E-3F4BD39D2D73}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "democratia.Web", "election-game.Web\democratia.Web.csproj", "{256234CE-E15D-48F1-8E5E-3F4BD39D2D73}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "election-game.Data", "election-game.Data\election-game.Data.csproj", "{A24637DA-6441-4914-A7A1-D989389772EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "democratia.Data", "election-game.Data\democratia.Data.csproj", "{A24637DA-6441-4914-A7A1-D989389772EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

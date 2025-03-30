@@ -12,21 +12,20 @@
 @inject IToastService ToastService
 @inject SessionProvider SessionProvider
 
-<SectionContent SectionName="HeaderContentSection">
-    <FluentToolbar id="toolbar-fluent-components">
+<SectionContent SectionName="FooterContentSection">
+    <FluentToolbar>
         <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
         <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
         <FluentButton Disabled="!Session.IsAdmin" IconEnd="@(new Size20.KeyReset())" OnClick="ResetClaimState" />
     </FluentToolbar>
 </SectionContent>
 
-<FluentSplitter Orientation="Orientation.Vertical" 
-                Style="height:100%" 
+@* <FluentSplitter Orientation="Orientation.Vertical" 
                 BarSize="20" 
                 Collapsed="@(!Session.IsTeamLeader)"
                 Panel2MinSize="30px" 
                 Panel2Size="100px">
-    <Panel1>
+    <Panel1> *@
         <OpenStreetMap @bind-Rotation="_rotation"
                        @bind-Center="_center"
                        OnClick="OnMapClick"
@@ -59,15 +58,13 @@
                 </div>
             </Popup>
         </OpenStreetMap>
-    </Panel1>
+@*     </Panel1>
     <Panel2>
         <TeamResources/>
     </Panel2>
-</FluentSplitter>
+</FluentSplitter> *@
 
 @code {
-
-    //[CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
     private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
     private double _rotation;
@@ -79,12 +76,9 @@
 
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        //UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
-
         _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
             {
                 MaximumAge = 5000,
@@ -126,19 +120,17 @@
         return Task.CompletedTask;
     }
 
+    private Task ResetClaimState()
+    {
+        return _districtsLayer?.ResetClaimState() ?? Task.CompletedTask;
+    }
+
     #region Implementation of IAsyncDisposable
 
-    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         await GeolocationService.ClearWatchAsync(_watchId);
     }
 
     #endregion
-
-    private Task ResetClaimState()
-    {
-        return _districtsLayer?.ResetClaimState() ?? Task.CompletedTask;
-    }
-
 }

@@ -1,4 +1,5 @@
 @import '/_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css';
+@import '/_content/OpenLayers.Blazor/OpenLayers.Blazor.css';
 
 body {
     --body-font: "Segoe UI Variable", "Segoe UI", sans-serif;
@@ -12,26 +13,11 @@ body {
     display: none;
 }
 
-.main {
-    min-height: calc(100dvh -50px);
-    color: var(--neutral-foreground-rest);
-    align-items: stretch !important;
-}
-
-.body-content {
-    align-self: stretch;
-    height: calc(100dvh - 50px) !important;
+html, body {
+    height: 100%;
+    margin: 0;
     display: flex;
-}
-
-.content {
-    padding: 0;
-    align-self: stretch !important;
-    width: 100%;
-}
-
-.manage {
-    width: 100dvw;
+    flex-direction: column;
 }
 
 .ol-box {
@@ -44,32 +30,29 @@ body {
     background-color: var(--ol-partial-background-color);
 }
 
-footer {
-    background: var(--neutral-layer-4);
-    color: var(--neutral-foreground-rest);
-    align-items: center;
-    padding: 10px 10px;
+:root {
+    --header-height: 50px;
 }
 
-    footer a {
-        color: var(--neutral-foreground-rest);
-        text-decoration: none;
-    }
+header {
+    --accent-fill-rest: #04203b;
+}
 
-        footer a:focus {
-            outline: 1px dashed;
-            outline-offset: 3px;
-        }
+.image-fit {
+    max-width: 100%;
+    max-height: calc(95vh - var(--header-height) - var(--type-ramp-plus-3-line-height));
+}
 
-        footer a:hover {
-            text-decoration: underline;
-        }
+.center-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center
+}
 
 .alert {
     border: 1px dashed var(--accent-fill-rest);
     padding: 5px;
 }
-
 
 #blazor-error-ui {
     background: lightyellow;

@@ -1,13 +1,13 @@
 ﻿<div class="navmenu">
     <input type="checkbox" title="Menu expand/collapse toggle" id="navmenu-toggle" class="navmenu-icon" />
     <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new NavIcons.Navigation())" Color="Color.Fill" /></label>
-    <nav class="sitenav" aria-labelledby="main-menu">
+    <nav class="sitenav" aria-labelledby="main-menu" style="">
         <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="_expanded" CustomToggle="true">
-            <AuthorizeView>
+@*             <AuthorizeView>
                 <NotAuthorized>
                     <FluentNavLink Href="login" Match="NavLinkMatch.All" Icon="@(new NavIcons.LockClosed())" IconColor="Color.Accent">Login</FluentNavLink>
                 </NotAuthorized>
-            </AuthorizeView>
+            </AuthorizeView> *@
 
             <AuthorizeView>
                 <Authorized>

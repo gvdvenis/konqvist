@@ -7,9 +7,13 @@
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
-@inject SessionProvider SessionProvider
 
-<h3>Please scan the QR-code to login</h3>
+<div class="center-content">
+    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit" />
+    <h3>
+        Scan QR-code to login
+    </h3>
+</div>
 
 @code {
     [CascadingParameter] HttpContext? HttpContext { get; set; }
@@ -17,7 +21,6 @@
 
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -50,7 +53,7 @@
         await HttpContext.SignInAsync(principal);
 
         if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastRunnerLogin();
-        
+
         NavigationManager.NavigateTo("/map");
     }
 
@@ -58,15 +61,15 @@
     {
         (TeamData? teamData, TeamMemberRole role)? login = await MapDataStore.TryLoginTeamMember(Password);
 
-        return login is null 
-            ? null 
+        return login is null
+            ? null
             : UserFromTeamDataLogin(login.Value);
     }
 
     private User UserFromTeamDataLogin((TeamData? teamData, TeamMemberRole role) login)
     {
         // map the login data to a user object
-        return new User (
+        return new User(
             Name: login.teamData?.Name ?? "Unknown",
             Password: Password ?? string.Empty,
             GameRole: login.role switch

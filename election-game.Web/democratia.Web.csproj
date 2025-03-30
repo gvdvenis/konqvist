@@ -5,10 +5,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ElectionGame.Web</RootNamespace>
+    <ApplicationIcon>wwwroot\icons\favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\election-game.Data\election-game.Data.csproj" />
+    <Content Remove="wwwroot\konqvist-logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\konqvist-logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\election-game.Data\democratia.Data.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
 
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.7" />
@@ -25,10 +34,6 @@
     <Content Update="Components\Pages\Map.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

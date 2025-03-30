@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Data;
+using System.Resources;
 using election_game.Data.Contracts;
 using election_game.Data.Models;
 using OpenLayers.Blazor;
@@ -105,13 +106,13 @@ public class MapDataStore
                 ? _teamsData.Where(t => t.PlayerLoggedIn)
                 : _teamsData;
 
-            return teams.Select(td =>
+            return [.. teams.Select(td =>
             {
                 td.Location = td.Location == Coordinate.Empty 
                     ? GetDefaultLocation() 
                     : td.Location;
                 return td;
-            }).ToList();
+            })];
         }
         finally
         {
@@ -139,7 +140,28 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            return _mapData.Districts.ToList();
+            return [.. _mapData.Districts];
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    ///     returns the total amount of resources for a team
+    /// </summary>
+    /// <param name="teamName"></param>
+    /// <returns></returns>
+    public async Task<DistrictResourcesData> GetResourcesForTeam(string teamName)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _mapData.Districts
+                .Where(dd => dd.Owner is not null && dd.Owner.Name == teamName)
+                .Select(dd => dd.Resources) 
+                .Aggregate(new DistrictResourcesData(), (acc, item) => acc + item);
         }
         finally
         {
@@ -266,27 +288,27 @@ public class MapDataStore
         }
     }
 
-    #endregion
-
-    /// <summary>
-    /// Updates a district's resources
-    /// </summary>
-    public async Task<bool> UpdateDistrictResourcesAsync(string districtName, DistrictResourcesData resources)
+    public async Task ClearClaims(string? teamName = null)
     {
         await _semaphore.WaitAsync();
         try
         {
-            var district = _mapData.Districts.FirstOrDefault(d => d.Name == districtName);
-            if (district == null) return false;
+            var districts = _mapData
+                .Districts
+                .Where(d => teamName is null || d.Owner is { } td && td.Name == teamName);
 
-            district.Resources = resources;
-            return true;
+            foreach (var districtData in districts)
+            {
+                districtData.IsClaimable = true;
+            }
         }
         finally
         {
             _semaphore.Release();
         }
+
     }
 
-   
+    #endregion
+
 }

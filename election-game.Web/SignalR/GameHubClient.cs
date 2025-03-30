@@ -58,7 +58,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     #endregion
 
-
     #region IGameHubClient implements
 
     public Task DistrictOwnerChanged(DistrictOwner districtOwner) => OnDistrictOwnerChanged?.Invoke(districtOwner) ?? Task.CompletedTask;
@@ -68,7 +67,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task RunnerLoggedInOrOut() => OnRunnerLoggedInOrOut?.Invoke() ?? Task.CompletedTask;
 
     #endregion
-
 
     #region IBindableHubClient implements
 
@@ -83,9 +81,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public async Task StopAsync() => await _hubConnection.StopAsync();
 
     #endregion
-
-
-
 
     #region IDisposable
 

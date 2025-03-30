@@ -19,7 +19,7 @@ public class Team : Actor
         Name = teamName;
         Fill = "white";
         Type = MarkerType.MarkerAwesome;
-        Text = "\uf5de";
+        Text = "\uf206";
         TextScale = 1.2;
     }
 

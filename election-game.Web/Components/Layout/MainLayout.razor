@@ -2,7 +2,7 @@
 
 <FluentLayout>
     <FluentHeader>
-        The Election Game: Team @Session.TeamName (@Session.GameRole) 
+        The Election Game: Team @UserSession.TeamName (@UserSession.GameRole) 
         <FluentSpacer /> 
         <SectionOutlet SectionName="HeaderContentSection" @rendermode="InteractiveServer" />
     </FluentHeader>
@@ -33,7 +33,7 @@
     internal static object HeaderContentSection = new();
 
     [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-    private Session Session { get; set; } = Session.Empty;
+    private UserSession UserSession { get; set; } = UserSession.Empty;
 
     #region Overrides of ComponentBase
 
@@ -45,7 +45,7 @@
         // we should not be able to reach this page without being authorized
         ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
 
-        Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
+        UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
     }
 
     #endregion

@@ -10,55 +10,69 @@
 
 @inject IGeolocationService GeolocationService
 @inject IToastService ToastService
+@inject SessionProvider SessionProvider
 
 <SectionContent SectionName="HeaderContentSection">
     <FluentToolbar id="toolbar-fluent-components">
-        <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation"/>
-        <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)"/>
+        <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
+        <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
+        <FluentButton Disabled="!Session.IsAdmin" IconEnd="@(new Size20.KeyReset())" OnClick="ResetClaimState" />
     </FluentToolbar>
 </SectionContent>
 
-<OpenStreetMap @bind-Rotation="_rotation"
-               @bind-Center="_center"
-               OnClick="OnMapClick"
-               OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
-               ZoomSliderControl
-               InitialCenter="@_center"
-               InitialZoom="14"
-               MinZoom="14"
-               MaxZoom="18"
-               FullScreenControl>
-    <Layers>
-        <MapLayer/>
-        <DistrictsLayer @ref="_districtsLayer"/>
-        <TriggerCirclesLayer/>
-        <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams"/>
-    </Layers>
-    <Popup>
-        <div id="popup" class="ol-box">
-            @if (context is District district)
-            {
-                <h4>@district.Name</h4>
-                <ul>
-                    @foreach (var prop in district.Resources)
+<FluentSplitter Orientation="Orientation.Vertical" 
+                Style="height:100%" 
+                BarSize="20" 
+                Collapsed="@(!Session.IsTeamLeader)"
+                Panel2MinSize="30px" 
+                Panel2Size="100px">
+    <Panel1>
+        <OpenStreetMap @bind-Rotation="_rotation"
+                       @bind-Center="_center"
+                       OnClick="OnMapClick"
+                       OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
+                       ZoomSliderControl
+                       InitialCenter="@_center"
+                       InitialZoom="14"
+                       MinZoom="14"
+                       MaxZoom="18"
+                       FullScreenControl>
+            <Layers>
+                <MapLayer />
+                <DistrictsLayer @ref="_districtsLayer" />
+                <TriggerCirclesLayer />
+                <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams" />
+            </Layers>
+            <Popup>
+                <div id="popup" class="ol-box">
+                    @if (context is District district)
                     {
-                        <li>@prop.Key: @prop.Value</li>
+                        <h4>@district.Name</h4>
+                        <ul>
+                            @foreach (var prop in district.ResourceDictionary)
+                            {
+                                <li>@prop.Key: @prop.Value</li>
+                            }
+                        </ul>
+                        <p>Owner: @district.Owner</p>
                     }
-                </ul>
-                <p>Owner: @district.Owner</p>
-            }
-        </div>
-    </Popup>
-</OpenStreetMap>
+                </div>
+            </Popup>
+        </OpenStreetMap>
+    </Panel1>
+    <Panel2>
+        <TeamResources/>
+    </Panel2>
+</FluentSplitter>
 
 @code {
 
-    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+    //[CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
     private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
     private double _rotation;
     private DistrictsLayer? _districtsLayer;
-    private Session? Session { get; set; }
+    private UserSession Session => SessionProvider.Session;
     private double _watchId;
     private bool _showTeams = true;
     private TeamsLayer? _teamsLayer;
@@ -69,14 +83,14 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        Session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
+        //UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
 
         _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
-        {
-            MaximumAge = 5000,
-            EnableHighAccuracy = true,
-            Timeout = 10000
-        });
+            {
+                MaximumAge = 5000,
+                EnableHighAccuracy = true,
+                Timeout = 10000
+            });
     }
 
     private void OnLocationError(GeolocationPositionError positionError)
@@ -95,8 +109,8 @@
 
     private async Task OnMapClick(Coordinate coordinate)
     {
-        if (Session is null || _districtsLayer is null) return;
-        
+        if (_districtsLayer is null) return;
+
         await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
 
         if (_teamsLayer is not null)
@@ -121,5 +135,10 @@
     }
 
     #endregion
+
+    private Task ResetClaimState()
+    {
+        return _districtsLayer?.ResetClaimState() ?? Task.CompletedTask;
+    }
 
 }

@@ -2,7 +2,7 @@
 
 namespace ElectionGame.Web.Authentication;
 
-public record Session
+public record UserSession
 {
     public GameRole GameRole { get; private init; }
     public string UserName { get; private init; } = string.Empty;
@@ -13,9 +13,15 @@ public record Session
     public bool IsPlayer => GameRole == GameRole.Runner;
     public bool IsTeamLeader => GameRole == GameRole.TeamLeader;
 
-    public static Session Empty { get; } = new();
+    public static UserSession Empty { get; } = new()
+    {
+        TeamName = "Unknown",
+        GameRole = GameRole.Anonymous,
+        IsAuthenticated = false,
+        UserName = string.Empty
+    };
 
-    public static async ValueTask<Session> CreateFromAuthenticationState(Task<AuthenticationState>? authStateTask)
+    public static async ValueTask<UserSession> CreateFromAuthenticationState(Task<AuthenticationState>? authStateTask)
     {
         if (authStateTask is null) return Empty;
 
@@ -23,16 +29,27 @@ public record Session
         return CreateWithAuthState(authState);
     }
 
-    public static Session CreateWithAuthState(AuthenticationState authState)
+    public static UserSession CreateWithAuthState(AuthenticationState authState)
     {
         var user = authState.User;
         
-        return new Session
+        return new UserSession
         {
             GameRole = Enum.Parse<GameRole>(user.FindFirst(ClaimTypes.Role)?.Value ?? nameof(GameRole.Anonymous)),
             UserName = user.Identity?.Name ?? string.Empty,
             IsAuthenticated = user.Identity?.IsAuthenticated ?? false,
             TeamName = user.FindFirst(ClaimTypes.UserData)?.Value ?? string.Empty
+        };
+    }
+
+    public static UserSession CreateFromUser(User loginUser)
+    {
+        return new UserSession
+        {
+            GameRole = loginUser.GameRole,
+            UserName = loginUser.Name,
+            IsAuthenticated = true,
+            TeamName = loginUser.TeamName
         };
     }
 }

@@ -1,3 +1,3 @@
 ﻿namespace ElectionGame.Web.Authentication;
 
-internal record User(string Name, string Password, GameRole GameRole, string TeamName);
+public record User(string Name, string Password, GameRole GameRole, string TeamName);

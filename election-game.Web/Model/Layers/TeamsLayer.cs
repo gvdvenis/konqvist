@@ -1,14 +1,18 @@
-﻿namespace ElectionGame.Web.Model;
+﻿using ElectionGame.Web.Authentication;
+
+namespace ElectionGame.Web.Model;
 
 public class TeamsLayer : Layer
 {
     private readonly MapDataStore _mapDataStore;
     private readonly IBindableHubClient _hubClient;
+    private readonly SessionProvider _sessionProvider;
 
-    public TeamsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient)
+    public TeamsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient, SessionProvider sessionProvider)
     {
         _mapDataStore = mapDataStore;
         _hubClient = hubClient;
+        _sessionProvider = sessionProvider;
 
         _hubClient.OnActorMoved += OnActorMoved;
         _hubClient.OnRunnerLoggedInOrOut += InitLayer;
@@ -36,7 +40,6 @@ public class TeamsLayer : Layer
 
     private async Task InitLayer()
     {
-        
         ShapesList.Clear();
         var teamData = await _mapDataStore.GetTeams(true);
         var teams = teamData.Select(td => new Team(td));
@@ -47,6 +50,7 @@ public class TeamsLayer : Layer
 
     public async Task BroadcastNewLocation(string teamName, Coordinate newLocation)
     {
-        await _hubClient.BroadcastActorMove(new ActorLocation(teamName, newLocation));
+        if (_sessionProvider.Session.IsPlayer)
+            await _hubClient.BroadcastActorMove(new ActorLocation(teamName, newLocation));
     }
 }

@@ -25,7 +25,7 @@ body {
 }
 
 .content {
-    padding: 0.1rem;
+    padding: 0;
     align-self: stretch !important;
     width: 100%;
 }

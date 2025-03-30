@@ -1,3 +1,4 @@
+using ElectionGame.Web.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
 
@@ -13,6 +14,7 @@ builder.Services.AddFluentUIComponents();
 
 builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -28,6 +30,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddGeolocationServices();
+builder.Services.AddScoped<SessionProvider>();
 
 // Add to your existing service registration section
 builder.Services.AddSingleton(_ =>  MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());

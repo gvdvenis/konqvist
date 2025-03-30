@@ -7,6 +7,7 @@
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
+@inject SessionProvider SessionProvider
 
 <h3>Please scan the QR-code to login</h3>
 
@@ -49,6 +50,7 @@
         await HttpContext.SignInAsync(principal);
 
         if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastRunnerLogin();
+        
         NavigationManager.NavigateTo("/map");
     }
 

@@ -3,6 +3,7 @@
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
+@inject SessionProvider SessionProvider
 
 @attribute [Authorize]
 
@@ -11,7 +12,6 @@
 @code {
 
     [CascadingParameter] HttpContext? HttpContext { get; set; }
-    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
     #region Overrides of ComponentBase
 
@@ -20,7 +20,7 @@
     {
         await base.OnInitializedAsync();
 
-        var session = await Session.CreateFromAuthenticationState(AuthenticationStateTask);
+        var session = await SessionProvider.SessionAsync;
 
         if (HttpContext is not { } ctx) return;
 
@@ -33,6 +33,8 @@
                 await MapDataStore.LogoutTeamMember(session.TeamName);
                 await HubClient.BroadcastRunnerLogout();
             } 
+            
+            SessionProvider.ClearSession();
 
             NavigationManager.NavigateTo("/login", true);
         }

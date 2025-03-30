@@ -1,4 +1,6 @@
-﻿namespace ElectionGame.Web.Model;
+﻿using election_game.Data.Models;
+
+namespace ElectionGame.Web.Model;
 
 public class TriggerCirclesLayer : Layer
 {
@@ -16,7 +18,15 @@ public class TriggerCirclesLayer : Layer
 
     private Task DistrictOwnerChanged(DistrictOwner districtOwner)
     {
-        var triggerCircleToRemove = ShapesList.OfType<TriggerCircle>().FirstOrDefault(tc => tc.DistrictName == districtOwner.DistrictName);
+        if (districtOwner == DistrictOwner.Empty)
+        {
+            // we recreate all claimable district circles on the map
+            return InitLayer();
+        }
+
+        var triggerCircleToRemove = ShapesList
+            .OfType<TriggerCircle>()
+            .FirstOrDefault(tc => tc.DistrictName == districtOwner.DistrictName);
 
         if (triggerCircleToRemove is not null) ShapesList.Remove(triggerCircleToRemove);
 
@@ -36,10 +46,14 @@ public class TriggerCirclesLayer : Layer
 
     private async Task InitLayer()
     {
+        ShapesList.Clear();
+
         var districts = await _mapDataStore.GetAllDistricts();
-        var triggerCircles = districts
-            .Where(d=> d.IsClaimable)
+
+        var circles = districts
+            .Where(d => d.IsClaimable)
             .Select(d => new TriggerCircle(d));
-        ShapesList.AddRange(triggerCircles);
+
+        ShapesList.AddRange(circles);
     }
 }

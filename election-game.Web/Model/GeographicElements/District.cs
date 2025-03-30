@@ -11,14 +11,8 @@ public class District : Region
         IsClaimable = districtData.IsClaimable;
         
         TriggerCircle = new TriggerCircle(districtData);
-        Resources = new Dictionary<string, int>
-        {
-            {"Gold", districtData.Resources.R1},
-            {"Votes", districtData.Resources.R2},
-            {"People", districtData.Resources.R3},
-            {"Oil", districtData.Resources.R4}
-        };
-
+        Resources = new Resources(districtData.Resources);
+        ResourceDictionary = Resources.ToDictionary();
         Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
     }
 
@@ -33,7 +27,8 @@ public class District : Region
     public string Name { get; }
     public Team? Owner { get; private set; }
     public TriggerCircle TriggerCircle { get; }
-    public Dictionary<string, int> Resources { get; }
+    public Resources Resources { get; set; }
+    public Dictionary<string, int> ResourceDictionary { get; }
 
     internal async Task SetOwner(Team newOwner)
     {

@@ -1,15 +1,20 @@
-﻿namespace ElectionGame.Web.Model;
+﻿using ElectionGame.Web.Authentication;
+
+namespace ElectionGame.Web.Model;
 
 public class DistrictsLayer : Layer
 {
     private readonly MapDataStore _mapDataStore;
     private List<District> _districts = [];
     private readonly IBindableHubClient _hubClient;
+    private readonly SessionProvider _sessionProvider;
 
-    public DistrictsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient)
+    public DistrictsLayer(MapDataStore mapDataStore, IBindableHubClient hubClient, SessionProvider sessionProvider)
     {
         _mapDataStore = mapDataStore;
         _hubClient = hubClient;
+        _sessionProvider = sessionProvider;
+
         Id = nameof(DistrictsLayer);
         SelectionStyle = MapStyles.SelectedDistrictStyle;
         LayerType = LayerType.Vector;
@@ -29,11 +34,17 @@ public class DistrictsLayer : Layer
 
     public async Task<bool> TryClaimDistrict(Coordinate location, string teamName)
     {
+        if (!_sessionProvider.Session.IsPlayer)
+        {
+            Console.WriteLine("*** Not a player, cannot claim district");
+            return false;
+        }
+        
         var foundDistrict = _districts
             .FirstOrDefault(d => d.IsAtLocation(location));
 
         Console.WriteLine($">>> Try claim district {foundDistrict?.Name ?? "NO DISTRICT"} by team '{teamName}'");
-        if (foundDistrict is null || foundDistrict.Owner?.Name == teamName) return false;
+        if (foundDistrict is null || foundDistrict.Owner?.Name == teamName && foundDistrict.IsClaimable == false) return false;
 
         Console.WriteLine(">>> Broadcast District Owner Changed");
         await _hubClient.BroadcastDistrictOwnerChange(new DistrictOwner(teamName, foundDistrict.Name));
@@ -56,8 +67,14 @@ public class DistrictsLayer : Layer
     private async Task InitLayer()
     {
         var districts = await _mapDataStore.GetAllDistricts();
-        _districts = districts.Select(d => new District(d)).ToList();
+        _districts = [.. districts.Select(d => new District(d))];
         ShapesList.Clear();
         ShapesList.AddRange(_districts);
+    }
+
+    public async Task ResetClaimState()
+    {
+        await _mapDataStore.ClearClaims();
+        await _hubClient.BroadcastDistrictOwnerChange(DistrictOwner.Empty);
     }
 }

@@ -1,0 +1,56 @@
+﻿@using ElectionGame.Web.Model
+
+@inject IBindableHubClient HubClient
+@inject MapDataStore DataStore
+@inject SessionProvider SessionProvider
+
+<FluentStack Orientation="Orientation.Horizontal" Style="padding:5px">
+    <FluentCard>
+        <div><FluentIcon Value="@(new NavIcons.CoinStack())" /> Gold: @Resources.Gold</div>
+    </FluentCard>
+    <FluentCard>
+        <div><FluentIcon Value="@(new NavIcons.Vote())" /> Votes: @Resources.Votes</div>
+    </FluentCard>
+    <FluentCard>
+        <div><FluentIcon Value="@(new NavIcons.People())" /> People: @Resources.People</div>
+    </FluentCard>
+    <FluentCard>
+        <div><FluentIcon Value="@(new NavIcons.Drop())" /> Oil: @Resources.Oil</div>
+    </FluentCard>
+</FluentStack>
+
+@code {
+
+    [Parameter] public string? TeamName { get; set; }
+
+    private Resources Resources { get; set; } = Resources.Empty;
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;;
+
+        TeamName ??= (await SessionProvider.SessionAsync).TeamName;
+
+        await LoadResource();
+    }
+
+    private Task OnDistrictOwnerChanged(DistrictOwner arg)
+    {
+        return LoadResource();
+    }
+
+    private async Task LoadResource()
+    {
+        var resourcesData = await DataStore.GetResourcesForTeam(TeamName!);
+        Resources = new Resources(resourcesData);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    #endregion
+
+}

@@ -3,6 +3,7 @@
 public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameHubServer
 {
     public const string HubUrl = "/chat";
+    //public const string HubUrl = "https://ass-konqvist-app.service.signalr.net";
 
     /// <inheritdoc />
     public async Task BroadcastRunnerLogout()

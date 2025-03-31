@@ -1,0 +1,53 @@
+﻿@using Konqvist.Web.Authentication
+@inherits LayoutComponentBase
+
+<FluentLayout Orientation="Orientation.Vertical">
+    <FluentHeader>
+        <FluentSpacer />
+        KONQVIST: Team @UserSession.TeamName (@UserSession.GameRole)
+        <FluentSpacer />
+    </FluentHeader>
+
+    <FluentBodyContent>
+        @Body
+    </FluentBodyContent>
+
+    <FluentFooter>
+        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer" />
+    </FluentFooter>
+
+    <FluentToastProvider MaxToastCount="3"
+                         RemoveToastsOnNavigation="true"
+                         Position="ToastPosition.BottomCenter"
+                         Timeout="5000"
+                         @rendermode="InteractiveServer" />
+</FluentLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+
+@code {
+
+    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+    private UserSession UserSession { get; set; } = UserSession.Empty;
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // we should not be able to reach this page without being authorized
+        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
+
+        UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
+    }
+
+    #endregion
+
+}

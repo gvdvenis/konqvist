@@ -20,12 +20,7 @@
     </FluentToolbar>
 </SectionContent>
 
-@* <FluentSplitter Orientation="Orientation.Vertical" 
-                BarSize="20" 
-                Collapsed="@(!Session.IsTeamLeader)"
-                Panel2MinSize="30px" 
-                Panel2Size="100px">
-    <Panel1> *@
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
         <OpenStreetMap @bind-Rotation="_rotation"
                        @bind-Center="_center"
                        OnClick="OnMapClick"
@@ -35,7 +30,10 @@
                        InitialZoom="14"
                        MinZoom="14"
                        MaxZoom="18"
-                       FullScreenControl>
+                       FullScreenControl
+                       ScaleLineUnit="ScaleLineUnit.None"
+                       AttributionControl="false"
+                       >
             <Layers>
                 <MapLayer />
                 <DistrictsLayer @ref="_districtsLayer" />
@@ -58,11 +56,9 @@
                 </div>
             </Popup>
         </OpenStreetMap>
-@*     </Panel1>
-    <Panel2>
-        <TeamResources/>
-    </Panel2>
-</FluentSplitter> *@
+        <TeamResources style="margin-top:-50px"/>
+</FluentStack>
+
 
 @code {
 

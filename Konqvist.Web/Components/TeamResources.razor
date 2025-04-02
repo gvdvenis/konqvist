@@ -2,22 +2,29 @@
 @inject MapDataStore DataStore
 @inject SessionProvider SessionProvider
 
-<FluentStack Orientation="Orientation.Horizontal" Style="padding:5px">
-    <FluentCard>
-        <div><FluentIcon Value="@(new NavIcons.CoinStack())" /> Gold: @Resources.Gold</div>
-    </FluentCard>
-    <FluentCard>
-        <div><FluentIcon Value="@(new NavIcons.Vote())" /> Votes: @Resources.Votes</div>
-    </FluentCard>
-    <FluentCard>
-        <div><FluentIcon Value="@(new NavIcons.People())" /> People: @Resources.People</div>
-    </FluentCard>
-    <FluentCard>
-        <div><FluentIcon Value="@(new NavIcons.Drop())" /> Oil: @Resources.Oil</div>
-    </FluentCard>
+<FluentStack @attributes="AdditionalAttributes" 
+             HorizontalAlignment="HorizontalAlignment.Center" 
+             Style="z-index:1; margin-top: -40px" 
+             VerticalGap="0"
+             HorizontalGap="5">
+    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
+        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />@nameof(Resources.Gold): @Resources.Gold
+    </FluentBadge>
+    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
+        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />@nameof(Resources.Votes): @Resources.Votes
+    </FluentBadge>
+    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
+        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.People())" />@nameof(Resources.People): @Resources.People
+    </FluentBadge>
+    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
+        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />@nameof(Resources.Oil): @Resources.Oil
+    </FluentBadge>
 </FluentStack>
 
 @code {
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object>? AdditionalAttributes { get; set; }
 
     [Parameter] public string? TeamName { get; set; }
 
@@ -30,7 +37,7 @@
     {
         await base.OnInitializedAsync();
 
-        HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;;
+        HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged; ;
 
         TeamName ??= (await SessionProvider.SessionAsync).TeamName;
 

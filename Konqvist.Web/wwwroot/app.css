@@ -13,7 +13,7 @@ body {
     display: none;
 }
 
-html, body {
+html, body, .body-content, .stack-vertical {
     height: 100%;
     margin: 0;
     display: flex;
@@ -44,9 +44,21 @@ header {
 }
 
 .center-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center
+    width: 100%;
+    text-align: center;
+}
+
+.resource-badge span {
+    padding: 13px 5px;
+    height: 35px;
+}
+
+.resource-badge-icon {
+    margin-right: 3px;
+}
+
+.fluent-card {
+    padding: 5px;
 }
 
 .alert {

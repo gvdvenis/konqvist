@@ -8,13 +8,6 @@
     <ApplicationIcon>wwwroot\icons\favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Remove="wwwroot\konqvist-logo.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\konqvist-logo.png" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Konqvist.Data\Konqvist.Data.csproj" />

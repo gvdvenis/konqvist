@@ -16,7 +16,11 @@
     <FluentToolbar>
         <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
         <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
-        <FluentButton Disabled="!Session.IsAdmin" IconEnd="@(new Size20.KeyReset())" OnClick="ResetClaimState" />
+        <FluentButton IconEnd="@(new Size20.KeyReset())" OnClick="ResetClaimState" Disabled="!Session.IsAdmin" />
+        <FluentButton IconEnd="@(new Size20.ArrowExit().WithColor(Color.Error))"
+                      Appearance="Appearance.Outline"
+                      Color="red"
+                      OnClick="LogoutAllRunners" Disabled="!Session.IsAdmin" Title="Logout all active runners" />
     </FluentToolbar>
 </SectionContent>
 
@@ -43,16 +47,16 @@
             <Popup>
                 <div id="popup" class="ol-box">
                     @if (context is District district)
-                    {
-                        <h4>@district.Name</h4>
-                        <ul>
-                            @foreach (var prop in district.ResourceDictionary)
-                            {
-                                <li>@prop.Key: @prop.Value</li>
-                            }
-                        </ul>
-                        <p>Owner: @district.Owner</p>
-                    }
+                {
+                            <h4>@district.Name</h4>
+                            <ul>
+                        @foreach (var prop in district.ResourceDictionary)
+                        {
+                                        <li>@prop.Key: @prop.Value</li>
+                        }
+                            </ul>
+                            <p>Owner: @district.Owner</p>
+                }
                 </div>
             </Popup>
         </OpenStreetMap>
@@ -121,6 +125,11 @@
         return _districtsLayer?.ResetClaimState() ?? Task.CompletedTask;
     }
 
+    private Task LogoutAllRunners(MouseEventArgs arg)
+    {
+        return _teamsLayer?.LogoutRunners() ?? Task.CompletedTask;
+    }
+
     #region Implementation of IAsyncDisposable
 
     public async ValueTask DisposeAsync()
@@ -129,4 +138,5 @@
     }
 
     #endregion
+
 }

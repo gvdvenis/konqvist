@@ -1,7 +1,4 @@
 ﻿@page "/logout"
-@using Konqvist.Data.Stores
-@using Konqvist.Web.Authentication
-@using Konqvist.Web.SignalR
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
@@ -33,7 +30,7 @@
 
             if (session.IsPlayer)
             {
-                await MapDataStore.LogoutTeamMember(session.TeamName);
+                await MapDataStore.LogoutRunner(session.TeamName);
                 await HubClient.BroadcastRunnerLogout();
             } 
             

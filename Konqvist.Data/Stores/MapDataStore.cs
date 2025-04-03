@@ -119,7 +119,6 @@ public class MapDataStore
 
         Coordinate GetDefaultLocation()
         {
-
             Coordinate center = new([6.261195479378347, 51.87638698662113]);
 
             double maxX = _mapData.Coordinates.Max(c => c.X);
@@ -233,6 +232,27 @@ public class MapDataStore
             "dtc" => (TeamByName("Delta"), TeamMemberRole.TeamCaptain),
             "dr" => (TeamByName("Delta"), TeamMemberRole.Runner),
             "d" => (TeamByName("Delta"), TeamMemberRole.Observer),
+
+            "etc" => (TeamByName("Echo"), TeamMemberRole.TeamCaptain),
+            "er" => (TeamByName("Echo"), TeamMemberRole.Runner),
+            "e" => (TeamByName("Echo"), TeamMemberRole.Observer),
+
+            "ftc" => (TeamByName("Foxtrot"), TeamMemberRole.TeamCaptain),
+            "fr" => (TeamByName("Foxtrot"), TeamMemberRole.Runner),
+            "f" => (TeamByName("Foxtrot"), TeamMemberRole.Observer),
+
+            "gtc" => (TeamByName("Golf"), TeamMemberRole.TeamCaptain),
+            "gr" => (TeamByName("Golf"), TeamMemberRole.Runner),
+            "g" => (TeamByName("Golf"), TeamMemberRole.Observer),
+
+            "htc" => (TeamByName("Hotel"), TeamMemberRole.TeamCaptain),
+            "hr" => (TeamByName("Hotel"), TeamMemberRole.Runner),
+            "h" => (TeamByName("Hotel"), TeamMemberRole.Observer),
+
+            "itc" => (TeamByName("India"), TeamMemberRole.TeamCaptain),
+            "ir" => (TeamByName("India"), TeamMemberRole.Runner),
+            "i" => (TeamByName("India"), TeamMemberRole.Observer),
+
             _ => null
         };
 
@@ -267,7 +287,7 @@ public class MapDataStore
         }
     }
 
-    public async Task<bool> LogoutTeamMember(string teamName)
+    public async Task<bool> LogoutRunner(string teamName)
     {
         // we don't bother with observers and team captains for now
         //if (role is not TeamMemberRole.Runner) return true;
@@ -279,6 +299,22 @@ public class MapDataStore
             if (team == null) return false;
             team.PlayerLoggedIn = false;
             return true;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task LogoutAllRunners()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            foreach (var team in _teamsData)
+            {
+                team.PlayerLoggedIn = false;
+            }
         }
         finally
         {

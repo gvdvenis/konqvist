@@ -2,9 +2,11 @@
 
 public interface IGameHubClient
 {
-   Task DistrictOwnerChanged(DistrictOwner districtOwner);
+    Task DistrictOwnerChanged(DistrictOwner districtOwner);
 
-   Task ActorMoved(ActorLocation actorLocation);
+    Task ActorMoved(ActorLocation actorLocation);
 
-   Task RunnerLoggedInOrOut();
+    Task RunnerLoggedInOrOut();
+
+    Task RequestRunnerLogout(string? teamName);
 }

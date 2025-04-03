@@ -21,6 +21,22 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await Clients.All.DistrictOwnerChanged(districtOwner);
     }
 
+    /// <summary>
+    ///     Send a runner logout request to all clients. Optionally provide
+    ///     a team name to only log out a single teams runner
+    /// </summary>
+    /// <param name="teamName"></param>
+    /// <returns></returns>
+    public async Task SendRunnerLogoutRequest(string? teamName = null)
+    {
+        if (teamName == null)
+            await dataStore.LogoutAllRunners();
+        else
+            await dataStore.LogoutRunner(teamName);
+
+        await Clients.All.RequestRunnerLogout(teamName);
+    }
+
     /// <inheritdoc />
     public async Task BroadcastRunnerLogin()
     {

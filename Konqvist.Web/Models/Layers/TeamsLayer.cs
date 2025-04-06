@@ -30,7 +30,9 @@ public class TeamsLayer : Layer
 
     private async Task PlayerLoggedInOrOut()
     {
-        _toastService.ShowError("A player just logged out");
+        if (_sessionProvider.Session.IsAdmin) 
+            _toastService.ShowError("A player just logged out");
+        
         await InitLayer();
     }
 

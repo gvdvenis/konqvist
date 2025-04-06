@@ -20,6 +20,14 @@ html, body, .body-content, .stack-vertical {
     flex-direction: column;
 }
 
+.card-grid {
+    width: 100%;
+    padding: 1rem;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
 .ol-box {
     box-sizing: border-box;
     border-radius: 5px;

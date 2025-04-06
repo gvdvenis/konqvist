@@ -1,15 +1,27 @@
 ﻿@page "/management"
-@using System.Security.Claims
-@using Konqvist.Web.Authentication
+@using Konqvist.Web.Models
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject MapDataStore MapDataStore
+@inject IBindableHubClient HubClient
+
 @attribute [AuthorizeGameRoles(GameRole.GameMaster)]
 
-<h3>Management</h3>
-
-<p>Welcome @TeamName</p>
+@* 
+    <FluentStack Orientation="Orientation.Horizontal"
+             VerticalGap="5"
+             HorizontalGap="5">
+    </FluentStack>
+ *@    
+    <div class="card-grid">
+        @foreach (var team in _teams)
+    {
+        <TeamCard Team="@team"/>
+    }
+</div>
 
 @code {
 
-    [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+    private IEnumerable<Team> _teams = [];
 
     public string TeamName { get; set; } = "";
 
@@ -20,22 +32,23 @@
     {
         await base.OnInitializedAsync();
 
-        // we should not be able to reach this page without being authorized
-        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
-        
-        var authState = await AuthenticationStateTask ;
-        TeamName = authState.User.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.UserData)?.Value ?? "Unknown";
+        var teamsData = await MapDataStore.GetTeams();
+        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
+        HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
+        HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
     }
 
-    /// <inheritdoc />
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private Task OnDistrictOwnerChanged(DistrictOwner arg)
     {
-        await base.OnAfterRenderAsync(firstRender);
-        
-        ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
-        
-        var authState = await AuthenticationStateTask ;
-        TeamName = authState.User.Identity?.Name ?? TeamName;
+        return InvokeAsync(StateHasChanged);
+        //return Task.CompletedTask;
+
+    }
+
+    private Task OnRunnerLoggedInOrOut()
+    {
+        return InvokeAsync(StateHasChanged);
+        //return Task.CompletedTask;
     }
 
     #endregion

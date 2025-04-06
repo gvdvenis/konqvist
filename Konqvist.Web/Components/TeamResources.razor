@@ -1,38 +1,51 @@
 ﻿@inject IBindableHubClient HubClient
 @inject MapDataStore DataStore
 @inject SessionProvider SessionProvider
+@using Microsoft.FluentUI.AspNetCore.Components.Utilities
+@inherits FluentComponentBase
 
-<FluentStack @attributes="AdditionalAttributes" 
-             HorizontalAlignment="HorizontalAlignment.Center" 
-             Style="z-index:1; margin-top: -40px" 
-             VerticalGap="0"
-             HorizontalGap="5">
-    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
-        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />@nameof(Resources.Gold): @Resources.Gold
-    </FluentBadge>
-    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
-        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />@nameof(Resources.Votes): @Resources.Votes
-    </FluentBadge>
-    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
-        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.People())" />@nameof(Resources.People): @Resources.People
-    </FluentBadge>
-    <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="Appearance.Accent">
-        <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />@nameof(Resources.Oil): @Resources.Oil
-    </FluentBadge>
-</FluentStack>
+<div @attributes="AdditionalAttributes" style="@StyleValue">
+    <FluentStack HorizontalAlignment="HorizontalAlignment.Center"
+                 VerticalGap="0"
+                 HorizontalGap="2">
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
+            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />
+            @(ShowTitle ? $"{nameof(Resources.Gold)}:" : "") @Resources.Gold
+        </FluentBadge>
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
+            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />
+            @(ShowTitle ? $"{nameof(Resources.Votes)}:" : "") @Resources.Votes
+        </FluentBadge>
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
+            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
+            @(ShowTitle ? $"{nameof(Resources.People)}:" : "") @Resources.People
+        </FluentBadge>
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
+            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />
+            @(ShowTitle ? $"{nameof(Resources.Oil)}:" : "") @Resources.Oil
+        </FluentBadge>
+    </FluentStack>
+</div>
 
 @code {
 
-    [Parameter(CaptureUnmatchedValues = true)]
-    public IDictionary<string, object>? AdditionalAttributes { get; set; }
-
     [Parameter] public string? TeamName { get; set; }
+    [Parameter] public bool ShowTitle { get; set; } = true;
+    [Parameter] public bool Enabled { get; set; } = true;
 
     private Resources Resources { get; set; } = Resources.Empty;
 
+    protected string? StyleValue => new StyleBuilder(Style)
+        .AddStyle("z-index", "1")
+        .AddStyle("width", "100%")
+        .Build();
+
+    private Appearance BadgeAppearance => Enabled 
+        ? Appearance.Accent 
+        : Appearance.Neutral;
+
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();

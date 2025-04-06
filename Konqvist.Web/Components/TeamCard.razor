@@ -1,0 +1,65 @@
+﻿@using System.Reflection.PortableExecutable
+@using Konqvist.Web.Models
+
+@inject SessionProvider SessionProvider
+@inject IBindableHubClient HubClient
+@inject MapDataStore MapDataStore
+@implements IDisposable
+
+<FluentCard MinimalStyle="true">
+    <h3>
+        @Team.Name
+        <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
+                      OnClick="LogoutRunner"
+                      Disabled="@(!Team.RunnerLoggedIn)"
+                      Title="Logout this runner" />
+    </h3>
+    <hr style="color:@(Team.RunnerLoggedIn ? Team.TextColor : "#DDD"); border-width: 5px; opacity:1; border-radius: 5px;" />
+    <TeamResources Enabled="@Team.RunnerLoggedIn" TeamName="@Team.Name" ShowTitle="false" />
+</FluentCard>
+
+@code {
+
+    private UserSession _session = UserSession.Empty;
+
+    [Parameter] public Team Team { get; set; } = Team.Empty;
+
+    private Task LogoutRunner(MouseEventArgs arg)
+    {
+        return HubClient.SendRunnerLogoutRequest(Team.Name);
+    }
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _session = SessionProvider.Session;
+        HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
+    }
+
+    private async Task OnRunnerLoggedInOrOut()
+    {
+        var teamData = await MapDataStore.GetTeamByName(Team.Name);
+
+        Team = teamData is null
+            ? Team.Empty
+            : Team.CreateFromDataOrEmtpy(teamData);
+
+        StateHasChanged();
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        //HubClient.OnRunnerLoggedInOrOut -= OnRunnerLoggedInOrOut;
+    }
+
+    #endregion
+
+}

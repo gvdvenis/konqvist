@@ -48,7 +48,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
         _hubConnection.On<Task>(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
 
-        _hubConnection.On<string, Task>(nameof(RequestRunnerLogout), RequestRunnerLogout);
+        _hubConnection.On<string, Task>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
     }
 
     #region IGameHubServer implements
@@ -81,7 +81,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task RunnerLoggedInOrOut() => OnRunnerLoggedInOrOut?.Invoke() ?? Task.CompletedTask;
 
-    public Task RequestRunnerLogout(string? teamName)
+    public Task PerformRunnerLogoutOnClient(string? teamName)
     {
         var session = _sessionProvider.Session;
 

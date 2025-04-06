@@ -1,5 +1,4 @@
-﻿@page "/login"
-@page "/login/{Password}"
+﻿@page "/voting"
 
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication.Cookies
@@ -52,16 +51,14 @@
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
 
-        if (loginuser.GameRole == GameRole.Runner) 
-            await HubClient.BroadcastRunnerLogin();
+        if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastRunnerLogin();
 
         NavigationManager.NavigateTo("/map");
     }
 
     private async Task<User?> VerifyPassword()
     {
-        (TeamData? teamData, TeamMemberRole role)? login = 
-            await MapDataStore.TryLoginTeamMember(Password);
+        (TeamData? teamData, TeamMemberRole role)? login = await MapDataStore.TryLoginTeamMember(Password);
 
         return login is null
             ? null

@@ -5,7 +5,6 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     public const string HubUrl = "/chat";
     //public const string HubUrl = "https://ass-konqvist-app.service.signalr.net";
 
-    /// <inheritdoc />
     public async Task BroadcastRunnerLogout()
     {
         await Clients.All.RunnerLoggedInOrOut();
@@ -32,9 +31,11 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         if (teamName == null)
             await dataStore.LogoutAllRunners();
         else
-            await dataStore.LogoutRunner(teamName);
-
-        await Clients.All.RequestRunnerLogout(teamName);
+        {
+            bool result = await dataStore.LogoutRunner(teamName);
+            await Clients.All.PerformRunnerLogoutOnClient(teamName);
+            if (result) await BroadcastRunnerLogout();
+        }
     }
 
     /// <inheritdoc />

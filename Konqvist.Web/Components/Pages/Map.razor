@@ -11,58 +11,69 @@
 @inject IGeolocationService GeolocationService
 @inject IToastService ToastService
 @inject SessionProvider SessionProvider
+@inject NavigationManager NavigationManager
+
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
+    <OpenStreetMap @bind-Rotation="_rotation"
+                   @bind-Center="_center"
+                   OnClick="OnMapClick"
+                   OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
+                   ZoomSliderControl
+                   InitialCenter="@_center"
+                   InitialZoom="14"
+                   MinZoom="14"
+                   MaxZoom="18"
+                   FullScreenControl
+                   ScaleLineUnit="ScaleLineUnit.None"
+                   AttributionControl="false">
+        <Layers>
+            <MapLayer />
+            <DistrictsLayer @ref="_districtsLayer" />
+            <TriggerCirclesLayer />
+            <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams" />
+        </Layers>
+        <Popup>
+            <div id="popup" class="ol-box">
+                @if (context is District district)
+                {
+                    <h4>@district.Name</h4>
+                    <ul>
+                        @foreach (var prop in district.ResourceDictionary)
+                        {
+                            <li>@prop.Key: @prop.Value</li>
+                        }
+                    </ul>
+                    <p>Owner: @district.Owner</p>
+                }
+            </div>
+        </Popup>
+    </OpenStreetMap>
+    @if (Session.IsAdmin == false)
+    {
+        <TeamResources Style="margin-top: -40px" />
+    }
+</FluentStack>
 
 <SectionContent SectionName="FooterContentSection">
     <FluentToolbar>
-        <FluentButton IconEnd="@(new Size20.MyLocation())" OnClick="CenterLocation" />
-        <FluentButton IconEnd="@(new Size20.Eye())" OnClick="@(() => _showTeams = !_showTeams)" />
-        <FluentButton IconEnd="@(new Size20.KeyReset())" OnClick="ResetClaimState" Disabled="!Session.IsAdmin" />
+        <FluentButton IconEnd="@(new Size20.MyLocation())"
+                      OnClick="CenterLocation" />
+        <FluentButton IconEnd="@(new Size20.Eye())"
+                      OnClick="@(() => _showTeams = !_showTeams)" />
+        <FluentButton IconEnd="@(new Size20.KeyReset())"
+                      OnClick="ResetClaimState"
+                      Disabled="!Session.IsAdmin" />
+        <FluentButton IconEnd="@(new Size20.Organization())"
+                      OnClick="ShowDashboard"
+                      Disabled="!Session.IsAdmin" />
         <FluentButton IconEnd="@(new Size20.ArrowExit().WithColor(Color.Error))"
+                      OnClick="LogoutAllRunners"
                       Appearance="Appearance.Outline"
                       Color="red"
-                      OnClick="LogoutAllRunners" Disabled="!Session.IsAdmin" Title="Logout all active runners" />
+                      Disabled="!Session.IsAdmin"
+                      Title="Logout all active runners" />
     </FluentToolbar>
 </SectionContent>
-
-<FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
-        <OpenStreetMap @bind-Rotation="_rotation"
-                       @bind-Center="_center"
-                       OnClick="OnMapClick"
-                       OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
-                       ZoomSliderControl
-                       InitialCenter="@_center"
-                       InitialZoom="14"
-                       MinZoom="14"
-                       MaxZoom="18"
-                       FullScreenControl
-                       ScaleLineUnit="ScaleLineUnit.None"
-                       AttributionControl="false"
-                       >
-            <Layers>
-                <MapLayer />
-                <DistrictsLayer @ref="_districtsLayer" />
-                <TriggerCirclesLayer />
-                <TeamsLayer @ref="_teamsLayer" Visibility="_showTeams" />
-            </Layers>
-            <Popup>
-                <div id="popup" class="ol-box">
-                    @if (context is District district)
-                {
-                            <h4>@district.Name</h4>
-                            <ul>
-                        @foreach (var prop in district.ResourceDictionary)
-                        {
-                                        <li>@prop.Key: @prop.Value</li>
-                        }
-                            </ul>
-                            <p>Owner: @district.Owner</p>
-                }
-                </div>
-            </Popup>
-        </OpenStreetMap>
-        <TeamResources style="margin-top:-50px"/>
-</FluentStack>
-
 
 @code {
 
@@ -129,6 +140,13 @@
     {
         return _teamsLayer?.LogoutRunners() ?? Task.CompletedTask;
     }
+
+
+    private void ShowDashboard(MouseEventArgs arg)
+    {
+        NavigationManager.NavigateTo("/management");
+    }
+
 
     #region Implementation of IAsyncDisposable
 

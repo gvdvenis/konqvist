@@ -91,23 +91,26 @@ public class MapDataStore
     /// <summary>
     ///     Gets a copy of all teams data, optionally filtering out
     ///     teams where no runner is logged in (they should not be shown on the map)
+    ///     and/or teams that have been disabled (not participating in the game).
+    ///     If Location is not set, a default location is assigned.
     /// </summary>
-    public async Task<List<TeamData>> GetTeams(bool onlyLoggedIn = false)
+    public async Task<List<TeamData>> GetTeams(
+        bool onlyLoggedIn = false,
+        bool includeDisabled = false)
     {
         var counter = 0;
 
         await _semaphore.WaitAsync();
         try
         {
-
-            var teams = onlyLoggedIn
-                ? _teamsData.Where(t => t.PlayerLoggedIn)
-                : _teamsData;
+            var teams = _teamsData
+                 .Where(t => !onlyLoggedIn || t.PlayerLoggedIn)
+                 .Where(t => includeDisabled || !t.IsDisabled);
 
             return [.. teams.Select(td =>
             {
-                td.Location = td.Location == Coordinate.Empty 
-                    ? GetDefaultLocation() 
+                td.Location = td.Location == Coordinate.Empty
+                    ? GetDefaultLocation()
                     : td.Location;
                 return td;
             })];
@@ -126,6 +129,25 @@ public class MapDataStore
             counter++;
 
             return new Coordinate(maxX, maxY - 0.0015 * counter);
+        }
+    }
+
+    /// <summary>
+    ///     Returns a single teams data. Please note that the location
+    ///     of the team is NOT falling back to a default location as is
+    ///     the case with the <see cref="GetTeams"/> method.
+    /// </summary>
+    public async Task<TeamData?> GetTeamByName (string teamName)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _teamsData
+                .SingleOrDefault(td => td.Name == teamName);
+        }
+        finally
+        {
+            _semaphore.Release();
         }
     }
 
@@ -157,7 +179,7 @@ public class MapDataStore
         {
             return _mapData.Districts
                 .Where(dd => dd.Owner is not null && dd.Owner.Name == teamName)
-                .Select(dd => dd.Resources) 
+                .Select(dd => dd.Resources)
                 .Aggregate(new DistrictResourcesData(), (acc, item) => acc + item);
         }
         finally
@@ -204,7 +226,7 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            if ( TeamByName(teamName) is { } team)
+            if (TeamByName(teamName) is { } team)
                 team.Location = coordinate;
         }
         finally
@@ -220,7 +242,7 @@ public class MapDataStore
         (TeamData? teamData, TeamMemberRole role)? td = password switch
         {
             "agm" => (TeamByName("Alpha"), TeamMemberRole.GameMaster),
-            
+
             "btc" => (TeamByName("Bravo"), TeamMemberRole.TeamCaptain),
             "br" => (TeamByName("Bravo"), TeamMemberRole.Runner),
             "b" => (TeamByName("Bravo"), TeamMemberRole.Observer),
@@ -228,7 +250,7 @@ public class MapDataStore
             "ctc" => (TeamByName("Charly"), TeamMemberRole.TeamCaptain),
             "cr" => (TeamByName("Charly"), TeamMemberRole.Runner),
             "c" => (TeamByName("Charly"), TeamMemberRole.Observer),
-            
+
             "dtc" => (TeamByName("Delta"), TeamMemberRole.TeamCaptain),
             "dr" => (TeamByName("Delta"), TeamMemberRole.Runner),
             "d" => (TeamByName("Delta"), TeamMemberRole.Observer),
@@ -256,7 +278,7 @@ public class MapDataStore
             _ => null
         };
 
-        return await TryLoginTeamMember(td?.teamData, td?.role) 
+        return await TryLoginTeamMember(td?.teamData, td?.role)
             ? (td?.teamData, td?.role ?? TeamMemberRole.Observer)
             : null;
     }
@@ -264,7 +286,7 @@ public class MapDataStore
     private TeamData? TeamByName(string name) => _teamsData.FirstOrDefault(t => t.Name == name);
 
     public async Task<bool> TryLoginTeamMember(
-        TeamData? teamData, 
+        TeamData? teamData,
         TeamMemberRole? role = TeamMemberRole.Observer)
     {
         if (teamData is null) return false;

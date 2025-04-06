@@ -1,7 +1,8 @@
 [
   {
     "name": "Alpha",
-    "color": "#880000" // red
+    "color": "#880000", // red
+    "isDisabled": true
   },
   {
     "name": "Bravo",
@@ -21,18 +22,22 @@
   },
   {
     "name": "Foxtrot",
-    "color": "#FFA500" // orange
+    "color": "#FFA500", // orange
+    "isDisabled": true
   },
   {
     "name": "Golf",
-    "color": "#FFC0CB" // pink
+    "color": "#FFC0CB", // pink
+    "isDisabled": true
   },
   {
     "name": "Hotel",
-    "color": "#A52A2A" // brown
+    "color": "#A52A2A", // brown
+    "isDisabled": true
   },
   {
     "name": "India",
-    "color": "#000000" // black
+    "color": "#000000", // black
+    "isDisabled": true
   }
 ]

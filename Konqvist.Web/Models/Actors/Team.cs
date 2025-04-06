@@ -1,16 +1,26 @@
-﻿namespace Konqvist.Web.Models.Actors;
+﻿namespace Konqvist.Web.Models;
 
 public class Team : Actor
 {
+    public static Team Empty { get; } = new("Unknown");
 
     public static Team? CreateFromDataOrDefault(TeamData? teamData)
     {
-        return teamData is null 
-            ? null 
+        return teamData is null
+            ? null
+            : new Team(teamData);
+    }
+
+    public static Team CreateFromDataOrEmtpy(TeamData? teamData)
+    {
+        return teamData is null
+            ? Empty
             : new Team(teamData);
     }
 
     public string Name { get; }
+
+    public bool RunnerLoggedIn { get; }
 
     public Team(string teamName)
     {
@@ -19,12 +29,14 @@ public class Team : Actor
         Type = MarkerType.MarkerAwesome;
         Text = "\uf206";
         TextScale = 1.2;
-    }
+        RunnerLoggedIn = false;
+        }
 
     public Team(TeamData teamData) : this(teamData.Name)
     {
         TextColor = teamData.Color;
         Coordinate = teamData.Location;
+        RunnerLoggedIn = teamData.PlayerLoggedIn;
     }
 
     #region Overrides of Object

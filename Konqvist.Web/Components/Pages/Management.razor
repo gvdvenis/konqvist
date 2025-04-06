@@ -10,7 +10,7 @@
          style="background-color: darkviolet; height:50px; border-radius: calc(var(--layer-corner-radius) * 1px);">
         @foreach (var round in _rounds)
         {
-            <FluentButton>@round.Title</FluentButton>
+            <FluentButton Disabled="@(_currentRound>= round.Order)" OnClick="NextRound">@round.Title</FluentButton>
         }
 
     </div>
@@ -33,6 +33,7 @@
 
     private IEnumerable<Team> _teams = [];
     private IEnumerable<RoundData> _rounds = [];
+    private int _currentRound;
 
     public string TeamName { get; set; } = "";
 
@@ -59,11 +60,24 @@
 
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
+        HubClient.OnNewRoundStarted += OnNewRoundStarted;
+    }
+
+    #endregion
+
+    private Task OnNewRoundStarted(int arg)
+    {
+        _currentRound++;
+        return InvokeAsync(StateHasChanged);
     }
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
 
     private Task OnRunnerLoggedInOrOut() => InvokeAsync(StateHasChanged);
 
-    #endregion
+    private Task NextRound(MouseEventArgs arg)
+    {
+        return HubClient.SendStartNewRoundRequest(_currentRound);
+    }
+
 }

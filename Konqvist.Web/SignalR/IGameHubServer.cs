@@ -31,4 +31,11 @@ public interface IGameHubServer
     /// <param name="teamName"></param>
     /// <returns></returns>
     Task SendRunnerLogoutRequest(string? teamName = null);
+
+    /// <summary>
+    ///     Send a request that initiates a new round.
+    /// </summary>
+    /// <param name="currentRound"></param>
+    /// <returns></returns>
+    Task SendStartNewRoundRequest(int currentRound);
 }

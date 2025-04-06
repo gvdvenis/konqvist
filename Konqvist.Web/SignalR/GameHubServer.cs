@@ -36,6 +36,16 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         if (result) await BroadcastRunnersLogout(teamName);
     }
 
+    public Task SendStartNewRoundRequest(int newRoundNumber)
+    {
+        Console.WriteLine($"+++ Start round number {newRoundNumber}");
+
+        // Broadcast to all clients
+        return Clients.All.BroadCastNewRoundStarted(newRoundNumber);
+
+        return Task.CompletedTask;
+    }
+
     public async Task BroadcastRunnersLogout(params string[] teamNames)
     {
         await Clients.All.RunnerLoggedInOrOut();

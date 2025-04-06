@@ -51,6 +51,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         _hubConnection.On<string, Task>(nameof(RunnerLoggedIn), RunnerLoggedIn);
 
         _hubConnection.On<string[], Task>(nameof(RunnersLoggedOut), RunnersLoggedOut);
+
+        _hubConnection.On<int, Task>(nameof(BroadCastNewRoundStarted), BroadCastNewRoundStarted);
     }
 
     #region IGameHubServer implements
@@ -72,6 +74,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task SendRunnerLogoutRequest(string? teamName = null) =>
         _hubConnection.SendAsync(nameof(SendRunnerLogoutRequest), teamName);
+
+    public Task SendStartNewRoundRequest(int currentRound) =>
+        _hubConnection.SendAsync(nameof(SendStartNewRoundRequest), currentRound);
 
     #endregion
 
@@ -101,6 +106,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         return Task.CompletedTask;
     }
 
+    public Task BroadCastNewRoundStarted(int newRoundNumber) =>
+        OnNewRoundStarted?.Invoke(newRoundNumber) ?? Task.CompletedTask;
+
     #endregion
 
     #region IBindableHubClient implements
@@ -114,7 +122,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Func<ActorLocation, Task>? OnActorMoved { get; set; }
 
     public Func<DistrictOwner, Task>? OnDistrictOwnerChanged { get; set; }
-    
+
+    public Func<int, Task>? OnNewRoundStarted { get; set; }
+
 
     public async Task StartAsync() => await _hubConnection.StartAsync();
 

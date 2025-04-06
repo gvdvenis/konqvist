@@ -5,10 +5,6 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     public const string HubUrl = "/chat";
     //public const string HubUrl = "https://ass-konqvist-app.service.signalr.net";
 
-    public async Task BroadcastRunnerLogout()
-    {
-        await Clients.All.RunnerLoggedInOrOut();
-    }
 
     public async Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner)
     {
@@ -29,21 +25,29 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     public async Task SendRunnerLogoutRequest(string? teamName = null)
     {
         if (teamName == null)
-            await dataStore.LogoutAllRunners();
-        else
         {
-            bool result = await dataStore.LogoutRunner(teamName);
-            await Clients.All.PerformRunnerLogoutOnClient(teamName);
-            if (result) await BroadcastRunnerLogout();
+            var loggedOutRunnerTeamNames = await dataStore.LogoutAllRunners();
+            await BroadcastRunnersLogout([..loggedOutRunnerTeamNames]);
+            return;
         }
+
+        bool result = await dataStore.LogoutRunner(teamName);
+        await Clients.All.PerformRunnerLogoutOnClient(teamName);
+        if (result) await BroadcastRunnersLogout(teamName);
     }
 
-    /// <inheritdoc />
-    public async Task BroadcastRunnerLogin()
+    public async Task BroadcastRunnersLogout(params string[] teamNames)
     {
         await Clients.All.RunnerLoggedInOrOut();
+        await Clients.All.RunnersLoggedOut(teamNames);
     }
-    
+
+    public async Task BroadcastRunnerLogin(string teamName)
+    {
+        await Clients.All.RunnerLoggedInOrOut();
+        await Clients.All.RunnerLoggedIn(teamName);
+    }
+
     /// <summary>
     ///     Broadcasts the new location of an actor
     /// </summary>
@@ -54,7 +58,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await dataStore.UpdateTeamPosition(actorLocation.Name, actorLocation.Location);
         await Clients.All.ActorMoved(actorLocation);
     }
-    
+
     public override async Task OnConnectedAsync()
     {
         Console.WriteLine($"+++ {Context.ConnectionId} connected");

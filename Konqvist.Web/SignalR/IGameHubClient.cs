@@ -8,5 +8,9 @@ public interface IGameHubClient
 
     Task RunnerLoggedInOrOut();
 
+    Task RunnerLoggedIn(string teamName);
+    
+    Task RunnersLoggedOut(string[] teamName);
+
     Task PerformRunnerLogoutOnClient(string? teamName);
 }

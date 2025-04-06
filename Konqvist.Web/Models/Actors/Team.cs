@@ -1,4 +1,4 @@
-﻿namespace Konqvist.Web.Models;
+﻿namespace Konqvist.Web.Models.Actors;
 
 public class Team : Actor
 {

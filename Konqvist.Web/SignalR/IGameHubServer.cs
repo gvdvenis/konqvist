@@ -8,10 +8,20 @@ public interface IGameHubServer
     ///     Signals all clients that a new runner should be added to the map.
     /// </summary>
     /// <returns></returns>
-    Task BroadcastRunnerLogin();
+    Task BroadcastRunnerLogin(string teamName);
 
-    Task BroadcastRunnerLogout();
+    /// <summary>
+    ///     Signals all clients that one or more runners should be removed from the map.
+    /// </summary>
+    /// <param name="teamNames"></param>
+    /// <returns></returns>
+    Task BroadcastRunnersLogout(string[] teamNames);
 
+    /// <summary>
+    ///     Broadcasts that a district has changed owner and the client data should be updated accordingly.
+    /// </summary>
+    /// <param name="districtOwner"></param>
+    /// <returns></returns>
     Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner);
 
     /// <summary>

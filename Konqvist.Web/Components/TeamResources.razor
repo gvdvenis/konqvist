@@ -8,18 +8,22 @@
     <FluentStack HorizontalAlignment="HorizontalAlignment.Center"
                  VerticalGap="0"
                  HorizontalGap="2">
+        
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
             <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />
             @(ShowTitle ? $"{nameof(Resources.Gold)}:" : "") @Resources.Gold
         </FluentBadge>
+        
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
             <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />
             @(ShowTitle ? $"{nameof(Resources.Votes)}:" : "") @Resources.Votes
         </FluentBadge>
+        
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
             <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
             @(ShowTitle ? $"{nameof(Resources.People)}:" : "") @Resources.People
         </FluentBadge>
+        
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance">
             <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />
             @(ShowTitle ? $"{nameof(Resources.Oil)}:" : "") @Resources.Oil
@@ -40,8 +44,8 @@
         .AddStyle("width", "100%")
         .Build();
 
-    private Appearance BadgeAppearance => Enabled 
-        ? Appearance.Accent 
+    private Appearance BadgeAppearance => Enabled
+        ? Appearance.Accent
         : Appearance.Neutral;
 
     #region Overrides of ComponentBase

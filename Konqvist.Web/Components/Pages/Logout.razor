@@ -1,7 +1,6 @@
 ﻿@page "/logout"
 
 @inject NavigationManager NavigationManager
-@inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
 
@@ -15,7 +14,6 @@
 
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -30,8 +28,7 @@
 
             if (session.IsPlayer)
             {
-                await MapDataStore.LogoutRunner(session.TeamName);
-                await HubClient.BroadcastRunnerLogout();
+                await HubClient.SendRunnerLogoutRequest(session.TeamName);
             } 
             
             SessionProvider.ClearSession();

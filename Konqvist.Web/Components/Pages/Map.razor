@@ -138,16 +138,14 @@
 
     private Task LogoutAllRunners(MouseEventArgs arg)
     {
-        return _teamsLayer?.LogoutRunners() ?? Task.CompletedTask;
+        return _teamsLayer?.LogoutAllRunners() ?? Task.CompletedTask;
     }
-
-
+    
     private void ShowDashboard(MouseEventArgs arg)
     {
         NavigationManager.NavigateTo("/management");
     }
-
-
+    
     #region Implementation of IAsyncDisposable
 
     public async ValueTask DisposeAsync()

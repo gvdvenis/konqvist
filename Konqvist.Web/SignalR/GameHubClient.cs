@@ -1,6 +1,4 @@
-﻿using Konqvist.Web.Authentication;
-using Microsoft.AspNetCore.Components;
-using Microsoft.FluentUI.AspNetCore.Components;
+﻿using Microsoft.FluentUI.AspNetCore.Components;
 
 namespace Konqvist.Web.SignalR;
 
@@ -49,6 +47,10 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         _hubConnection.On<Task>(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
 
         _hubConnection.On<string, Task>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
+
+        _hubConnection.On<string, Task>(nameof(RunnerLoggedIn), RunnerLoggedIn);
+
+        _hubConnection.On<string[], Task>(nameof(RunnersLoggedOut), RunnersLoggedOut);
     }
 
     #region IGameHubServer implements
@@ -59,11 +61,11 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task BroadcastActorMove(ActorLocation actorLocation) =>
         _hubConnection.SendAsync(nameof(BroadcastActorMove), actorLocation);
 
-    public Task BroadcastRunnerLogin() =>
-        _hubConnection.SendAsync(nameof(BroadcastRunnerLogin));
+    public Task BroadcastRunnerLogin(string teamName) =>
+        _hubConnection.SendAsync(nameof(BroadcastRunnerLogin), teamName);
 
-    public Task BroadcastRunnerLogout() =>
-        _hubConnection.SendAsync(nameof(BroadcastRunnerLogin));
+    public Task BroadcastRunnersLogout(string[] teamNames) =>
+        _hubConnection.SendAsync(nameof(BroadcastRunnersLogout), teamNames);
 
     public Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner) =>
         _hubConnection.SendAsync(nameof(BroadcastDistrictOwnerChange), districtOwner);
@@ -81,6 +83,10 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task RunnerLoggedInOrOut() => OnRunnerLoggedInOrOut?.Invoke() ?? Task.CompletedTask;
 
+    public Task RunnerLoggedIn(string teamName) => OnRunnerLoggedIn?.Invoke(teamName) ?? Task.CompletedTask;
+
+    public Task RunnersLoggedOut(string[] teamNames) => OnRunnersLoggedOut?.Invoke(teamNames) ?? Task.CompletedTask;
+
     public Task PerformRunnerLogoutOnClient(string? teamName)
     {
         var session = _sessionProvider.Session;
@@ -88,7 +94,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName) 
             return Task.CompletedTask;
 
-        _toastService.ShowWarning("Sorry! The game master has logged you out", 4000);
+        _toastService.ShowWarning("The game master has logged you out", 4000);
             
         _navigationManager.NavigateTo("logout", false);
 
@@ -101,9 +107,14 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Func<Task>? OnRunnerLoggedInOrOut { get; set; }
 
+    public Func<string, Task>? OnRunnerLoggedIn { get; set; }
+    
+    public Func<string[], Task>? OnRunnersLoggedOut { get; set; }
+    
     public Func<ActorLocation, Task>? OnActorMoved { get; set; }
 
     public Func<DistrictOwner, Task>? OnDistrictOwnerChanged { get; set; }
+    
 
     public async Task StartAsync() => await _hubConnection.StartAsync();
 

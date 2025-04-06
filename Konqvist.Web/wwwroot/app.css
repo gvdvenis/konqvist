@@ -28,6 +28,10 @@ html, body, .body-content, .stack-vertical {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.full-span {
+    grid-column: 1 / -1; /* Span all columns in the grid */
+}
+
 .ol-box {
     box-sizing: border-box;
     border-radius: 5px;

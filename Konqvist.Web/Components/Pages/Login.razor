@@ -53,7 +53,7 @@
         await HttpContext.SignInAsync(principal);
 
         if (loginuser.GameRole == GameRole.Runner) 
-            await HubClient.BroadcastRunnerLogin();
+            await HubClient.BroadcastRunnerLogin(loginuser.TeamName);
 
         NavigationManager.NavigateTo("/map");
     }

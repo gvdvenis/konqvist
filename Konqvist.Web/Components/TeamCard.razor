@@ -1,5 +1,4 @@
-﻿@using System.Reflection.PortableExecutable
-@using Konqvist.Web.Models
+﻿@using Konqvist.Web.Models
 
 @inject SessionProvider SessionProvider
 @inject IBindableHubClient HubClient
@@ -10,9 +9,9 @@
     <h3>
         @Team.Name
         <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
-                      OnClick="LogoutRunner"
-                      Disabled="@(!Team.RunnerLoggedIn)"
-                      Title="Logout this runner" />
+        OnClick="LogoutRunner"
+        Disabled="@(!Team.RunnerLoggedIn)"
+        Title="Logout this runner" />
     </h3>
     <hr style="color:@(Team.RunnerLoggedIn ? Team.TextColor : "#DDD"); border-width: 5px; opacity:1; border-radius: 5px;" />
     <TeamResources Enabled="@Team.RunnerLoggedIn" TeamName="@Team.Name" ShowTitle="false" />

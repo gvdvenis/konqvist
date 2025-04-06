@@ -328,15 +328,22 @@ public class MapDataStore
         }
     }
 
-    public async Task LogoutAllRunners()
+    public async Task<List<string>> LogoutAllRunners()
     {
         await _semaphore.WaitAsync();
         try
         {
+            List<string> loggedOutPlayerTeamNames = [];
+
             foreach (var team in _teamsData)
             {
+                if (team.PlayerLoggedIn)
+                    loggedOutPlayerTeamNames.Add(team.Name);
+
                 team.PlayerLoggedIn = false;
             }
+
+            return loggedOutPlayerTeamNames;
         }
         finally
         {

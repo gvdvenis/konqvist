@@ -1,84 +1,11 @@
 ﻿@page "/voting"
 
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Authentication.Cookies
-
-@inject NavigationManager NavigationManager
-@inject MapDataStore MapDataStore
-@inject IBindableHubClient HubClient
-
 <div class="center-content">
-    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit" />
     <h3>
-        Scan QR-code to login
+        Start voting now
     </h3>
 </div>
 
 @code {
-    [CascadingParameter] HttpContext? HttpContext { get; set; }
-    [Parameter] public string? Password { get; set; }
 
-    #region Overrides of ComponentBase
-
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-
-        if (Password is not null)
-            await TryLogin();
-    }
-
-    #endregion
-
-    private async Task TryLogin()
-    {
-
-        if (HttpContext is null || await VerifyPassword() is not { } loginuser)
-        {
-            NavigationManager.NavigateTo("/access-denied");
-            return;
-        }
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, loginuser.Name),
-            new(ClaimTypes.Role, loginuser.GameRole.ToString()),
-            new(ClaimTypes.UserData, loginuser.TeamName),
-            new(ClaimTypes.NameIdentifier, loginuser.TeamName)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-        await HttpContext.SignInAsync(principal);
-
-        if (loginuser.GameRole == GameRole.Runner) await HubClient.BroadcastRunnerLogin();
-
-        NavigationManager.NavigateTo("/map");
-    }
-
-    private async Task<User?> VerifyPassword()
-    {
-        (TeamData? teamData, TeamMemberRole role)? login = await MapDataStore.TryLoginTeamMember(Password);
-
-        return login is null
-            ? null
-            : UserFromTeamDataLogin(login.Value);
-    }
-
-    private User UserFromTeamDataLogin((TeamData? teamData, TeamMemberRole role) login)
-    {
-        // map the login data to a user object
-        return new User(
-            Name: login.teamData?.Name ?? "Unknown",
-            Password: Password ?? string.Empty,
-            GameRole: login.role switch
-            {
-                TeamMemberRole.GameMaster => GameRole.GameMaster,
-                TeamMemberRole.Observer => GameRole.Anonymous,
-                TeamMemberRole.TeamCaptain => GameRole.TeamLeader,
-                _ => GameRole.Runner
-            },
-            TeamName: login.teamData?.Name ?? "Unknown"
-        );
-    }
 }

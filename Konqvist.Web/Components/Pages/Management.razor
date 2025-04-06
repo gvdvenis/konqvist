@@ -1,27 +1,38 @@
 ﻿@page "/management"
-@using Konqvist.Web.Models
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
 
 @attribute [AuthorizeGameRoles(GameRole.GameMaster)]
 
-@* 
-    <FluentStack Orientation="Orientation.Horizontal"
-             VerticalGap="5"
-             HorizontalGap="5">
-    </FluentStack>
- *@    
-    <div class="card-grid">
-        @foreach (var team in _teams)
+<div class="card-grid">
+    <div class="full-span"
+         style="background-color: darkviolet; height:50px; border-radius: calc(var(--layer-corner-radius) * 1px);">
+        @foreach (var round in _rounds)
+        {
+            <FluentButton>@round.Title</FluentButton>
+        }
+
+    </div>
+
+    @foreach (var team in _teams)
     {
-        <TeamCard Team="@team"/>
+        <TeamCard Team="@team" />
     }
 </div>
 
 @code {
 
+    public enum RoundKind
+    {
+        GatherResources,
+        Voting
+    }
+
+    public record RoundData(int Order, string Title, RoundKind Kind);
+
     private IEnumerable<Team> _teams = [];
+    private IEnumerable<RoundData> _rounds = [];
 
     public string TeamName { get; set; } = "";
 
@@ -34,23 +45,25 @@
 
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
+        _rounds = new List<RoundData>
+        {
+            new(1, "Running 1", RoundKind.GatherResources),
+            new(2, "Voting 1", RoundKind.Voting),
+            new(3, "Running 2", RoundKind.GatherResources),
+            new(4, "Voting 2", RoundKind.Voting),
+            new(5, "Running 3", RoundKind.GatherResources),
+            new(6, "Voting 3", RoundKind.Voting),
+            new(7, "Running 4", RoundKind.GatherResources),
+            new(8, "Voting 4", RoundKind.Voting),
+        };
+
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
     }
 
-    private Task OnDistrictOwnerChanged(DistrictOwner arg)
-    {
-        return InvokeAsync(StateHasChanged);
-        //return Task.CompletedTask;
+    private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
 
-    }
-
-    private Task OnRunnerLoggedInOrOut()
-    {
-        return InvokeAsync(StateHasChanged);
-        //return Task.CompletedTask;
-    }
+    private Task OnRunnerLoggedInOrOut() => InvokeAsync(StateHasChanged);
 
     #endregion
-
 }

@@ -16,6 +16,7 @@ public class MapDataStore
     // Storage for map and team data
     private MapData _mapData = MapData.Empty;
     private ConcurrentBag<TeamData> _teamsData = [];
+    private RoundDataStore _roundsData = RoundDataStore.Empty;
 
     public static async Task<MapDataStore> GetInstanceAsync()
     {
@@ -34,6 +35,9 @@ public class MapDataStore
 
         var teamsData = await MapDataHelper.GetTeamsData();
         await InitializeTeamsDataAsync(teamsData);
+
+        //var roundsData = await MapDataHelper.GetRoundsData();
+        await InitializeRoundsDataAsync(null);
     }
 
     /// <summary>
@@ -61,6 +65,33 @@ public class MapDataStore
         try
         {
             _teamsData = [.. teamsData ?? []];
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task InitializeRoundsDataAsync(List<RoundData>? roundsData)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            roundsData ??=
+            [
+                new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted),
+                new RoundData(1, "Running 1", RoundKind.GatherResources),
+                new RoundData(2, "Voting 1", RoundKind.Voting),
+                new RoundData(3, "Running 2", RoundKind.GatherResources),
+                new RoundData(4, "Voting 2", RoundKind.Voting),
+                new RoundData(5, "Running 3", RoundKind.GatherResources),
+                new RoundData(6, "Voting 3", RoundKind.Voting),
+                new RoundData(7, "Running 4", RoundKind.GatherResources),
+                new RoundData(8, "Voting 4", RoundKind.Voting),
+                new RoundData(9, "Game Over", RoundKind.Finished)
+            ];
+
+            _roundsData = new RoundDataStore(roundsData);
         }
         finally
         {
@@ -122,7 +153,7 @@ public class MapDataStore
 
         Coordinate GetDefaultLocation()
         {
-            Coordinate center = new([6.261195479378347, 51.87638698662113]);
+            //Coordinate center = new([6.261195479378347, 51.87638698662113]);
 
             double maxX = _mapData.Coordinates.Max(c => c.X);
             double maxY = _mapData.Coordinates.Max(c => c.Y);
@@ -137,7 +168,7 @@ public class MapDataStore
     ///     of the team is NOT falling back to a default location as is
     ///     the case with the <see cref="GetTeams"/> method.
     /// </summary>
-    public async Task<TeamData?> GetTeamByName (string teamName)
+    public async Task<TeamData?> GetTeamByName(string teamName)
     {
         await _semaphore.WaitAsync();
         try
@@ -172,20 +203,33 @@ public class MapDataStore
     /// </summary>
     /// <param name="teamName"></param>
     /// <returns></returns>
-    public async Task<DistrictResourcesData> GetResourcesForTeam(string teamName)
+    public async Task<ResourcesData> GetResourcesForTeam(string teamName)
     {
+        var team = await GetTeamByName(teamName);
+
         await _semaphore.WaitAsync();
         try
         {
-            return _mapData.Districts
+            var currentAdditionalTeamResources= team?.AdditionalResources ?? ResourcesData.Empty;
+            
+            var destrictResources = _mapData.Districts
                 .Where(dd => dd.Owner is not null && dd.Owner.Name == teamName)
                 .Select(dd => dd.Resources)
-                .Aggregate(new DistrictResourcesData(), (acc, item) => acc + item);
+                .Aggregate(new ResourcesData(), (acc, item) => acc + item);
+
+            var totalResources = currentAdditionalTeamResources + destrictResources;
+
+            return totalResources;
         }
         finally
         {
             _semaphore.Release();
         }
+    }
+    
+    public async Task<RoundDataStore> GetRounds()
+    {
+        return await Task.FromResult(_roundsData);
     }
 
     #endregion
@@ -369,7 +413,57 @@ public class MapDataStore
         {
             _semaphore.Release();
         }
+    }
 
+    public async Task<RoundData?> NextRound()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+
+            return _roundsData.NextRound();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<RoundData?> PreviousRound()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _roundsData.PreviousRound();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Sets the additional resources for a team. Please note that
+    ///     this replaces the current resources and does not add to them. 
+    /// </summary>
+    /// <param name="teamName"></param>
+    /// <param name="resourcesReplacement"></param>
+    /// <returns></returns>
+    public async Task SetAdditionalTeamResource(string teamName, ResourcesData resourcesReplacement)
+    {
+        var team = await GetTeamByName(teamName);
+        
+        if (team is null) return;
+        
+        await _semaphore.WaitAsync();
+        try
+        {
+            team.AdditionalResources = resourcesReplacement;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     #endregion

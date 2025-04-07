@@ -11,7 +11,8 @@ public interface IBindableHubClient: IGameHubClient, IGameHubServer
     Func<string, Task>? OnRunnerLoggedIn { get; set; }
 
     Func<string[], Task>? OnRunnersLoggedOut { get; set; }
-    Func<int, Task>? OnNewRoundStarted { get; set; }
+
+    Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
     Task StartAsync();
 

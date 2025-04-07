@@ -35,7 +35,6 @@ public interface IGameHubServer
     /// <summary>
     ///     Send a request that initiates a new round.
     /// </summary>
-    /// <param name="currentRound"></param>
     /// <returns></returns>
-    Task SendStartNewRoundRequest(int currentRound);
+    Task SendStartNewRoundRequest();
 }

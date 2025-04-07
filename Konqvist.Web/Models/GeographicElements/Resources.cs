@@ -2,10 +2,10 @@
 
 public record Resources
 {
-    private readonly DistrictResourcesData _resourcesData;
-    public static Resources Empty { get; } = new(new DistrictResourcesData());
+    private readonly ResourcesData _resourcesData;
+    public static Resources Empty { get; } = new(new ResourcesData());
     
-    public Resources(DistrictResourcesData resourcesData)
+    public Resources(ResourcesData resourcesData)
     {
         _resourcesData = resourcesData;
     }
@@ -15,7 +15,7 @@ public record Resources
     public int People => _resourcesData.R3;
     public int Oil => _resourcesData.R4;
 
-    public void Deconstruct(out DistrictResourcesData resourcesData)
+    public void Deconstruct(out ResourcesData resourcesData)
     {
         resourcesData = _resourcesData;
     }

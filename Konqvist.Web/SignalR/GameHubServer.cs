@@ -5,7 +5,6 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     public const string HubUrl = "/chat";
     //public const string HubUrl = "https://ass-konqvist-app.service.signalr.net";
 
-
     public async Task BroadcastDistrictOwnerChange(DistrictOwner districtOwner)
     {
         // Update the data store first
@@ -36,14 +35,20 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         if (result) await BroadcastRunnersLogout(teamName);
     }
 
-    public Task SendStartNewRoundRequest(int newRoundNumber)
+    public async Task SendStartNewRoundRequest()
     {
-        Console.WriteLine($"+++ Start round number {newRoundNumber}");
+        var nextRound = await dataStore.NextRound();
+
+        if (nextRound == null)
+        {
+            Console.WriteLine("+++ No next round found");
+            return;
+        }
+
+        Console.WriteLine($"+++ Start round number {nextRound.Order}");
 
         // Broadcast to all clients
-        return Clients.All.BroadCastNewRoundStarted(newRoundNumber);
-
-        return Task.CompletedTask;
+        await Clients.All.BroadCastNewRoundStarted(nextRound);
     }
 
     public async Task BroadcastRunnersLogout(params string[] teamNames)

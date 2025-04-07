@@ -7,10 +7,10 @@
 
 <div class="card-grid">
     <div class="full-span"
-         style="background-color: darkviolet; height:50px; border-radius: calc(var(--layer-corner-radius) * 1px);">
-        @foreach (var round in _rounds)
+         style="background-color: darkviolet; padding:20px; border-radius: calc(var(--layer-corner-radius) * 1px);">
+        @foreach (var round in _roundDataStore.Rounds)
         {
-            <FluentButton Disabled="@(_currentRound>= round.Order)" OnClick="NextRound">@round.Title</FluentButton>
+            <FluentButton Disabled="@( _currentRoundNumber >= round.Order)" OnClick="NextRound">@round.Title</FluentButton>
         }
 
     </div>
@@ -23,17 +23,9 @@
 
 @code {
 
-    public enum RoundKind
-    {
-        GatherResources,
-        Voting
-    }
-
-    public record RoundData(int Order, string Title, RoundKind Kind);
-
     private IEnumerable<Team> _teams = [];
-    private IEnumerable<RoundData> _rounds = [];
-    private int _currentRound;
+    private RoundDataStore _roundDataStore = RoundDataStore.Empty;
+    private int _currentRoundNumber;
 
     public string TeamName { get; set; } = "";
 
@@ -46,17 +38,7 @@
 
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
-        _rounds = new List<RoundData>
-        {
-            new(1, "Running 1", RoundKind.GatherResources),
-            new(2, "Voting 1", RoundKind.Voting),
-            new(3, "Running 2", RoundKind.GatherResources),
-            new(4, "Voting 2", RoundKind.Voting),
-            new(5, "Running 3", RoundKind.GatherResources),
-            new(6, "Voting 3", RoundKind.Voting),
-            new(7, "Running 4", RoundKind.GatherResources),
-            new(8, "Voting 4", RoundKind.Voting),
-        };
+        _roundDataStore = await MapDataStore.GetRounds();
 
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
@@ -65,9 +47,9 @@
 
     #endregion
 
-    private Task OnNewRoundStarted(int arg)
+    private Task OnNewRoundStarted(RoundData roundData)
     {
-        _currentRound++;
+        _currentRoundNumber = roundData.Order;
         return InvokeAsync(StateHasChanged);
     }
 
@@ -77,7 +59,6 @@
 
     private Task NextRound(MouseEventArgs arg)
     {
-        return HubClient.SendStartNewRoundRequest(_currentRound);
+        return HubClient.SendStartNewRoundRequest();
     }
-
 }

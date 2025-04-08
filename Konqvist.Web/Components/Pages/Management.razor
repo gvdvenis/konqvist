@@ -7,12 +7,16 @@
 
 <div class="card-grid">
     <div class="full-span"
-         style="background-color: darkviolet; padding:20px; border-radius: calc(var(--layer-corner-radius) * 1px);">
-        @foreach (var round in _roundDataStore.Rounds)
-        {
-            <FluentButton Disabled="@( _currentRoundNumber >= round.Order)" OnClick="NextRound">@round.Title</FluentButton>
-        }
-
+         style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
+        <p style="display: flex; align-items: center; gap: 10px;margin-bottom:0">
+            @_currentRound.Title
+            <FluentButton Appearance="Appearance.Outline"
+                          OnClick="NextRound"
+                          Style="border-radius: 0 15px 15px 0;"
+                          IconEnd="@(new NavIcons.ArrowRight())">
+                Volgende Ronde
+            </FluentButton>
+        </p>
     </div>
 
     @foreach (var team in _teams)
@@ -25,7 +29,7 @@
 
     private IEnumerable<Team> _teams = [];
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
-    private int _currentRoundNumber;
+    private RoundData _currentRound;
 
     public string TeamName { get; set; } = "";
 
@@ -39,7 +43,7 @@
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
         _roundDataStore = await MapDataStore.GetRounds();
-
+        _currentRound = _roundDataStore.GetCurrentRound();
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
         HubClient.OnNewRoundStarted += OnNewRoundStarted;
@@ -49,7 +53,7 @@
 
     private Task OnNewRoundStarted(RoundData roundData)
     {
-        _currentRoundNumber = roundData.Order;
+        _currentRound = roundData;
         return InvokeAsync(StateHasChanged);
     }
 

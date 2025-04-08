@@ -2,6 +2,8 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
+@inject SessionProvider SessionProvider
+@inject NavigationManager NavigationManager
 
 @attribute [AuthorizeGameRoles(GameRole.GameMaster)]
 
@@ -25,17 +27,38 @@
     }
 </div>
 
+<SectionContent SectionName="FooterContentSection">
+    <FluentSpacer />
+    <FluentToolbar>
+        <FluentButton IconEnd="@(new NavIcons.KeyReset())"
+                      OnClick="ResetClaimState"
+                      Disabled="!Session.IsAdmin"
+                      Title="Reset Claim State" />
+        <FluentButton IconEnd="@(new NavIcons.Organization())"
+                      OnClick="ShowMap"
+                      Disabled="!Session.IsAdmin"
+                      Title="Management Dashboard" />
+        <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
+                      OnClick="LogoutAllRunners"
+                      Appearance="Appearance.Outline"
+                      Color="red"
+                      Disabled="!Session.IsAdmin"
+                      Title="Logout all active runners" />
+    </FluentToolbar>
+    <FluentSpacer />
+</SectionContent>
+
 @code {
 
     private IEnumerable<Team> _teams = [];
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
-    private RoundData _currentRound;
+    private RoundData _currentRound = RoundData.Empty;
 
+    private UserSession Session => SessionProvider.Session;
     public string TeamName { get; set; } = "";
 
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -64,5 +87,24 @@
     private Task NextRound(MouseEventArgs arg)
     {
         return HubClient.SendStartNewRoundRequest();
+    }
+
+    private void ShowMap(MouseEventArgs arg)
+    {
+        NavigationManager.NavigateTo("/map");
+    }
+
+    private async Task ResetClaimState()
+    {
+        await MapDataStore.ClearClaims();
+        await HubClient.BroadcastDistrictOwnerChange(DistrictOwner.Empty);
+    }
+
+    private async Task LogoutAllRunners(MouseEventArgs arg)
+    {
+        if (!Session.IsAdmin)
+            return;
+
+        await HubClient.SendRunnerLogoutRequest();
     }
 }

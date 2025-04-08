@@ -153,8 +153,6 @@ public class MapDataStore
 
         Coordinate GetDefaultLocation()
         {
-            //Coordinate center = new([6.261195479378347, 51.87638698662113]);
-
             double maxX = _mapData.Coordinates.Max(c => c.X);
             double maxY = _mapData.Coordinates.Max(c => c.Y);
             counter++;

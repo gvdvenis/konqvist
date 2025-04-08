@@ -3,7 +3,18 @@
 <FluentLayout Orientation="Orientation.Vertical">
     <FluentHeader>
         <FluentSpacer />
-        KONQVIST: Team @UserSession.TeamName (@UserSession.GameRole)
+        @if (UserSession.IsAuthenticated)
+        {
+            <span>
+                 @UserSession.TeamName (@UserSession.GameRole);
+            </span>
+         }
+        else
+        {
+            <span>
+                - KONQVIST -
+            </span>
+        }
         <FluentSpacer />
     </FluentHeader>
 

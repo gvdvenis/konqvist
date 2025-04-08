@@ -125,10 +125,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
-    public async Task StartAsync() => await _hubConnection.StartAsync();
-
-    public async Task StopAsync() => await _hubConnection.StopAsync();
-
     #endregion
 
     #region IDisposable

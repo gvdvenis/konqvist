@@ -2,7 +2,7 @@
 @page "/map"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-@using Microsoft.FluentUI.AspNetCore.Components.Icons.Regular
+@using System.Diagnostics
 
 @implements IAsyncDisposable
 
@@ -12,6 +12,7 @@
 @inject IToastService ToastService
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
+@inject MapDataStore MapDataStore
 
 <FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
     <OpenStreetMap @bind-Rotation="_rotation"
@@ -55,35 +56,32 @@
 </FluentStack>
 
 <SectionContent SectionName="FooterContentSection">
+    <FluentSpacer/>
     <FluentToolbar>
-        <FluentButton IconEnd="@(new Size20.MyLocation())"
-                      OnClick="CenterLocation" />
-        <FluentButton IconEnd="@(new Size20.Eye())"
-                      OnClick="@(() => _showTeams = !_showTeams)" />
-        <FluentButton IconEnd="@(new Size20.KeyReset())"
-                      OnClick="ResetClaimState"
-                      Disabled="!Session.IsAdmin" />
-        <FluentButton IconEnd="@(new Size20.Organization())"
+        <FluentButton IconEnd="@(new NavIcons.MyLocation())"
+                      OnClick="CenterLocation"
+                      Title="Center on current location"/>
+        <FluentButton IconEnd="@(new NavIcons.Eye())"
+                      OnClick="@(() => _showTeams = !_showTeams)"
+                      Title="Show/Hide Teams"/>
+        <FluentButton IconEnd="@(new NavIcons.Organization())"
                       OnClick="ShowDashboard"
-                      Disabled="!Session.IsAdmin" />
-        <FluentButton IconEnd="@(new Size20.ArrowExit().WithColor(Color.Error))"
-                      OnClick="LogoutAllRunners"
-                      Appearance="Appearance.Outline"
-                      Color="red"
                       Disabled="!Session.IsAdmin"
-                      Title="Logout all active runners" />
+                      Title="Management Dashboard"/>
     </FluentToolbar>
+    <FluentSpacer/>
 </SectionContent>
 
 @code {
+    private static readonly Coordinate DefaultCenter = new([6.261195479378347, 51.87638698662113]);
 
-    private Coordinate _center = new([6.261195479378347, 51.87638698662113]);
+    private Coordinate _center = DefaultCenter;
     private double _rotation;
-    private DistrictsLayer? _districtsLayer;
-    private UserSession Session => SessionProvider.Session;
     private double _watchId;
     private bool _showTeams = true;
     private TeamsLayer? _teamsLayer;
+    private DistrictsLayer? _districtsLayer;
+    private UserSession Session => SessionProvider.Session;
 
     #region Overrides of ComponentBase
 
@@ -107,7 +105,10 @@
     private void OnLocationChanged(GeolocationPosition obj)
     {
         Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
-        //OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
+        if (!Debugger.IsAttached)
+        {
+            OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
+        }
     }
 
     #endregion
@@ -122,23 +123,13 @@
             await _teamsLayer.BroadcastNewLocation(Session.TeamName, coordinate);
     }
 
-    private Task CenterLocation()
+    private async Task CenterLocation()
     {
-        _center = new Coordinate([6.261195479378347, 51.87638698662113]);
+        var team = await MapDataStore.GetTeamByName(Session.TeamName);
+
+        _center = team?.Location ?? DefaultCenter;
 
         ToastService.ShowInfo("Kaart gecentreerd");
-
-        return Task.CompletedTask;
-    }
-
-    private Task ResetClaimState()
-    {
-        return _districtsLayer?.ResetClaimState() ?? Task.CompletedTask;
-    }
-
-    private Task LogoutAllRunners(MouseEventArgs arg)
-    {
-        return _teamsLayer?.LogoutAllRunners() ?? Task.CompletedTask;
     }
     
     private void ShowDashboard(MouseEventArgs arg)

@@ -127,7 +127,9 @@
     {
         var team = await MapDataStore.GetTeamByName(Session.TeamName);
 
-        _center = team?.Location ?? DefaultCenter;
+        _center = team is not null && team.PlayerLoggedIn 
+            ? team.Location 
+            : DefaultCenter;
 
         ToastService.ShowInfo("Kaart gecentreerd");
     }

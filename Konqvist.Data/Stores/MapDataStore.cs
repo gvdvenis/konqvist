@@ -456,7 +456,7 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            team.AdditionalResources = resourcesReplacement;
+            team.AdditionalResources += resourcesReplacement;
         }
         finally
         {

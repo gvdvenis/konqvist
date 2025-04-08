@@ -26,7 +26,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         if (teamName == null)
         {
             var loggedOutRunnerTeamNames = await dataStore.LogoutAllRunners();
-            await BroadcastRunnersLogout([..loggedOutRunnerTeamNames]);
+            await BroadcastRunnersLogout([.. loggedOutRunnerTeamNames]);
             return;
         }
 
@@ -49,6 +49,14 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
 
         // Broadcast to all clients
         await Clients.All.BroadCastNewRoundStarted(nextRound);
+    }
+
+    public async Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources)
+    {
+        await dataStore.SetAdditionalTeamResource(teamName, additionalResources);
+
+        Console.WriteLine($"+++ Set additional resources for {teamName}");
+        await Clients.All.TeamResourcesChanged(teamName);
     }
 
     public async Task BroadcastRunnersLogout(params string[] teamNames)

@@ -37,4 +37,12 @@ public interface IGameHubServer
     /// </summary>
     /// <returns></returns>
     Task SendStartNewRoundRequest();
+
+    /// <summary>
+    ///     Sends a request to update a team's resources.
+    /// </summary>
+    /// <param name="teamName"></param>
+    /// <param name="additionalResources"></param>
+    /// <returns></returns>
+    Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources);
 }

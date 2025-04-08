@@ -1,8 +1,7 @@
-﻿@using Konqvist.Web.Models
-
-@inject SessionProvider SessionProvider
+﻿@inject SessionProvider SessionProvider
 @inject IBindableHubClient HubClient
 @inject MapDataStore MapDataStore
+
 @implements IDisposable
 
 <FluentCard MinimalStyle="true">
@@ -20,10 +19,10 @@
 
 @code {
 
-    private UserSession _session = UserSession.Empty;
-
     [Parameter] public Team Team { get; set; } = Team.Empty;
 
+    private UserSession _session = UserSession.Empty;
+    
     private Task LogoutRunner(MouseEventArgs arg)
     {
         return HubClient.SendRunnerLogoutRequest(Team.Name);

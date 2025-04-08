@@ -15,4 +15,6 @@ public interface IGameHubClient
     Task PerformRunnerLogoutOnClient(string? teamName);
 
     Task BroadCastNewRoundStarted(RoundData newRoundNumber);
+
+    Task TeamResourcesChanged(string teamName);
 }

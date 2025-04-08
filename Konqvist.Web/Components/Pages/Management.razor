@@ -10,8 +10,9 @@
 <div class="card-grid">
     <div class="full-span"
          style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
-        <p style="display: flex; align-items: center; gap: 10px;margin-bottom:0">
+        <p class="vertically-centered">
             @_currentRound.Title
+            <FluentSpacer/>
             <FluentButton Appearance="Appearance.Outline"
                           OnClick="NextRound"
                           Style="border-radius: 0 15px 15px 0;"
@@ -34,7 +35,7 @@
                       OnClick="ResetClaimState"
                       Disabled="!Session.IsAdmin"
                       Title="Reset Claim State" />
-        <FluentButton IconEnd="@(new NavIcons.Organization())"
+        <FluentButton IconEnd="@(new NavIcons.Map())"
                       OnClick="ShowMap"
                       Disabled="!Session.IsAdmin"
                       Title="Management Dashboard" />

@@ -6,8 +6,9 @@
 @implements IDisposable
 
 <FluentCard MinimalStyle="true">
-    <h3>
+    <h3 class="vertically-centered">
         @Team.Name
+        <FluentSpacer />
         <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
         OnClick="LogoutRunner"
         Disabled="@(!Team.RunnerLoggedIn)"

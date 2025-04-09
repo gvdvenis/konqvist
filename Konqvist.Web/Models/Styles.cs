@@ -1,4 +1,7 @@
-﻿namespace Konqvist.Web.Models;
+﻿using System.Drawing;
+using System.Globalization;
+
+namespace Konqvist.Web.Models;
 
 public static class MapStyles
 {
@@ -27,6 +30,8 @@ file class DistrictOwnerStyle : StyleOptions
 {
     public DistrictOwnerStyle(string ownerColor)
     {
+        string semitransparentColor = ConvertToSemitransparent(ownerColor, 0.7);
+
         Stroke = new StrokeOptions
         {
             Color = "black",
@@ -36,18 +41,30 @@ file class DistrictOwnerStyle : StyleOptions
         };
         Fill = new FillOptions
         {
-            Color = ownerColor
-            //    Color = ownerColor switch
-            //{
-            //    "red" => "rgba(255, 50, 50, 0.5)",
-            //    "blue" => "rgba(50, 50, 255, 0.5)",
-            //    "green" => "rgba(50, 255, 50, 0.5)",
-            //    "magenta" => "rgba(255, 50, 255, 0.5)",
-            //    "yellow" => "rgba(255, 255, 50, 0.5)",
-            //    "cyan" => "rgba(50, 255, 255, 0.5)",
-            //    _ => "rgba(50, 50, 50, 0.5)"
-            //}
+            Color = semitransparentColor
         };
+    }
+
+    private static string ConvertToSemitransparent(string color, double opacity)
+    {
+        // Ensure opacity is within the valid range (0.0 to 1.0)
+        opacity = Math.Clamp(opacity, 0.0, 1.0);
+
+        try
+        {
+            // Assuming the input is a valid HTML color (e.g., "#RRGGBB" or "rgb(r, g, b)")
+            Color parsedColor = ColorTranslator.FromHtml(color);
+
+            opacity = parsedColor.A == 0 ? 0 : opacity;
+
+            // Use InvariantCulture to ensure the opacity is formatted with a decimal point
+            return $"rgba({parsedColor.R}, {parsedColor.G}, {parsedColor.B}, {opacity.ToString(CultureInfo.InvariantCulture)})";
+        }
+        catch
+        {
+            // Fallback to a default semitransparent color if parsing fails
+            return $"rgba(0, 0, 0, {opacity.ToString(CultureInfo.InvariantCulture)})";
+        }
     }
 }
 

@@ -612,10 +612,10 @@
       "owner": null,
       "name": "Pann\u00E5k\u00F6i",
       "resources": {
-        "r1": 20,
-        "r2": 30,
-        "r3": 10,
-        "r4": 40
+        "r1": 10,
+        "r2": 40,
+        "r3": 30,
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -753,9 +753,9 @@
       "owner": null,
       "name": "TroiH\u00FCllen",
       "resources": {
-        "r1": 20,
-        "r2": 10,
-        "r3": 30,
+        "r1": 10,
+        "r2": 30,
+        "r3": 20,
         "r4": 40
       },
       "isClaimable": true
@@ -887,9 +887,9 @@
       "name": "M\u00F6lenBarg",
       "resources": {
         "r1": 30,
-        "r2": 20,
-        "r3": 10,
-        "r4": 40
+        "r2": 10,
+        "r3": 40,
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -1047,10 +1047,10 @@
       "owner": null,
       "name": "Test",
       "resources": {
-        "r1": 30,
+        "r1": 40,
         "r2": 10,
         "r3": 20,
-        "r4": 40
+        "r4": 30
       },
       "isClaimable": true
     }

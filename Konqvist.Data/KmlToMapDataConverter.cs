@@ -8,155 +8,17 @@ namespace Konqvist.Data;
 
 public class KmlToMapDataConverter
 {
-    /// <summary>
-    ///     Converts a KML file to MapData.
-    /// </summary>
-    /// <param name="kmlFilePath"></param>
-    /// <returns></returns>
-    public static MapData ConvertKmlToMapData(string kmlFilePath)
+    private const string _mapLayerName = "Speelgebied";
+    private const string _triggerCircleLayerName = "TriggerCirkels";
+    private const string _districtsLayerName = "Districten";
+    private static readonly XNamespace _ns = "http://www.opengis.net/kml/2.2";
+    private static XDocument _kml = new();
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        var mapData = MapData.Empty;
-
-        try
-        {
-            var kml = XDocument.Load(kmlFilePath);
-            XNamespace ns = "http://www.opengis.net/kml/2.2";
-
-            // Parse 'Speelgebied' folder for map coordinates
-            var speelgebiedFolder = kml.Descendants(ns + "Folder")
-                .FirstOrDefault(folder => string.Equals(folder.Element(ns + "name")?.Value, "Speelgebied", StringComparison.OrdinalIgnoreCase));
-
-            if (speelgebiedFolder != null)
-            {
-                var coordinates = speelgebiedFolder
-                    .Descendants(ns + "coordinates")
-                    .FirstOrDefault()?.Value
-                    .Trim()
-                    .Split(' ')
-                    .Where(coord => !string.IsNullOrWhiteSpace(coord)) // Filter out empty strings
-                    .Select(coord => ParseCoordinate(coord))
-                    .ToList();
-
-                if (coordinates != null)
-                {
-                    mapData.Coordinates = coordinates;
-                }
-            }
-
-            // Parse 'Districten' folder for district data
-            var districtenFolder = kml.Descendants(ns + "Folder")
-                .FirstOrDefault(folder => string.Equals(folder.Element(ns + "name")?.Value, "Districten", StringComparison.OrdinalIgnoreCase));
-
-            if (districtenFolder != null)
-            {
-                var districtPlacemarks = districtenFolder.Descendants(ns + "Placemark");
-                foreach (var placemark in districtPlacemarks)
-                {
-                    var name = placemark.Element(ns + "name")?.Value;
-                    var polygon = placemark.Element(ns + "Polygon");
-
-                    if (polygon != null)
-                    {
-                        var coordinates = polygon
-                            .Descendants(ns + "coordinates")
-                            .FirstOrDefault()?.Value
-                            .Trim()
-                            .Split(' ')
-                            .Where(coord => !string.IsNullOrWhiteSpace(coord)) // Filter out empty strings
-                            .Select(coord => ParseCoordinate(coord))
-                            .ToList();
-
-                        if (coordinates != null)
-                        {
-                            mapData.Districts.Add(new DistrictData
-                            {
-                                Name = name ?? "Unnamed District",
-                                Coordinates = coordinates,
-                                IsClaimable = true, // Default value, adjust as needed
-                                Resources = GenerateRandomResources() // Assign randomized resources
-                            });
-                        }
-                    }
-                }
-            }
-
-            // Parse 'TriggerCirkels' folder for trigger circle data
-            var triggerCirkelsFolder = kml.Descendants(ns + "Folder")
-                .FirstOrDefault(folder => string.Equals(folder.Element(ns + "name")?.Value, "TriggerCirkels", StringComparison.OrdinalIgnoreCase));
-
-            if (triggerCirkelsFolder != null)
-            {
-                var triggerPlacemarks = triggerCirkelsFolder.Descendants(ns + "Placemark");
-                foreach (var placemark in triggerPlacemarks)
-                {
-                    var name = placemark.Element(ns + "name")?.Value;
-                    var point = placemark.Element(ns + "Point");
-
-                    if (point != null)
-                    {
-                        var coordinate = point
-                            .Element(ns + "coordinates")?.Value
-                            .Trim();
-
-                        if (!string.IsNullOrWhiteSpace(coordinate)) // Check for empty or null coordinate
-                        {
-                            var triggerCircleCenter = ParseCoordinate(coordinate);
-
-                            // Match trigger circle to district by name (case-insensitive)
-                            var matchingDistrict = mapData.Districts
-                                .FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase));
-
-                            if (matchingDistrict != null)
-                            {
-                                matchingDistrict.TriggerCircleCenter = triggerCircleCenter;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            // Handle errors (e.g., log them)
-            Console.WriteLine($"Error parsing KML file: {ex.Message}");
-        }
-
-        return mapData;
-    }
-
-    private static Coordinate ParseCoordinate(string coordinateString)
-    {
-        if (string.IsNullOrWhiteSpace(coordinateString))
-        {
-            throw new FormatException("Coordinate string is null or empty.");
-        }
-
-        var parts = coordinateString.Split(',');
-        if (parts.Length < 2)
-        {
-            throw new FormatException($"Invalid coordinate format: {coordinateString}");
-        }
-
-        return new Coordinate(
-            double.Parse(parts[0], CultureInfo.InvariantCulture), // Longitude (X)
-            double.Parse(parts[1], CultureInfo.InvariantCulture)  // Latitude (Y)
-        );
-    }
-
-    private static ResourcesData GenerateRandomResources()
-    {
-        var random = new Random();
-        var values = new List<int> { 10, 20, 30, 40 };
-        var shuffledValues = values.OrderBy(_ => random.Next()).ToList();
-
-        return new ResourcesData
-        {
-            R1 = shuffledValues[0],
-            R2 = shuffledValues[1],
-            R3 = shuffledValues[2],
-            R4 = shuffledValues[3]
-        };
-    }
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     /// <summary>
     ///     Runs the KML to MapData conversion and saves the result as a JSON file.
@@ -172,14 +34,144 @@ public class KmlToMapDataConverter
         SaveToJsonFile(mapData, jsonFilePath);
     }
 
+    /// <summary>
+    ///    Saves the MapData object to a JSON file.
+    /// </summary>
+    /// <param name="mapData"></param>
+    /// <param name="jsonFilePath"></param>
     public static void SaveToJsonFile(MapData mapData, string jsonFilePath)
     {
-        JsonSerializerOptions options = new()
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-        string jsonString = JsonSerializer.Serialize(mapData, options);
+        string jsonString = JsonSerializer.Serialize(mapData, _jsonOptions);
         File.WriteAllText(jsonFilePath, jsonString);
+    }
+
+    /// <summary>
+    ///     Converts a KML file to MapData.
+    /// </summary>
+    /// <param name="kmlFilePath"></param>
+    /// <returns></returns>
+    public static MapData ConvertKmlToMapData(string kmlFilePath)
+    {
+        var mapData = MapData.Empty;
+
+        try
+        {
+            _kml = XDocument.Load(kmlFilePath);
+
+            // Parse 'Speelgebied' element for map coordinates
+            mapData.Coordinates = ExtractCoordinatesFromLayer(_mapLayerName);
+
+            // Parse 'Districten' element for district data and add to map data
+            ParseFolderContent(_districtsLayerName, "Polygon", (element, placemark) =>
+            {
+                mapData.Districts.Add(new DistrictData
+                {
+                    Name = placemark.Element(_ns + "name")?.Value ?? "Unnamed District",
+                    Coordinates = ExtractCoordinatesFromElement(element),
+                    IsClaimable = true, // Default value, adjust as needed
+                    Resources = GenerateRandomResources() // Assign randomized resources
+                });
+            });
+
+            // Parse 'TriggerCircles' elements for trigger circle coordinates and assign to equally named districts
+            ParseFolderContent(_triggerCircleLayerName, "Point", (element, placemark) =>
+            {
+                if (mapData
+                    .Districts
+                    .FirstOrDefault(district => string.Equals(
+                        placemark.Element(_ns + "name")?.Value,
+                        district.Name,
+                        StringComparison.OrdinalIgnoreCase)) is not { } matchingDistrict)
+                    return;
+
+                if (element
+                    .Element(_ns + "coordinates")?.Value
+                    .Trim() is not { } coordinate)
+                    return;
+
+                matchingDistrict.TriggerCircleCenter = ParseCoordinate(coordinate);
+            });
+
+            return mapData;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing KML file: {ex.Message}");
+        }
+
+        return mapData;
+    }
+
+    private static void ParseFolderContent(
+        string layerName,
+        string elementName,
+        Action<XElement, XElement> elementParser)
+    {
+        if (GetFolderElementByLayerName(layerName) is XElement elementFolder)
+        {
+            foreach (var placemark in elementFolder.Descendants(_ns + "Placemark"))
+            {
+                if (placemark.Element(_ns + elementName) is not XElement element) continue;
+
+                elementParser(element, placemark);
+            }
+        }
+    }
+
+    private static List<Coordinate> ExtractCoordinatesFromLayer(string layerName)
+    {
+        XElement? folderElement = GetFolderElementByLayerName(layerName);
+        return ExtractCoordinatesFromElement(folderElement);
+    }
+
+    private static List<Coordinate> ExtractCoordinatesFromElement(XElement? folderElement)
+    {
+        return folderElement?
+            .Descendants(_ns + "coordinates")
+            .FirstOrDefault()?.Value
+            .Trim()
+            .Split(' ')
+            .Where(coord => !string.IsNullOrWhiteSpace(coord)) // Filter out empty strings
+            .Select(ParseCoordinate)
+            .ToList() ?? [];
+    }
+
+    private static XElement? GetFolderElementByLayerName(string layerName)
+    {
+        return _kml
+            .Descendants(_ns + "Folder")
+            .FirstOrDefault(xElement => string.Equals(
+                xElement.Element(_ns + "name")?.Value,
+                layerName,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static Coordinate ParseCoordinate(string coordinateString)
+    {
+        if (string.IsNullOrWhiteSpace(coordinateString))
+            throw new FormatException("Coordinate string is null or empty.");
+
+        var parts = coordinateString.Split(',');
+        return parts.Length < 2
+            ? throw new FormatException($"Invalid coordinate format: {coordinateString}")
+            : new Coordinate(
+                double.Parse(parts[0], CultureInfo.InvariantCulture), // Longitude (X)
+                double.Parse(parts[1], CultureInfo.InvariantCulture)  // Latitude (Y)
+        );
+    }
+
+    private static ResourcesData GenerateRandomResources()
+    {
+        var random = new Random();
+        var values = new[] { 10, 20, 30, 40 }; // Use new collection initializer syntax
+        var shuffledValues = values.OrderBy(_ => random.Next()).ToArray();
+
+        return new ResourcesData
+        {
+            R1 = shuffledValues[0],
+            R2 = shuffledValues[1],
+            R3 = shuffledValues[2],
+            R4 = shuffledValues[3]
+        };
     }
 }

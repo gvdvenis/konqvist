@@ -1,10 +1,24 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.FluentUI.AspNetCore.Components.Utilities
+@inherits LayoutComponentBase
+
+@inject MapDataStore MapDataStore
 
 <FluentLayout Orientation="Orientation.Vertical">
-    <FluentHeader>
-        <FluentSpacer />
-        KONQVIST: Team @UserSession.TeamName (@UserSession.GameRole)
-        <FluentSpacer />
+    <FluentHeader @ref="_fluentHeader" style="@StyleValue">
+        <FluentSpacer/>
+        @if (UserSession.IsAuthenticated)
+        {
+            <span>
+                @UserSession.TeamName (@UserSession.GameRole)
+            </span>
+        }
+        else
+        {
+            <span>
+                - KONQVIST -
+            </span>
+        }
+        <FluentSpacer/>
     </FluentHeader>
 
     <FluentBodyContent>
@@ -12,14 +26,15 @@
     </FluentBodyContent>
 
     <FluentFooter>
-        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer" />
+        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer"/>
     </FluentFooter>
 
+    <FluentDialogProvider @rendermode="InteractiveServer"/>
     <FluentToastProvider MaxToastCount="3"
                          RemoveToastsOnNavigation="false"
                          Position="ToastPosition.BottomCenter"
                          Timeout="5000"
-                         @rendermode="InteractiveServer" />
+                         @rendermode="InteractiveServer"/>
 </FluentLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -30,9 +45,15 @@
 
 
 @code {
+    private FluentHeader? _fluentHeader;
+    private TeamData _currentTeam = TeamData.Empty;
 
     [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
     private UserSession UserSession { get; set; } = UserSession.Empty;
+
+    private string? StyleValue => new StyleBuilder(_fluentHeader?.Style)
+        .AddStyle("background-color", _currentTeam.Color)
+        .Build();
 
     #region Overrides of ComponentBase
 
@@ -45,6 +66,7 @@
         ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
 
         UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
+        _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName) ?? TeamData.Empty;
     }
 
     #endregion

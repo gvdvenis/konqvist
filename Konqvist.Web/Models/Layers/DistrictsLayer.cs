@@ -69,10 +69,4 @@ public class DistrictsLayer : Layer
         ShapesList.Clear();
         ShapesList.AddRange(_districts);
     }
-
-    public async Task ResetClaimState()
-    {
-        await _mapDataStore.ClearClaims();
-        await _hubClient.BroadcastDistrictOwnerChange(DistrictOwner.Empty);
-    }
 }

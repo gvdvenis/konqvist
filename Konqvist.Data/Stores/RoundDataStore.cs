@@ -9,9 +9,9 @@ public class RoundDataStore(List<RoundData> rounds)
 
     public List<RoundData> Rounds { get; } = rounds;
 
-    public RoundData? GetCurrentRound()
+    public RoundData GetCurrentRound()
     {
-        return Rounds.FirstOrDefault(r => r.Order == CurrentRound);
+        return Rounds.FirstOrDefault(r => r.Order == CurrentRound) ?? RoundData.Empty;
     }
 
     public RoundData? NextRound()

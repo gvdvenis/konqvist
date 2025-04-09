@@ -76,12 +76,4 @@ public class TeamsLayer : Layer
         if (_session.IsPlayer)
             await _hubClient.BroadcastActorMove(new ActorLocation(teamName, newLocation));
     }
-
-    public async Task LogoutAllRunners()
-    {
-        if (_session.IsAdmin)
-        {
-            await _hubClient.SendRunnerLogoutRequest();
-        }
-    }
 }

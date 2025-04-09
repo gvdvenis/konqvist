@@ -14,7 +14,5 @@ public interface IBindableHubClient: IGameHubClient, IGameHubServer
 
     Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
-    Task StartAsync();
-
-    Task StopAsync();
+    Func<string, Task>? OnTeamResourcesChanged { get; set; }
 }

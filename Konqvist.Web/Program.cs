@@ -1,4 +1,5 @@
 
+using Konqvist.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
 
@@ -33,7 +34,7 @@ builder.Services.AddGeolocationServices();
 builder.Services.AddScoped<SessionProvider>();
 
 // Add to your existing service registration section
-builder.Services.AddSingleton(_ =>  MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
+builder.Services.AddSingleton(_ => MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
 
 var app = builder.Build();
 
@@ -42,6 +43,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+else
+{
+    KmlToMapDataConverter.Run(@"D:\Source\konqvist\Konqvist.Data\Data\Konqvist.kml", @"D:\Source\konqvist\Konqvist.Data\Data\map.json");
 }
 
 app.UseAuthentication();

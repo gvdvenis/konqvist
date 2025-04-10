@@ -3,6 +3,46 @@
   <Document>
     <name>Konqvist</name>
     <description/>
+    <Style id="icon-1499-0097A7-nodesc-normal">
+      <IconStyle>
+        <color>ffa79700</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-0097A7-nodesc-highlight">
+      <IconStyle>
+        <color>ffa79700</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-0097A7-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-0097A7-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-0097A7-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="icon-1499-0288D1-nodesc-normal">
       <IconStyle>
         <color>ffd18802</color>
@@ -83,9 +123,9 @@
         <styleUrl>#icon-1499-0F9D58-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
-    <Style id="icon-1499-757575-nodesc-normal">
+    <Style id="icon-1499-1A237E-nodesc-normal">
       <IconStyle>
-        <color>ff757575</color>
+        <color>ff7e231a</color>
         <scale>1</scale>
         <Icon>
           <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
@@ -98,9 +138,9 @@
         <text><![CDATA[<h3>$[name]</h3>]]></text>
       </BalloonStyle>
     </Style>
-    <Style id="icon-1499-757575-nodesc-highlight">
+    <Style id="icon-1499-1A237E-nodesc-highlight">
       <IconStyle>
-        <color>ff757575</color>
+        <color>ff7e231a</color>
         <scale>1</scale>
         <Icon>
           <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
@@ -113,14 +153,14 @@
         <text><![CDATA[<h3>$[name]</h3>]]></text>
       </BalloonStyle>
     </Style>
-    <StyleMap id="icon-1499-757575-nodesc">
+    <StyleMap id="icon-1499-1A237E-nodesc">
       <Pair>
         <key>normal</key>
-        <styleUrl>#icon-1499-757575-nodesc-normal</styleUrl>
+        <styleUrl>#icon-1499-1A237E-nodesc-normal</styleUrl>
       </Pair>
       <Pair>
         <key>highlight</key>
-        <styleUrl>#icon-1499-757575-nodesc-highlight</styleUrl>
+        <styleUrl>#icon-1499-1A237E-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="icon-1499-7CB342-nodesc-normal">
@@ -161,6 +201,86 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#icon-1499-7CB342-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1499-817717-nodesc-normal">
+      <IconStyle>
+        <color>ff177781</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-817717-nodesc-highlight">
+      <IconStyle>
+        <color>ff177781</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-817717-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-817717-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-817717-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1499-9C27B0-nodesc-normal">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-9C27B0-nodesc-highlight">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-9C27B0-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-9C27B0-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-9C27B0-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="icon-1499-AFB42B-nodesc-normal">
@@ -243,6 +363,46 @@
         <styleUrl>#icon-1499-FF5252-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="icon-1499-FFD600-nodesc-normal">
+      <IconStyle>
+        <color>ff00d6ff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-FFD600-nodesc-highlight">
+      <IconStyle>
+        <color>ff00d6ff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-FFD600-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-FFD600-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-FFD600-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="icon-1499-FFEA00-nodesc-normal">
       <IconStyle>
         <color>ff00eaff</color>
@@ -283,13 +443,13 @@
         <styleUrl>#icon-1499-FFEA00-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
-    <Style id="poly-000000-1200-77-nodesc-normal">
+    <Style id="poly-006064-1200-77-nodesc-normal">
       <LineStyle>
-        <color>ff000000</color>
+        <color>ff646000</color>
         <width>1.2</width>
       </LineStyle>
       <PolyStyle>
-        <color>4d000000</color>
+        <color>4d646000</color>
         <fill>1</fill>
         <outline>1</outline>
       </PolyStyle>
@@ -297,13 +457,13 @@
         <text><![CDATA[<h3>$[name]</h3>]]></text>
       </BalloonStyle>
     </Style>
-    <Style id="poly-000000-1200-77-nodesc-highlight">
+    <Style id="poly-006064-1200-77-nodesc-highlight">
       <LineStyle>
-        <color>ff000000</color>
+        <color>ff646000</color>
         <width>1.8</width>
       </LineStyle>
       <PolyStyle>
-        <color>4d000000</color>
+        <color>4d646000</color>
         <fill>1</fill>
         <outline>1</outline>
       </PolyStyle>
@@ -311,14 +471,14 @@
         <text><![CDATA[<h3>$[name]</h3>]]></text>
       </BalloonStyle>
     </Style>
-    <StyleMap id="poly-000000-1200-77-nodesc">
+    <StyleMap id="poly-006064-1200-77-nodesc">
       <Pair>
         <key>normal</key>
-        <styleUrl>#poly-000000-1200-77-nodesc-normal</styleUrl>
+        <styleUrl>#poly-006064-1200-77-nodesc-normal</styleUrl>
       </Pair>
       <Pair>
         <key>highlight</key>
-        <styleUrl>#poly-000000-1200-77-nodesc-highlight</styleUrl>
+        <styleUrl>#poly-006064-1200-77-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-0288D1-1200-77-nodesc-normal">
@@ -395,6 +555,82 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#poly-0F9D58-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-1A237E-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff7e231a</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d7e231a</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-1A237E-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff7e231a</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d7e231a</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-1A237E-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-1A237E-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-1A237E-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-795548-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff485579</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d485579</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-795548-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff485579</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d485579</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-795548-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-795548-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-795548-1200-77-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-817717-1200-77-nodesc-normal">
@@ -625,6 +861,44 @@
         <styleUrl>#poly-C5E1A5-1200-201-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="poly-CE93D8-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ffd893ce</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4dd893ce</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-CE93D8-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ffd893ce</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4dd893ce</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-CE93D8-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-CE93D8-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-CE93D8-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="poly-EDA29B-1200-117-nodesc-normal">
       <LineStyle>
         <color>ff9ba2ed</color>
@@ -693,6 +967,120 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#poly-EDA29B-1200-199-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-EDA29B-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff9ba2ed</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d9ba2ed</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-EDA29B-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff9ba2ed</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d9ba2ed</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-EDA29B-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-EDA29B-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-EDA29B-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-F57C00-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff007cf5</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d007cf5</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-F57C00-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff007cf5</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d007cf5</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-F57C00-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-F57C00-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-F57C00-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-F9A825-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff25a8f9</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d25a8f9</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-F9A825-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff25a8f9</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d25a8f9</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-F9A825-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-F9A825-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-F9A825-1200-77-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-FADA80-1200-77-nodesc-normal">
@@ -860,10 +1248,10 @@
       </Placemark>
       <Placemark>
         <name>TroiHüllen</name>
-        <styleUrl>#icon-1499-757575-nodesc</styleUrl>
+        <styleUrl>#icon-1499-0097A7-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2488915,51.8790045,0
+            6.2510909,51.8836339,0
           </coordinates>
         </Point>
       </Placemark>
@@ -878,10 +1266,10 @@
       </Placemark>
       <Placemark>
         <name>Test</name>
-        <styleUrl>#icon-1499-0288D1-nodesc</styleUrl>
+        <styleUrl>#icon-1499-9C27B0-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2555858,51.8815423,0
+            6.2662851,51.8862277,0
           </coordinates>
         </Point>
       </Placemark>
@@ -890,7 +1278,7 @@
         <styleUrl>#icon-1499-FF5252-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.240579,51.8728177,0
+            6.2398924,51.8738577,0
           </coordinates>
         </Point>
       </Placemark>
@@ -913,11 +1301,57 @@
         </Point>
       </Placemark>
       <Placemark>
+        <name>litörna</name>
+        <styleUrl>#icon-1499-1A237E-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2479977,51.8773024,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Soläng</name>
+        <styleUrl>#icon-1499-817717-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2573508,51.8811673,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
         <name>Balla</name>
         <styleUrl>#icon-1499-0F9D58-nodesc</styleUrl>
         <Point>
           <coordinates>
             6.2582606,51.8781864,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Friidrottsbana</name>
+        <styleUrl>#icon-1499-FFD600-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2678374,51.880542,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Rodingsvik</name>
+        <styleUrl>#icon-1499-FFD600-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2604491,51.8808553,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>fisk butik Jörgen
+</name>
+        <styleUrl>#icon-1499-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2660059,51.8804827,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1026,26 +1460,26 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                6.2467033,51.8728639,0
-                6.2464445,51.8731164,0
-                6.2465768,51.873306,0
-                6.2465213,51.8741549,0
-                6.2460447,51.8760495,0
-                6.2455432,51.8759336,0
-                6.2448672,51.8757787,0
-                6.2446097,51.8760702,0
-                6.243966,51.8762556,0
-                6.242314,51.8761923,0
-                6.2409459,51.8752952,0
-                6.2394868,51.8746064,0
-                6.2390687,51.8737114,0
-                6.2391868,51.8730078,0
-                6.2393974,51.8728441,0
-                6.2408449,51.8719925,0
-                6.2414211,51.8718663,0
-                6.2427139,51.8718083,0
-                6.2461075,51.8725007,0
-                6.2467033,51.8728639,0
+                6.2467033,51.8728771,0
+                6.2464445,51.8731296,0
+                6.2465768,51.8733192,0
+                6.2465213,51.8741681,0
+                6.2460447,51.8760627,0
+                6.2455432,51.8759468,0
+                6.2448672,51.8757919,0
+                6.2446097,51.8760834,0
+                6.243966,51.8762688,0
+                6.242314,51.8762055,0
+                6.2409459,51.8753084,0
+                6.2394868,51.8746196,0
+                6.2390687,51.8737246,0
+                6.2391868,51.873021,0
+                6.2393974,51.8728573,0
+                6.2408449,51.8720057,0
+                6.2414211,51.8718795,0
+                6.2427139,51.8718215,0
+                6.2461075,51.8725139,0
+                6.2467033,51.8728771,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -1160,7 +1594,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 6</name>
+        <name>troiHüllen</name>
         <styleUrl>#poly-0288D1-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1202,7 +1636,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 7</name>
+        <name>Soläng</name>
         <styleUrl>#poly-FADA80-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1228,7 +1662,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 2</name>
+        <name>Rodingsvik</name>
         <styleUrl>#poly-FBC02D-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1262,7 +1696,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 333</name>
+        <name>Friidrottsbana</name>
         <styleUrl>#poly-FFCC80-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1306,7 +1740,8 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 8</name>
+        <name>fisk butik Jörgen
+</name>
         <styleUrl>#poly-0F9D58-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1341,7 +1776,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 9</name>
+        <name>Längelsön</name>
         <styleUrl>#poly-9FA8DA-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1393,6 +1828,30 @@
         </Polygon>
       </Placemark>
       <Placemark>
+        <name>Polygoon 20</name>
+        <styleUrl>#poly-CE93D8-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2523118,51.8723421,0
+                6.2521918,51.8735158,0
+                6.2507193,51.8733601,0
+                6.2491773,51.8731604,0
+                6.2469108,51.8725941,0
+                6.2471503,51.8723806,0
+                6.2478407,51.871433,0
+                6.248458,51.8716698,0
+                6.249643,51.8719695,0
+                6.2498683,51.8722278,0
+                6.2523118,51.8723421,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
         <name>Polygoon 14</name>
         <styleUrl>#poly-B2EBF2-1200-77-nodesc</styleUrl>
         <Polygon>
@@ -1437,8 +1896,8 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 15</name>
-        <styleUrl>#poly-000000-1200-77-nodesc</styleUrl>
+        <name>litörna</name>
+        <styleUrl>#poly-1A237E-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
             <LinearRing>
@@ -1475,6 +1934,229 @@
           </outerBoundaryIs>
         </Polygon>
       </Placemark>
+      <Placemark>
+        <name>Polygoon 16</name>
+        <styleUrl>#poly-006064-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2524955,51.8717503,0
+                6.2546305,51.8718596,0
+                6.2552421,51.871694,0
+                6.2553708,51.8719258,0
+                6.2556364,51.8721224,0
+                6.2552716,51.8724139,0
+                6.2550999,51.8732485,0
+                6.2551643,51.8738712,0
+                6.2552479,51.8750151,0
+                6.2520864,51.8745827,0
+                6.2510779,51.8745165,0
+                6.2505683,51.8744271,0
+                6.2495705,51.8741157,0
+                6.2487712,51.8736786,0
+                6.2465768,51.873306,0
+                6.2464445,51.8731164,0
+                6.2467033,51.8728639,0
+                6.2466524,51.8728134,0
+                6.2469108,51.8725941,0
+                6.2491773,51.8731604,0
+                6.2507193,51.8733601,0
+                6.2521918,51.8735158,0
+                6.2523118,51.8723421,0
+                6.2498683,51.8722278,0
+                6.249643,51.8719695,0
+                6.248458,51.8716698,0
+                6.2478407,51.871433,0
+                6.2475917,51.8696261,0
+                6.252778,51.8689464,0
+                6.2524955,51.8717503,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygoon 17</name>
+        <styleUrl>#poly-795548-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2596538,51.8683712,0
+                6.2597235,51.8687489,0
+                6.2599488,51.8696332,0
+                6.2599703,51.8698949,0
+                6.2599327,51.8700771,0
+                6.2598201,51.8702394,0
+                6.2589739,51.8714019,0
+                6.2588022,51.8716437,0
+                6.2585761,51.8717515,0
+                6.2579753,51.8718045,0
+                6.2571599,51.8718045,0
+                6.2562157,51.8719237,0
+                6.2556364,51.8721224,0
+                6.2553708,51.8719258,0
+                6.2552421,51.871694,0
+                6.2546305,51.8718596,0
+                6.2524955,51.8717503,0
+                6.252778,51.8689464,0
+                6.255477,51.8685995,0
+                6.2565323,51.8686439,0
+                6.2576678,51.868417,0
+                6.2586977,51.8683643,0
+                6.2596538,51.8683712,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygoon 18</name>
+        <styleUrl>#poly-F57C00-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2628098,51.8727332,0
+                6.2619139,51.8727232,0
+                6.2616725,51.8732101,0
+                6.2600996,51.8731425,0
+                6.2600996,51.8723476,0
+                6.2592198,51.8717382,0
+                6.2588121,51.8716322,0
+                6.2599327,51.8700771,0
+                6.2599703,51.8698949,0
+                6.2599488,51.8696332,0
+                6.2596538,51.8683712,0
+                6.2614617,51.8683712,0
+                6.2620422,51.8684766,0
+                6.2627555,51.8687132,0
+                6.2654898,51.8703459,0
+                6.2691924,51.8740814,0
+                6.2684836,51.8743863,0
+                6.2676199,51.8739855,0
+                6.2672336,51.8739292,0
+                6.2673463,51.8736311,0
+                6.2673248,51.8734821,0
+                6.2628098,51.8727332,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygoon 19</name>
+        <styleUrl>#poly-CE93D8-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2680979,51.8750109,0
+                6.2658777,51.8774409,0
+                6.2657538,51.877521,0
+                6.2654802,51.8774167,0
+                6.2649853,51.8772842,0
+                6.2629022,51.8769001,0
+                6.2606743,51.8762253,0
+                6.2596704,51.8758583,0
+                6.2589194,51.8756861,0
+                6.2600996,51.8731425,0
+                6.2616725,51.8732101,0
+                6.2619139,51.8727232,0
+                6.2628098,51.8727332,0
+                6.2673248,51.8734821,0
+                6.2673463,51.8736311,0
+                6.2672336,51.8739292,0
+                6.2676199,51.8739855,0
+                6.2684836,51.8743863,0
+                6.2680979,51.8750109,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygoon 20</name>
+        <styleUrl>#poly-EDA29B-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.275371,51.8766109,0
+                6.2757154,51.8769253,0
+                6.2761982,51.8774817,0
+                6.2766596,51.8779851,0
+                6.2770902,51.8787387,0
+                6.2773827,51.879024,0
+                6.2761717,51.8792684,0
+                6.2717407,51.8798711,0
+                6.270979,51.8798181,0
+                6.2703423,51.879551,0
+                6.2699989,51.8793523,0
+                6.2695698,51.8790609,0
+                6.2691138,51.878796,0
+                6.268631,51.8786138,0
+                6.2680517,51.8784714,0
+                6.2673787,51.8783963,0
+                6.2659635,51.8783282,0
+                6.2660085,51.87809,0
+                6.2659817,51.8778311,0
+                6.2659321,51.8776963,0
+                6.2657538,51.877521,0
+                6.2658777,51.8774409,0
+                6.2680979,51.8750109,0
+                6.2684836,51.8743863,0
+                6.2691924,51.8740814,0
+                6.2698293,51.8744854,0
+                6.2705133,51.8748125,0
+                6.2710262,51.8749994,0
+                6.2715787,51.8751472,0
+                6.2727658,51.8754082,0
+                6.2735559,51.875644,0
+                6.275371,51.8766109,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygoon 22</name>
+        <styleUrl>#poly-F9A825-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                6.2725941,51.8753287,0
+                6.2725688,51.8748293,0
+                6.2764235,51.8747778,0
+                6.2797001,51.8743213,0
+                6.2816743,51.8737648,0
+                6.2837343,51.8723605,0
+                6.2844638,51.8722016,0
+                6.2846354,51.8746259,0
+                6.2833803,51.8753016,0
+                6.2788635,51.8783352,0
+                6.2773827,51.879024,0
+                6.2770902,51.8787387,0
+                6.2766596,51.8779851,0
+                6.2757154,51.8769253,0
+                6.275371,51.8766109,0
+                6.2735559,51.875644,0
+                6.2727658,51.8754082,0
+                6.2725843,51.8753263,0
+                6.2725941,51.8753287,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
     </Folder>
     <Folder>
       <name>Speelgebied</name>
@@ -1486,10 +2168,13 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                6.2798718,51.8763614,0
-                6.2785844,51.8766263,0
-                6.279271,51.87811,0
-                6.2784985,51.8785868,0
+                6.2797001,51.8743213,0
+                6.2816743,51.8737648,0
+                6.2837343,51.8723605,0
+                6.2844638,51.8722016,0
+                6.2846354,51.8746259,0
+                6.2833803,51.8753016,0
+                6.2788635,51.8783352,0
                 6.2773827,51.879024,0
                 6.2761717,51.8792684,0
                 6.2717407,51.8798711,0
@@ -1597,11 +2282,11 @@
                 6.2705133,51.8748125,0
                 6.2710262,51.8749994,0
                 6.2715787,51.8751472,0
-                6.2727658,51.8754082,0
-                6.2735559,51.875644,0
+                6.2725941,51.8753287,0
+                6.2725688,51.8748293,0
                 6.273398,51.8748043,0
-                6.2790628,51.8741949,0
-                6.2798718,51.8763614,0
+                6.2764235,51.8747778,0
+                6.2797001,51.8743213,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>

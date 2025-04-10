@@ -4,7 +4,8 @@ public record Resources
 {
     private readonly ResourcesData _resourcesData;
     public static Resources Empty { get; } = new(new ResourcesData());
-    
+    public string? ResourceNameOfInterest { get; }
+
     public Resources(ResourcesData resourcesData)
     {
         _resourcesData = resourcesData;
@@ -23,6 +24,18 @@ public record Resources
     public override string ToString()
     {
         return $"{nameof(Gold)}: {Gold}, {nameof(Votes)}: {Votes}, {nameof(People)}: {People}, {nameof(Oil)}: {Oil}";
+    }
+
+    public static string? ToResourceName(string resourceDataName)
+    {
+        return resourceDataName switch
+        {
+            nameof(ResourcesData.R1) => nameof(Gold),
+            nameof(ResourcesData.R2) => nameof(Votes),
+            nameof(ResourcesData.R3) => nameof(People),
+            nameof(ResourcesData.R4) => nameof(Oil),
+            _ => null
+        };
     }
 
     public Dictionary<string, int> ToDictionary()

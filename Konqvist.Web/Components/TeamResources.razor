@@ -12,27 +12,27 @@
                  VerticalGap="0"
                  HorizontalGap="2">
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance"
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Gold))"
                      OnClick="() => ResourceClick(nameof(Resources.Gold))">
-            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())"/>
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />
             @(ShowTitle ? $"{nameof(Resources.Gold)}:" : "") @Resources.Gold
         </FluentBadge>
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance"
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Votes))"
                      OnClick="() => ResourceClick(nameof(Resources.Votes))">
-            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Vote())"/>
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />
             @(ShowTitle ? $"{nameof(Resources.Votes)}:" : "") @Resources.Votes
         </FluentBadge>
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance"
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.People))"
                      OnClick="() => ResourceClick(nameof(Resources.People))">
-            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.People())"/>
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
             @(ShowTitle ? $"{nameof(Resources.People)}:" : "") @Resources.People
         </FluentBadge>
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="BadgeAppearance"
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Oil))"
                      OnClick="() => ResourceClick(nameof(Resources.Oil))">
-            <FluentIcon Color="Color.Fill" Class="resource-badge-icon" Value="@(new NavIcons.Drop())"/>
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />
             @(ShowTitle ? $"{nameof(Resources.Oil)}:" : "") @Resources.Oil
         </FluentBadge>
     </FluentStack>
@@ -43,22 +43,36 @@
     [Parameter] public string? TeamName { get; set; }
     [Parameter] public bool ShowTitle { get; set; } = true;
     [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public bool AllowEdit { get; set; }
 
     private Resources Resources { get; set; } = Resources.Empty;
+    private string? _currentResourceOfInterest;
 
     private DialogParameters _dlgParameters = new()
-    {
-        Title = "Resource bonus"
-    };
+        {
+            Title = "Resource bonus",            
+        };
 
     protected string? StyleValue => new StyleBuilder(Style)
         .AddStyle("z-index", "1")
         .AddStyle("width", "100%")
         .Build();
 
-    private Appearance BadgeAppearance => Enabled
-        ? Appearance.Accent
-        : Appearance.Neutral;
+
+    private Appearance GetBadgeAppearance(string resourceName)
+    {
+
+        // if not enabled, return neutral appearance
+        if (!Enabled)
+            return Appearance.Lightweight;
+
+        // if enabled, check if resource is the current resource of interest -> return green
+        if (_currentResourceOfInterest is not null && resourceName == _currentResourceOfInterest)
+            return Appearance.Accent;
+
+        // if not, return neutral accent
+        return Appearance.Neutral;
+    }
 
     #region Overrides of ComponentBase
 
@@ -82,18 +96,24 @@
             return;
 
         var resourcesData = await DataStore.GetResourcesForTeam(TeamName!);
+        var rdn = await DataStore.GetCurrentResourceOfInterest();
+        _currentResourceOfInterest = Resources.ToResourceName(rdn);
+
         Resources = new Resources(resourcesData);
+
         await InvokeAsync(StateHasChanged);
     }
 
     private async Task ResourceClick(string resourceName)
     {
-        if (TeamName is null) return;
+
+        if (Enabled== false || AllowEdit == false || TeamName is null) return;
         var entryValue = string.Empty;
 
-        var dialogInstance = await DialogService.ShowDialogAsync(@<div>
-            <FluentTextField @bind-Value="@entryValue" Label="Value to add to this resource:"/>
-        </div>
+        var dialogInstance = await DialogService.ShowDialogAsync(
+            @<div>
+                <FluentTextField  @bind-Value="@entryValue" Label="Value to add to this resource:" />
+            </div>
             , _dlgParameters);
 
         var result = await dialogInstance.Result;
@@ -105,27 +125,27 @@
             {
                 case nameof(Resources.Gold):
                     additionalResources += new ResourcesData
-                    {
-                        R1 = int.Parse(entryValue)
-                    };
+                        {
+                            R1 = int.Parse(entryValue)
+                        };
                     break;
                 case nameof(Resources.Votes):
                     additionalResources += new ResourcesData
-                    {
-                        R2 = int.Parse(entryValue)
-                    };
+                        {
+                            R2 = int.Parse(entryValue)
+                        };
                     break;
                 case nameof(Resources.People):
                     additionalResources += new ResourcesData
-                    {
-                        R3 = int.Parse(entryValue)
-                    };
+                        {
+                            R3 = int.Parse(entryValue)
+                        };
                     break;
                 case nameof(Resources.Oil):
                     additionalResources += new ResourcesData
-                    {
-                        R4 = int.Parse(entryValue)
-                    };
+                        {
+                            R4 = int.Parse(entryValue)
+                        };
                     break;
             }
         }

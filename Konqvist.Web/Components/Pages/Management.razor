@@ -24,7 +24,7 @@
 
     @foreach (var team in _teams)
     {
-        <TeamCard Team="@team" />
+        <TeamCard Team="@team" AllowEdit="true"/>
     }
 </div>
 
@@ -39,12 +39,12 @@
                       OnClick="ShowMap"
                       Disabled="!Session.IsAdmin"
                       Title="Management Dashboard" />
-        <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
+@*         <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
                       OnClick="LogoutAllRunners"
                       Appearance="Appearance.Outline"
                       Color="red"
                       Disabled="!Session.IsAdmin"
-                      Title="Logout all active runners" />
+                      Title="Logout all active runners" /> *@
     </FluentToolbar>
     <FluentSpacer />
 </SectionContent>
@@ -66,7 +66,7 @@
 
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
-        _roundDataStore = await MapDataStore.GetRounds();
+        _roundDataStore = await MapDataStore.GetRoundsDataStore();
         _currentRound = _roundDataStore.GetCurrentRound();
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;

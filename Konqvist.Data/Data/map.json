@@ -640,10 +640,10 @@
       "owner": null,
       "name": "Pann\u00E5k\u00F6i",
       "resources": {
-        "r1": 30,
-        "r2": 20,
+        "r1": 20,
+        "r2": 40,
         "r3": 10,
-        "r4": 40
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -773,10 +773,10 @@
       "owner": null,
       "name": "M\u00F6lenBarg",
       "resources": {
-        "r1": 40,
+        "r1": 30,
         "r2": 20,
-        "r3": 30,
-        "r4": 10
+        "r3": 10,
+        "r4": 40
       },
       "isClaimable": true
     },
@@ -870,10 +870,10 @@
       "owner": null,
       "name": "Jykkel",
       "resources": {
-        "r1": 40,
-        "r2": 30,
-        "r3": 10,
-        "r4": 20
+        "r1": 20,
+        "r2": 40,
+        "r3": 30,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -980,9 +980,9 @@
       "name": "Sacka",
       "resources": {
         "r1": 20,
-        "r2": 30,
-        "r3": 40,
-        "r4": 10
+        "r2": 40,
+        "r3": 10,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -1076,9 +1076,9 @@
       "owner": null,
       "name": "Balla",
       "resources": {
-        "r1": 10,
-        "r2": 40,
-        "r3": 30,
+        "r1": 30,
+        "r2": 10,
+        "r3": 40,
         "r4": 20
       },
       "isClaimable": true
@@ -1198,9 +1198,9 @@
       "name": "Shafte",
       "resources": {
         "r1": 20,
-        "r2": 40,
+        "r2": 30,
         "r3": 10,
-        "r4": 30
+        "r4": 40
       },
       "isClaimable": true
     },
@@ -1330,10 +1330,10 @@
       "owner": null,
       "name": "troiH\u00FCllen",
       "resources": {
-        "r1": 20,
-        "r2": 10,
-        "r3": 40,
-        "r4": 30
+        "r1": 30,
+        "r2": 40,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1500,10 +1500,10 @@
       "owner": null,
       "name": "Rodingsvik",
       "resources": {
-        "r1": 30,
-        "r2": 40,
-        "r3": 10,
-        "r4": 20
+        "r1": 40,
+        "r2": 30,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1641,9 +1641,9 @@
       "owner": null,
       "name": "Friidrottsbana",
       "resources": {
-        "r1": 40,
+        "r1": 20,
         "r2": 10,
-        "r3": 20,
+        "r3": 40,
         "r4": 30
       },
       "isClaimable": true
@@ -1746,10 +1746,10 @@
       "owner": null,
       "name": "fisk butik J\u00F6rgen\n",
       "resources": {
-        "r1": 10,
+        "r1": 40,
         "r2": 20,
-        "r3": 30,
-        "r4": 40
+        "r3": 10,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -1919,10 +1919,10 @@
       "owner": null,
       "name": "L\u00E4ngels\u00F6n",
       "resources": {
-        "r1": 40,
-        "r2": 30,
-        "r3": 20,
-        "r4": 10
+        "r1": 20,
+        "r2": 10,
+        "r3": 30,
+        "r4": 40
       },
       "isClaimable": true
     },
@@ -1981,8 +1981,8 @@
       "name": "Polygoon 20",
       "resources": {
         "r1": 30,
-        "r2": 10,
-        "r3": 40,
+        "r2": 40,
+        "r3": 10,
         "r4": 20
       },
       "isClaimable": true
@@ -2122,9 +2122,9 @@
       "name": "Polygoon 14",
       "resources": {
         "r1": 30,
-        "r2": 10,
-        "r3": 20,
-        "r4": 40
+        "r2": 40,
+        "r3": 10,
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -2243,9 +2243,9 @@
       "name": "lit\u00F6rna",
       "resources": {
         "r1": 30,
-        "r2": 10,
+        "r2": 20,
         "r3": 40,
-        "r4": 20
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2379,10 +2379,10 @@
       "owner": null,
       "name": "Polygoon 16",
       "resources": {
-        "r1": 20,
-        "r2": 10,
+        "r1": 10,
+        "r2": 40,
         "r3": 30,
-        "r4": 40
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -2488,9 +2488,9 @@
       "owner": null,
       "name": "Polygoon 17",
       "resources": {
-        "r1": 40,
-        "r2": 10,
-        "r3": 20,
+        "r1": 20,
+        "r2": 40,
+        "r3": 10,
         "r4": 30
       },
       "isClaimable": true
@@ -2593,10 +2593,10 @@
       "owner": null,
       "name": "Polygoon 18",
       "resources": {
-        "r1": 10,
-        "r2": 30,
+        "r1": 20,
+        "r2": 10,
         "r3": 40,
-        "r4": 20
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -2686,10 +2686,10 @@
       "owner": null,
       "name": "Polygoon 19",
       "resources": {
-        "r1": 30,
-        "r2": 20,
-        "r3": 40,
-        "r4": 10
+        "r1": 40,
+        "r2": 10,
+        "r3": 20,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -2831,10 +2831,10 @@
       "owner": null,
       "name": "Polygoon 20",
       "resources": {
-        "r1": 20,
-        "r2": 30,
-        "r3": 10,
-        "r4": 40
+        "r1": 30,
+        "r2": 20,
+        "r3": 40,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2924,9 +2924,9 @@
       "owner": null,
       "name": "Polygoon 22",
       "resources": {
-        "r1": 40,
-        "r2": 10,
-        "r3": 20,
+        "r1": 20,
+        "r2": 40,
+        "r3": 10,
         "r4": 30
       },
       "isClaimable": true

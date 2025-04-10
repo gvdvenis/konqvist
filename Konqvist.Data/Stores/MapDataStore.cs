@@ -226,7 +226,20 @@ public class MapDataStore
         }
     }
 
-    public async Task<RoundDataStore> GetRounds()
+    public async Task<string?> GetCurrentResourceOfInterest()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _roundsData.GetCurrentRound().ResourceOfInterest;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<RoundDataStore> GetRoundsDataStore()
     {
         return await Task.FromResult(_roundsData);
     }
@@ -415,12 +428,14 @@ public class MapDataStore
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
                 _teamsData,
-                _roundsData.CurrentRound);
+                _roundsData.CurrentRoundNumber);
 
             // reset all trigger circles 
             ClearClaimsInternal(null);
 
-            ClearAllTeamsAdditionalResources();
+            // we only want to reset our resources when we're exiting a voting round
+            if (_roundsData.GetCurrentRound().Kind == RoundKind.Voting)
+                ClearAllTeamsAdditionalResources();
 
             return _roundsData.NextRound();
         }
@@ -446,7 +461,7 @@ public class MapDataStore
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
                 _teamsData,
-                _roundsData.CurrentRound);
+                _roundsData.CurrentRoundNumber);
 
             return _roundsData.PreviousRound();
         }

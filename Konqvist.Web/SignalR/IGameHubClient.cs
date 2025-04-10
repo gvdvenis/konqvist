@@ -9,12 +9,12 @@ public interface IGameHubClient
     Task RunnerLoggedInOrOut();
 
     Task RunnerLoggedIn(string teamName);
-    
+
     Task RunnersLoggedOut(string[] teamName);
 
     Task PerformRunnerLogoutOnClient(string? teamName);
 
-    Task BroadCastNewRoundStarted(RoundData newRoundNumber);
+    Task NewRoundStarted(RoundData newRoundNumber);
 
-    Task TeamResourcesChanged(string teamName);
+    Task TeamResourcesChanged(string? teamName = null);
 }

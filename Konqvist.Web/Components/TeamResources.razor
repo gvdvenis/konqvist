@@ -78,7 +78,7 @@
 
     private async Task LoadResource(string? teamName)
     {
-        if (teamName != TeamName)
+        if (teamName is not null && teamName != TeamName)
             return;
 
         var resourcesData = await DataStore.GetResourcesForTeam(TeamName!);

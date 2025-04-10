@@ -48,7 +48,8 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         Console.WriteLine($"+++ Start round number {nextRound.Order}");
 
         // Broadcast to all clients
-        await Clients.All.BroadCastNewRoundStarted(nextRound);
+        await Clients.All.NewRoundStarted(nextRound);
+        await Clients.All.TeamResourcesChanged();
     }
 
     public async Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources)

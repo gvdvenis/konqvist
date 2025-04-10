@@ -10,6 +10,7 @@
 
 @inject IGeolocationService GeolocationService
 @inject IToastService ToastService
+@inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
@@ -94,6 +95,24 @@
                 EnableHighAccuracy = true,
                 Timeout = 10000
             });
+
+        HubClient.OnNewRoundStarted += OnNewRoundStarted;
+    }
+    
+    private Task OnNewRoundStarted(RoundData e)
+    {
+        if (Session.IsAdmin) return Task.CompletedTask;
+
+        else if (e.Kind == RoundKind.Voting)
+        {
+            NavigationManager.NavigateTo("/voting");
+        }
+        else if (e.Kind == RoundKind.GameOver)
+        {
+            NavigationManager.NavigateTo("/gameover");
+        }
+
+        return Task.CompletedTask;
     }
 
     private void OnLocationError(GeolocationPositionError positionError)
@@ -138,7 +157,7 @@
     {
         NavigationManager.NavigateTo("/management");
     }
-    
+
     #region Implementation of IAsyncDisposable
 
     public async ValueTask DisposeAsync()

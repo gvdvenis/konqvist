@@ -12,9 +12,14 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddFluentUIComponents();
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddGeolocationServices();
 
 builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
+builder.Services.AddScoped<SessionProvider>();
+builder.Services.AddSingleton(_ => MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -26,15 +31,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
         options.AccessDeniedPath = "/access-denied";
-
     });
-builder.Services.AddAuthorization();
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddGeolocationServices();
-builder.Services.AddScoped<SessionProvider>();
 
 // Add to your existing service registration section
-builder.Services.AddSingleton(_ => MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
 
 var app = builder.Build();
 
@@ -46,19 +45,16 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    KmlToMapDataConverter.Run(@"D:\Source\konqvist\Konqvist.Data\Data\Konqvist.kml", @"D:\Source\konqvist\Konqvist.Data\Data\map.json");
+    KmlToMapDataConverter.Run(
+        @"D:\Source\konqvist\Konqvist.Data\Data\Konqvist.kml",
+        @"D:\Source\konqvist\Konqvist.Data\Data\map.json");
 }
 
 app.UseAuthentication();
-
 app.UseAuthorization();
-
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
-
 //app.UseOutputCache();
-
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()

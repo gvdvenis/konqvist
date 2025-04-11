@@ -18,16 +18,16 @@
             @(ShowTitle ? $"{nameof(Resources.Gold)}:" : "") @Resources.Gold
         </FluentBadge>
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Votes))"
-                     OnClick="() => ResourceClick(nameof(Resources.Votes))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.Vote())" />
-            @(ShowTitle ? $"{nameof(Resources.Votes)}:" : "") @Resources.Votes
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Voters))"
+                     OnClick="() => ResourceClick(nameof(Resources.Voters))">
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
+            @(ShowTitle ? $"{nameof(Resources.Voters)}:" : "") @Resources.Voters
         </FluentBadge>
 
-        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.People))"
-                     OnClick="() => ResourceClick(nameof(Resources.People))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
-            @(ShowTitle ? $"{nameof(Resources.People)}:" : "") @Resources.People
+        <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Likes))"
+                     OnClick="() => ResourceClick(nameof(Resources.Likes))">
+            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.ThumbLike())" />
+            @(ShowTitle ? $"{nameof(Resources.Likes)}:" : "") @Resources.Likes
         </FluentBadge>
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Oil))"
@@ -129,13 +129,13 @@
                             R1 = int.Parse(entryValue)
                         };
                     break;
-                case nameof(Resources.Votes):
+                case nameof(Resources.Voters):
                     additionalResources += new ResourcesData
                         {
                             R2 = int.Parse(entryValue)
                         };
                     break;
-                case nameof(Resources.People):
+                case nameof(Resources.Likes):
                     additionalResources += new ResourcesData
                         {
                             R3 = int.Parse(entryValue)

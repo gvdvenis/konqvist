@@ -1,7 +1,7 @@
-﻿using System.Collections.Concurrent;
-using Konqvist.Data.Contracts;
+﻿using Konqvist.Data.Contracts;
 using Konqvist.Data.Models;
 using OpenLayers.Blazor;
+using System.Collections.Concurrent;
 
 namespace Konqvist.Data.Stores;
 
@@ -17,6 +17,7 @@ public class MapDataStore
     private MapData _mapData = MapData.Empty;
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsData = RoundDataStore.Empty;
+    private readonly SnapshotDataStore _snapshotDataStore = new();
 
     public static async Task<MapDataStore> GetInstanceAsync()
     {
@@ -31,72 +32,27 @@ public class MapDataStore
     private async Task InitializeAsync()
     {
         var mapData = await MapDataHelper.GetMapData().ConfigureAwait(false);
-        await InitializeMapDataAsync(mapData);
+        _mapData = mapData;
 
         var teamsData = await MapDataHelper.GetTeamsData();
-        await InitializeTeamsDataAsync(teamsData);
+        _teamsData = [.. teamsData ?? []];
 
         //var roundsData = await MapDataHelper.GetRoundsData();
-        await InitializeRoundsDataAsync(null);
-    }
-
-    /// <summary>
-    /// Initializes the data store with map data
-    /// </summary>
-    public async Task InitializeMapDataAsync(MapData mapData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            _mapData = mapData;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    /// <summary>
-    /// Initializes the data store with team data
-    /// </summary>
-    public async Task InitializeTeamsDataAsync(IEnumerable<TeamData>? teamsData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            _teamsData = [.. teamsData ?? []];
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    public async Task InitializeRoundsDataAsync(List<RoundData>? roundsData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            roundsData ??=
+        List<RoundData> roundsData =
             [
-                new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted),
-                new RoundData(1, "Running 1", RoundKind.GatherResources),
-                new RoundData(2, "Voting 1", RoundKind.Voting),
-                new RoundData(3, "Running 2", RoundKind.GatherResources),
-                new RoundData(4, "Voting 2", RoundKind.Voting),
-                new RoundData(5, "Running 3", RoundKind.GatherResources),
-                new RoundData(6, "Voting 3", RoundKind.Voting),
-                new RoundData(7, "Running 4", RoundKind.GatherResources),
-                new RoundData(8, "Voting 4", RoundKind.Voting),
-                new RoundData(9, "Game Over", RoundKind.Finished)
+                new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
+                new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
+                new RoundData(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
+                new RoundData(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),
+                new RoundData(4, "Voting 2", RoundKind.Voting, nameof(ResourcesData.R4)),
+                new RoundData(5, "Running 3", RoundKind.GatherResources, nameof(ResourcesData.R2)),
+                new RoundData(6, "Voting 3", RoundKind.Voting, nameof(ResourcesData.R2)),
+                new RoundData(7, "Running 4", RoundKind.GatherResources, nameof(ResourcesData.R3)),
+                new RoundData(8, "Voting 4", RoundKind.Voting, nameof(ResourcesData.R3)),
+                new RoundData(9, "Game Over", RoundKind.GameOver, null)
             ];
 
-            _roundsData = new RoundDataStore(roundsData);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        _roundsData = new RoundDataStore(roundsData);
     }
 
     #endregion
@@ -208,8 +164,8 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            var currentAdditionalTeamResources= team?.AdditionalResources ?? ResourcesData.Empty;
-            
+            var currentAdditionalTeamResources = team?.AdditionalResources ?? ResourcesData.Empty;
+
             var destrictResources = _mapData.Districts
                 .Where(dd => dd.Owner is not null && dd.Owner.Name == teamName)
                 .Select(dd => dd.Resources)
@@ -224,8 +180,21 @@ public class MapDataStore
             _semaphore.Release();
         }
     }
-    
-    public async Task<RoundDataStore> GetRounds()
+
+    public async Task<string?> GetCurrentResourceOfInterest()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _roundsData.GetCurrentRound().ResourceOfInterest;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<RoundDataStore> GetRoundsDataStore()
     {
         return await Task.FromResult(_roundsData);
     }
@@ -354,7 +323,7 @@ public class MapDataStore
     public async Task<bool> LogoutRunner(string teamName)
     {
         // we don't bother with observers and team captains for now
-        //if (role is not TeamMemberRole.Runner) return true;
+        // if (role is not TeamMemberRole.Runner) return true;
 
         await _semaphore.WaitAsync();
         try
@@ -398,14 +367,7 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            var districts = _mapData
-                .Districts
-                .Where(d => teamName is null || d.Owner is { } td && td.Name == teamName);
-
-            foreach (var districtData in districts)
-            {
-                districtData.IsClaimable = true;
-            }
+            ClearClaimsInternal(teamName);
         }
         finally
         {
@@ -418,6 +380,17 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
+            _snapshotDataStore.CreateSnapshot(
+                _mapData,
+                _teamsData,
+                _roundsData.CurrentRoundNumber);
+
+            // reset all trigger circles 
+            ClearClaimsInternal(null);
+
+            // we only want to reset our resources when we're exiting a voting round
+            if (_roundsData.GetCurrentRound().Kind == RoundKind.Voting)
+                ClearAllTeamsAdditionalResources();
 
             return _roundsData.NextRound();
         }
@@ -427,12 +400,39 @@ public class MapDataStore
         }
     }
 
+    private void ClearAllTeamsAdditionalResources()
+    {
+        foreach (var team in _teamsData)
+        {
+            team.AdditionalResources = ResourcesData.Empty;
+        }
+    }
+
     public async Task<RoundData?> PreviousRound()
     {
         await _semaphore.WaitAsync();
         try
         {
+            _snapshotDataStore.CreateSnapshot(
+                _mapData,
+                _teamsData,
+                _roundsData.CurrentRoundNumber);
+
             return _roundsData.PreviousRound();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task ResetGame()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            _snapshotDataStore.Clear();
+            await InitializeAsync();
         }
         finally
         {
@@ -450,9 +450,9 @@ public class MapDataStore
     public async Task SetAdditionalTeamResource(string teamName, ResourcesData resourcesReplacement)
     {
         var team = await GetTeamByName(teamName);
-        
+
         if (team is null) return;
-        
+
         await _semaphore.WaitAsync();
         try
         {
@@ -466,4 +466,20 @@ public class MapDataStore
 
     #endregion
 
+    /// <summary>
+    ///     Resets all trigger circles to be reclaimable. If a teamName is provided,
+    ///     only the trigger circles of that team are set to be reclaimable.
+    /// </summary>
+    /// <param name="teamName"></param>
+    private void ClearClaimsInternal(string? teamName)
+    {
+        var districts = _mapData
+            .Districts
+            .Where(d => teamName is null || d.Owner is { } td && td.Name == teamName);
+
+        foreach (var districtData in districts)
+        {
+            districtData.IsClaimable = true;
+        }
+    }
 }

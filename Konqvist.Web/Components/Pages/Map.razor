@@ -10,6 +10,7 @@
 
 @inject IGeolocationService GeolocationService
 @inject IToastService ToastService
+@inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
@@ -59,15 +60,15 @@
     <FluentSpacer/>
     <FluentToolbar>
         <FluentButton IconEnd="@(new NavIcons.MyLocation())"
-                      OnClick="CenterLocation"
-                      Title="Center on current location"/>
+        OnClick="CenterLocation"
+        Title="Center on current location"/>
         <FluentButton IconEnd="@(new NavIcons.Eye())"
-                      OnClick="@(() => _showTeams = !_showTeams)"
-                      Title="Show/Hide Teams"/>
+        OnClick="@(() => _showTeams = !_showTeams)"
+        Title="Show/Hide Teams"/>
         <FluentButton IconEnd="@(new NavIcons.Organization())"
-                      OnClick="ShowDashboard"
-                      Disabled="!Session.IsAdmin"
-                      Title="Management Dashboard"/>
+        OnClick="ShowDashboard"
+        Disabled="!Session.IsAdmin"
+        Title="Management Dashboard"/>
     </FluentToolbar>
     <FluentSpacer/>
 </SectionContent>
@@ -88,12 +89,33 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
-            {
-                MaximumAge = 5000,
-                EnableHighAccuracy = true,
-                Timeout = 10000
-            });
+        if (Session.IsPlayer)
+        {
+            _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
+                {
+                    MaximumAge = 5000,
+                    EnableHighAccuracy = true,
+                    Timeout = 10000
+                });
+        }
+
+        HubClient.OnNewRoundStarted += OnNewRoundStarted;
+    }
+    
+    private Task OnNewRoundStarted(RoundData e)
+    {
+        if (Session.IsAdmin) return Task.CompletedTask;
+
+        else if (e.Kind == RoundKind.Voting)
+        {
+            NavigationManager.NavigateTo("/voting");
+        }
+        else if (e.Kind == RoundKind.GameOver)
+        {
+            NavigationManager.NavigateTo("/gameover");
+        }
+
+        return Task.CompletedTask;
     }
 
     private void OnLocationError(GeolocationPositionError positionError)
@@ -138,7 +160,7 @@
     {
         NavigationManager.NavigateTo("/management");
     }
-    
+
     #region Implementation of IAsyncDisposable
 
     public async ValueTask DisposeAsync()

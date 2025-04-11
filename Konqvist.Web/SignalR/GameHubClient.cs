@@ -52,7 +52,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
         _hubConnection.On<string[], Task>(nameof(RunnersLoggedOut), RunnersLoggedOut);
 
-        _hubConnection.On<RoundData, Task>(nameof(BroadCastNewRoundStarted), BroadCastNewRoundStarted);
+        _hubConnection.On<RoundData, Task>(nameof(NewRoundStarted), NewRoundStarted);
 
         _hubConnection.On<string, Task>(nameof(TeamResourcesChanged), TeamResourcesChanged);
     }
@@ -83,6 +83,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources) =>
         _hubConnection.SendAsync(nameof(SendSetAdditionalResourcesRequest), teamName, additionalResources);
 
+    public Task SendResetGameRequest() =>
+        _hubConnection.SendAsync(nameof(SendResetGameRequest));
+
     #endregion
 
     #region IGameHubClient implements
@@ -101,21 +104,19 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     {
         var session = _sessionProvider.Session;
 
-        if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName) 
+        if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName)
             return Task.CompletedTask;
 
         _toastService.ShowWarning("The game master has logged you out", 4000);
-            
+
         _navigationManager.NavigateTo("logout", false);
 
         return Task.CompletedTask;
     }
 
-    public Task BroadCastNewRoundStarted(RoundData newRound) =>
-        OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
+    public Task NewRoundStarted(RoundData newRound) => OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
 
-    public Task TeamResourcesChanged(string teamName) => 
-        OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
+    public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 
     #endregion
 
@@ -124,16 +125,16 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Func<Task>? OnRunnerLoggedInOrOut { get; set; }
 
     public Func<string, Task>? OnRunnerLoggedIn { get; set; }
-    
+
     public Func<string[], Task>? OnRunnersLoggedOut { get; set; }
-    
+
     public Func<ActorLocation, Task>? OnActorMoved { get; set; }
 
     public Func<DistrictOwner, Task>? OnDistrictOwnerChanged { get; set; }
 
     public Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
-    public Func<string, Task>? OnTeamResourcesChanged { get; set; }
+    public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
     #endregion
 

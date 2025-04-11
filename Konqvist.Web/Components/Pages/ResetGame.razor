@@ -1,0 +1,31 @@
+﻿@page "/resetgame"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@attribute [AuthorizeGameRoles(GameRole.GameMaster)]
+
+@inject NavigationManager NavigationManager
+@inject IBindableHubClient HubClient
+
+
+<div class="center-content" >
+    <h3 style="margin-top: 30px; margin-left:20%; margin-right:20%;" > Please be careful! When you press the button below, all current game data will be lost</h3>
+    <p>
+        <FluentButton IconEnd="@(new NavIcons.Delete().WithColor(Color.FillInverse))"
+                      OnClick="ResetGameNow"
+                      BackgroundColor="var(--error)" 
+                      Title="Reset Game"
+                      Style="margin-top: 20px; width: 50%; height:80px ">
+            Reset Game
+        </FluentButton>
+    </p>
+</div>
+
+@code {
+
+    private async Task ResetGameNow()
+    {
+        await HubClient.SendResetGameRequest();
+        
+        NavigationManager.NavigateTo("/management", true);
+    }
+}

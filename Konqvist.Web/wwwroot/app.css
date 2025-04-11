@@ -70,10 +70,12 @@ header {
 .resource-badge span {
     padding: 13px 5px;
     height: 35px;
+    user-select: none;
 }
 
 .resource-badge-icon {
     margin-right: 3px;
+    user-select: none;
 }
 
 .fluent-card {

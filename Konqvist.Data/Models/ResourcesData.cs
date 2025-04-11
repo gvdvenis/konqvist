@@ -1,4 +1,5 @@
-﻿namespace Konqvist.Data.Models;
+﻿
+namespace Konqvist.Data.Models;
 
 public class ResourcesData
 {
@@ -8,7 +9,7 @@ public class ResourcesData
     public int R4 { get; set; }
 
     public static ResourcesData Empty { get; } = new();
-    
+
     /// <summary>
     ///    Adds a value to all the resources
     /// </summary>
@@ -53,7 +54,7 @@ public class ResourcesData
             R4 = a.R4 - b
         };
     }
-    
+
     /// <summary>
     ///     subtracts two resources
     /// </summary>

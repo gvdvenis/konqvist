@@ -1,11 +1,41 @@
 ﻿@page "/voting"
 
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@inject IBindableHubClient HubClient
+@inject NavigationManager NavigationManager
+@inject SessionProvider SessionProvider
+
+@attribute [Authorize]
+
 <div class="center-content">
     <h3>
-        Start voting now
+        Cast your votes please!
     </h3>
 </div>
 
 @code {
 
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        HubClient.OnNewRoundStarted += SetAppGameState;
+    }
+
+    private Task SetAppGameState(RoundData e)
+    {
+        if (SessionProvider.Session.IsAdmin) return Task.CompletedTask;
+
+        if (e.Kind == RoundKind.GatherResources)
+        {
+            NavigationManager.NavigateTo("/map");
+        }
+        else if (e.Kind == RoundKind.GameOver)
+        {
+            NavigationManager.NavigateTo("/gameover");
+        }
+
+        return Task.CompletedTask;
+    }
 }

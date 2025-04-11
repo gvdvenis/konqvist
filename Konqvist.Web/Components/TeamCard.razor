@@ -14,12 +14,13 @@
         Title="Logout this runner" />
     </h3>
     <hr style="color:@(Team.RunnerLoggedIn ? Team.TextColor : "#DDD"); border-width: 5px; opacity:1; border-radius: 5px;" />
-    <TeamResources Enabled="@Team.RunnerLoggedIn" TeamName="@Team.Name" ShowTitle="false" />
+    <TeamResources Enabled="@Team.RunnerLoggedIn" TeamName="@Team.Name" ShowTitle="false" AllowEdit="@AllowEdit" />
 </FluentCard>
 
 @code {
 
     [Parameter] public Team Team { get; set; } = Team.Empty;
+    [Parameter] public bool AllowEdit { get; set; } = false;
 
     private UserSession _session = UserSession.Empty;
     

@@ -16,7 +16,7 @@ public class MapDataStore
     // Storage for map and team data
     private MapData _mapData = MapData.Empty;
     private ConcurrentBag<TeamData> _teamsData = [];
-    private RoundDataStore _roundsData = RoundDataStore.Empty;
+    private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly SnapshotDataStore _snapshotDataStore = new();
 
     public static async Task<MapDataStore> GetInstanceAsync()
@@ -35,24 +35,24 @@ public class MapDataStore
         _mapData = mapData;
 
         var teamsData = await MapDataHelper.GetTeamsData();
-        _teamsData = [.. teamsData ?? []];
+        _teamsData = [.. teamsData];
 
         //var roundsData = await MapDataHelper.GetRoundsData();
         List<RoundData> roundsData =
             [
-                new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
-                new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
-                new RoundData(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
-                new RoundData(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),
-                new RoundData(4, "Voting 2", RoundKind.Voting, nameof(ResourcesData.R4)),
-                new RoundData(5, "Running 3", RoundKind.GatherResources, nameof(ResourcesData.R2)),
-                new RoundData(6, "Voting 3", RoundKind.Voting, nameof(ResourcesData.R2)),
-                new RoundData(7, "Running 4", RoundKind.GatherResources, nameof(ResourcesData.R3)),
-                new RoundData(8, "Voting 4", RoundKind.Voting, nameof(ResourcesData.R3)),
-                new RoundData(9, "Game Over", RoundKind.GameOver, null)
+                new(0, "Waiting for Game Start", RoundKind.NotStarted,null),
+                new(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
+                new(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
+                new(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),
+                new(4, "Voting 2", RoundKind.Voting, nameof(ResourcesData.R4)),
+                new(5, "Running 3", RoundKind.GatherResources, nameof(ResourcesData.R2)),
+                new(6, "Voting 3", RoundKind.Voting, nameof(ResourcesData.R2)),
+                new(7, "Running 4", RoundKind.GatherResources, nameof(ResourcesData.R3)),
+                new(8, "Voting 4", RoundKind.Voting, nameof(ResourcesData.R3)),
+                new(9, "Game Over", RoundKind.GameOver, null)
             ];
 
-        _roundsData = new RoundDataStore(roundsData);
+        _roundsDataStore = new RoundDataStore(roundsData);
     }
 
     #endregion
@@ -165,15 +165,8 @@ public class MapDataStore
         try
         {
             var currentAdditionalTeamResources = team?.AdditionalResources ?? ResourcesData.Empty;
-
-            var destrictResources = _mapData.Districts
-                .Where(dd => dd.Owner is not null && dd.Owner.Name == teamName)
-                .Select(dd => dd.Resources)
-                .Aggregate(new ResourcesData(), (acc, item) => acc + item);
-
-            var totalResources = currentAdditionalTeamResources + destrictResources;
-
-            return totalResources;
+            var districtResources = GetCurrentDistrictResources(team);
+            return currentAdditionalTeamResources + districtResources;
         }
         finally
         {
@@ -181,12 +174,20 @@ public class MapDataStore
         }
     }
 
+    private ResourcesData GetCurrentDistrictResources(TeamData? team)
+    {
+        return _mapData.Districts
+            .Where(dd => dd.Owner is not null && dd.Owner.Name == team?.Name)
+            .Select(dd => dd.Resources)
+            .Aggregate(new ResourcesData(), (acc, item) => acc + item);
+    }
+
     public async Task<string?> GetCurrentResourceOfInterest()
     {
         await _semaphore.WaitAsync();
         try
         {
-            return _roundsData.GetCurrentRound().ResourceOfInterest;
+            return _roundsDataStore.GetCurrentRound().ResourceOfInterest;
         }
         finally
         {
@@ -196,7 +197,20 @@ public class MapDataStore
 
     public async Task<RoundDataStore> GetRoundsDataStore()
     {
-        return await Task.FromResult(_roundsData);
+        return await Task.FromResult(_roundsDataStore);
+    }
+
+    public async Task<IEnumerable<TeamScore>> GetTeamScores()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _snapshotDataStore.GetAllTeamScores();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     #endregion
@@ -380,19 +394,26 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
+            var teamResouces = _teamsData
+                .Select(t => new TeamResources(t, 
+                    t.AdditionalResources, 
+                    GetCurrentDistrictResources(t), 
+                    _roundsDataStore.GetCurrentRound().ResourceOfInterest))
+                .ToList();
+
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
-                _teamsData,
-                _roundsData.CurrentRoundNumber);
+                teamResouces,
+                _roundsDataStore.GetCurrentRound());
 
             // reset all trigger circles 
             ClearClaimsInternal(null);
 
             // we only want to reset our resources when we're exiting a voting round
-            if (_roundsData.GetCurrentRound().Kind == RoundKind.Voting)
+            if (_roundsDataStore.GetCurrentRound().Kind == RoundKind.Voting)
                 ClearAllTeamsAdditionalResources();
 
-            return _roundsData.NextRound();
+            return _roundsDataStore.NextRound();
         }
         finally
         {
@@ -407,25 +428,7 @@ public class MapDataStore
             team.AdditionalResources = ResourcesData.Empty;
         }
     }
-
-    public async Task<RoundData?> PreviousRound()
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            _snapshotDataStore.CreateSnapshot(
-                _mapData,
-                _teamsData,
-                _roundsData.CurrentRoundNumber);
-
-            return _roundsData.PreviousRound();
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
+    
     public async Task ResetGame()
     {
         await _semaphore.WaitAsync();

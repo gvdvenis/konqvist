@@ -139,4 +139,16 @@ public class ResourcesData
             R4 = a.R4 / b.R4
         };
     }
+
+    public int GetScore(string? resourceName)
+    {
+        return resourceName switch
+        {
+            "R1" => R1,
+            "R2" => R2,
+            "R3" => R3,
+            "R4" => R4,
+            _ => 0
+        };
+    }
 }

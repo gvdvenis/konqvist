@@ -45,9 +45,9 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    KmlToMapDataConverter.Run(
-        @"D:\Source\konqvist\Konqvist.Data\Data\Konqvist.kml",
-        @"D:\Source\konqvist\Konqvist.Data\Data\map.json");
+    //KmlToMapDataConverter.Run(
+    //    @"D:\Source\konqvist\Konqvist.Data\Data\Konqvist.kml",
+    //    @"D:\Source\konqvist\Konqvist.Data\Data\map.json");
 }
 
 app.UseAuthentication();

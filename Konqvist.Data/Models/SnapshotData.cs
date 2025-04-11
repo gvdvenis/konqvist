@@ -2,4 +2,7 @@
 
 namespace Konqvist.Data.Models;
 
-internal record SnapshotData(int Round, IEnumerable<DistrictOwner> DistrictOwners, IEnumerable<TeamResource> Resources);
+internal record SnapshotData(
+    RoundData Round,
+    IEnumerable<DistrictOwner> DistrictOwners,
+    IEnumerable<TeamResources> TeamResources);

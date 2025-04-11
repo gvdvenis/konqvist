@@ -2,4 +2,19 @@
 
 namespace Konqvist.Data.Contracts;
 
-public record TeamResource(TeamData Team, ResourcesData Resources);
+public record TeamResources(
+    TeamData Team, 
+    ResourcesData AdditionalResources, 
+    ResourcesData DistrictResources, 
+    string? RelevantResourceName)
+{
+    public int GetScore()
+    {
+        if (RelevantResourceName is null)
+        {
+            return 0;
+        }
+
+        return AdditionalResources.GetScore(RelevantResourceName) + DistrictResources.GetScore(RelevantResourceName);
+    }
+}

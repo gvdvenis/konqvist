@@ -26,6 +26,19 @@
     {
         <TeamCard Team="@team" AllowEdit="true"/>
     }
+    
+    <div class="full-span"
+         style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
+        <h3>Scores:</h3>
+        <p class="vertically-centered">
+            @foreach (var score in _teamScores)
+            {
+                <FluentBadge Circular="true" Class="resource-badge" Height="24px">
+                    @score.TeamName: @score.Score
+                </FluentBadge>
+            }
+        </p>
+    </div>
 </div>
 
 <SectionContent SectionName="FooterContentSection">
@@ -52,9 +65,9 @@
 @code {
 
     private IEnumerable<Team> _teams = [];
+    private IEnumerable<TeamScore> _teamScores = [];
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
     private RoundData _currentRound = RoundData.Empty;
-
     private UserSession Session => SessionProvider.Session;
     public string TeamName { get; set; } = "";
 
@@ -67,7 +80,9 @@
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
         _roundDataStore = await MapDataStore.GetRoundsDataStore();
+        _teamScores = await MapDataStore.GetTeamScores();
         _currentRound = _roundDataStore.GetCurrentRound();
+
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
         HubClient.OnNewRoundStarted += OnNewRoundStarted;
@@ -75,10 +90,12 @@
 
     #endregion
 
-    private Task OnNewRoundStarted(RoundData roundData)
+    private async Task OnNewRoundStarted(RoundData roundData)
     {
         _currentRound = roundData;
-        return InvokeAsync(StateHasChanged);
+        _teamScores = await MapDataStore.GetTeamScores();
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);

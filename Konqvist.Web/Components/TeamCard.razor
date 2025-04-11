@@ -20,7 +20,7 @@
 @code {
 
     [Parameter] public Team Team { get; set; } = Team.Empty;
-    [Parameter] public bool AllowEdit { get; set; } = false;
+    [Parameter] public bool AllowEdit { get; set; }
 
     private UserSession _session = UserSession.Empty;
     

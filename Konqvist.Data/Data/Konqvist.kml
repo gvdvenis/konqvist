@@ -163,6 +163,46 @@
         <styleUrl>#icon-1499-1A237E-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="icon-1499-424242-nodesc-normal">
+      <IconStyle>
+        <color>ff424242</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-424242-nodesc-highlight">
+      <IconStyle>
+        <color>ff424242</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-424242-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-424242-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-424242-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="icon-1499-7CB342-nodesc-normal">
       <IconStyle>
         <color>ff42b37c</color>
@@ -323,6 +363,86 @@
         <styleUrl>#icon-1499-AFB42B-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="icon-1499-BDBDBD-nodesc-normal">
+      <IconStyle>
+        <color>ffbdbdbd</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-BDBDBD-nodesc-highlight">
+      <IconStyle>
+        <color>ffbdbdbd</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-BDBDBD-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-BDBDBD-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-BDBDBD-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1499-F9A825-nodesc-normal">
+      <IconStyle>
+        <color>ff25a8f9</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1499-F9A825-nodesc-highlight">
+      <IconStyle>
+        <color>ff25a8f9</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1499-F9A825-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1499-F9A825-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1499-F9A825-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="icon-1499-FF5252-nodesc-normal">
       <IconStyle>
         <color>ff5252ff</color>
@@ -441,6 +561,48 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#icon-1499-FFEA00-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1899-0288D1-nodesc-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-0288D1-nodesc-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-0288D1-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-006064-1200-77-nodesc-normal">
@@ -1251,7 +1413,7 @@
         <styleUrl>#icon-1499-0097A7-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2510909,51.8836339,0
+            6.2522925,51.8833491,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1265,11 +1427,11 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>Test</name>
+        <name>Längelsön</name>
         <styleUrl>#icon-1499-9C27B0-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2662851,51.8862277,0
+            6.2662756,51.8859703,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1278,7 +1440,7 @@
         <styleUrl>#icon-1499-FF5252-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2398924,51.8738577,0
+            6.2400855,51.8738511,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1287,25 +1449,25 @@
         <styleUrl>#icon-1499-AFB42B-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2579972,51.8741518,0
+            6.2568063,51.8740193,0
           </coordinates>
         </Point>
       </Placemark>
       <Placemark>
-        <name>Shafte</name>
+        <name>Shäfte</name>
         <styleUrl>#icon-1499-0288D1-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2512488,51.875964,0
+            6.249897,51.8751957,0
           </coordinates>
         </Point>
       </Placemark>
       <Placemark>
-        <name>litörna</name>
+        <name>Litörna</name>
         <styleUrl>#icon-1499-1A237E-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2479977,51.8773024,0
+            6.2484269,51.8784681,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1319,7 +1481,7 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>Balla</name>
+        <name>Bålla</name>
         <styleUrl>#icon-1499-0F9D58-nodesc</styleUrl>
         <Point>
           <coordinates>
@@ -1332,7 +1494,7 @@
         <styleUrl>#icon-1499-FFD600-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2678374,51.880542,0
+            6.2680171,51.8797671,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1341,17 +1503,89 @@
         <styleUrl>#icon-1499-FFD600-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2604491,51.8808553,0
+            6.2603364,51.8810647,0
           </coordinates>
         </Point>
       </Placemark>
       <Placemark>
-        <name>fisk butik Jörgen
+        <name>Fisk butik Jörgen
 </name>
         <styleUrl>#icon-1499-0F9D58-nodesc</styleUrl>
         <Point>
           <coordinates>
-            6.2660059,51.8804827,0
+            6.2658664,51.8806515,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Dalahäst</name>
+        <styleUrl>#icon-1499-F9A825-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2626543,51.8696828,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Shämägård</name>
+        <styleUrl>#icon-1499-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2481156,51.8721039,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vitsjö</name>
+        <styleUrl>#icon-1499-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2493009,51.8707532,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kätiä</name>
+        <styleUrl>#icon-1499-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2644288,51.8762589,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Puck & kompani]]></name>
+        <styleUrl>#icon-1499-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2603564,51.8793723,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Isgård</name>
+        <styleUrl>#icon-1499-424242-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.2571834,51.8714501,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Nattstjärna</name>
+        <styleUrl>#icon-1499-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.274991,51.8782126,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Tänka</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            6.27621,51.8760417,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1424,8 +1658,7 @@
                 6.2473094,51.879656,0
                 6.2474073,51.8796444,0
                 6.2498863,51.8833773,0
-                6.249893,51.8834954,0
-                6.249779,51.8835126,0
+                6.2498426,51.883501,0
                 6.2483258,51.8837129,0
                 6.247725,51.8837792,0
                 6.2472154,51.883756,0
@@ -1460,16 +1693,16 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                6.2467033,51.8728771,0
-                6.2464445,51.8731296,0
-                6.2465768,51.8733192,0
-                6.2465213,51.8741681,0
-                6.2460447,51.8760627,0
-                6.2455432,51.8759468,0
-                6.2448672,51.8757919,0
-                6.2446097,51.8760834,0
-                6.243966,51.8762688,0
-                6.242314,51.8762055,0
+                6.2466524,51.8728134,0
+                6.2467033,51.8728639,0
+                6.2464445,51.8731164,0
+                6.2465755,51.8733052,0
+                6.2465452,51.8740795,0
+                6.2460447,51.8760495,0
+                6.2448659,51.8757779,0
+                6.2446084,51.8760694,0
+                6.2439647,51.8762548,0
+                6.242314,51.8761923,0
                 6.2409459,51.8753084,0
                 6.2394868,51.8746196,0
                 6.2390687,51.8737246,0
@@ -1479,7 +1712,7 @@
                 6.2414211,51.8718795,0
                 6.2427139,51.8718215,0
                 6.2461075,51.8725139,0
-                6.2467033,51.8728771,0
+                6.2466524,51.8728134,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -1522,7 +1755,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Balla</name>
+        <name>Bålla</name>
         <styleUrl>#poly-817717-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1555,7 +1788,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Shafte</name>
+        <name>Shäfte</name>
         <styleUrl>#poly-FFFF8D-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1594,15 +1827,17 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>troiHüllen</name>
+        <name>TroiHüllen</name>
         <styleUrl>#poly-0288D1-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                6.2572821,51.8803444,0
-                6.2563487,51.8811393,0
+                6.2535592,51.880149,0
+                6.2548037,51.8802865,0
+                6.255249,51.8804877,0
+                6.2553429,51.8807837,0
                 6.2562253,51.8814837,0
                 6.2558766,51.8821691,0
                 6.2560429,51.8822685,0
@@ -1622,14 +1857,12 @@
                 6.2563975,51.8834327,0
                 6.2556679,51.8834062,0
                 6.2521489,51.8838963,0
-                6.250825,51.8837854,0
+                6.2508885,51.8837347,0
                 6.2511738,51.8829783,0
                 6.2515385,51.8823822,0
                 6.2524398,51.8812564,0
                 6.2531479,51.8804484,0
-                6.2544997,51.8793092,0
-                6.2545855,51.8792032,0
-                6.2572821,51.8803444,0
+                6.2535592,51.880149,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -1653,8 +1886,12 @@
                 6.2560429,51.8822685,0
                 6.2558766,51.8821691,0
                 6.2562253,51.8814837,0
-                6.2563487,51.8811393,0
-                6.2572821,51.8803444,0
+                6.2553429,51.8807837,0
+                6.255249,51.8804877,0
+                6.2548037,51.8802865,0
+                6.2535592,51.880149,0
+                6.2544997,51.8793092,0
+                6.2545855,51.8792032,0
                 6.2575134,51.8804402,0
               </coordinates>
             </LinearRing>
@@ -1740,7 +1977,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>fisk butik Jörgen
+        <name>Fisk butik Jörgen
 </name>
         <styleUrl>#poly-0F9D58-1200-77-nodesc</styleUrl>
         <Polygon>
@@ -1828,7 +2065,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 20</name>
+        <name>Shämägård</name>
         <styleUrl>#poly-CE93D8-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1852,7 +2089,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 14</name>
+        <name><![CDATA[Puck & kompani]]></name>
         <styleUrl>#poly-B2EBF2-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1896,14 +2133,14 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>litörna</name>
+        <name>Litörna</name>
         <styleUrl>#poly-1A237E-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                6.249893,51.8834954,0
+                6.2498426,51.883501,0
                 6.2498863,51.8833773,0
                 6.2474073,51.8796444,0
                 6.2469431,51.8789874,0
@@ -1925,17 +2162,16 @@
                 6.2524398,51.8812564,0
                 6.2515385,51.8823822,0
                 6.2511738,51.8829783,0
-                6.250825,51.8837854,0
-                6.2504456,51.8837257,0
-                6.2500808,51.8836528,0
-                6.249893,51.8834954,0
+                6.2508885,51.8837347,0
+                6.2501586,51.8836074,0
+                6.2498426,51.883501,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 16</name>
+        <name>Vitsjö</name>
         <styleUrl>#poly-006064-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -1978,7 +2214,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 17</name>
+        <name>Isgård</name>
         <styleUrl>#poly-795548-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -2014,7 +2250,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 18</name>
+        <name>Dalahäst</name>
         <styleUrl>#poly-F57C00-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -2049,7 +2285,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 19</name>
+        <name>Kätiä</name>
         <styleUrl>#poly-CE93D8-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -2081,7 +2317,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 20</name>
+        <name>Nattstjärna</name>
         <styleUrl>#poly-EDA29B-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -2126,7 +2362,7 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygoon 22</name>
+        <name>Tänka</name>
         <styleUrl>#poly-F9A825-1200-77-nodesc</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -2221,31 +2457,41 @@
                 6.2508885,51.8837347,0
                 6.2501586,51.8836074,0
                 6.2498426,51.883501,0
-                6.2483406,51.8837063,0
-                6.2477398,51.8837726,0
-                6.2472302,51.8837494,0
-                6.2469137,51.8836732,0
-                6.246624,51.8835606,0
-                6.2464791,51.8835308,0
-                6.2455966,51.8834471,0
-                6.2446096,51.8832948,0
-                6.2445935,51.8832484,0
-                6.2444272,51.8832153,0
-                6.2441697,51.8831342,0
-                6.2438639,51.8829885,0
-                6.2436762,51.8828759,0
-                6.2429413,51.8822202,0
-                6.2427133,51.8820795,0
-                6.2416967,51.88175,0
-                6.2415358,51.8816739,0
-                6.2415031,51.8816131,0
-                6.2415165,51.8815585,0
-                6.2419839,51.8808315,0
-                6.2404604,51.8806858,0
-                6.2384005,51.8810302,0
-                6.2375422,51.8807918,0
-                6.2372418,51.8805666,0
-                6.2368536,51.8804922,0
+                6.2483258,51.8837129,0
+                6.247725,51.8837792,0
+                6.2472154,51.883756,0
+                6.2468989,51.8836798,0
+                6.2466092,51.8835672,0
+                6.2464643,51.8835374,0
+                6.2455818,51.8834537,0
+                6.2445948,51.8833014,0
+                6.2445787,51.883255,0
+                6.2444124,51.8832219,0
+                6.2441549,51.8831425,0
+                6.2438491,51.8829968,0
+                6.2436614,51.8828842,0
+                6.2429265,51.8822285,0
+                6.2426985,51.8820878,0
+                6.242323,51.8819289,0
+                6.2416819,51.8817583,0
+                6.241521,51.8816822,0
+                6.2414883,51.8816214,0
+                6.2415017,51.8815668,0
+                6.2419691,51.8808381,0
+                6.2404469,51.8807023,0
+                6.2400637,51.8807479,0
+                6.2395705,51.8808298,0
+                6.2385198,51.8810293,0
+                6.2384192,51.8810389,0
+                6.2383294,51.8810318,0
+                6.2381765,51.8810078,0
+                6.2379618,51.8809656,0
+                6.2377272,51.8809019,0
+                6.2375274,51.8807984,0
+                6.237227,51.8805732,0
+                6.2368112,51.8804954,0
+                6.2372458,51.8799092,0
+                6.2378546,51.8790036,0
                 6.2388363,51.8774736,0
                 6.239185,51.8770463,0
                 6.2397523,51.8766456,0
@@ -2253,16 +2499,16 @@
                 6.2404241,51.8763724,0
                 6.2407862,51.8762788,0
                 6.2411966,51.8762283,0
-                6.2423221,51.8761783,0
-                6.240954,51.8752812,0
-                6.2394949,51.8745924,0
-                6.2390768,51.8736974,0
-                6.2391949,51.8729938,0
-                6.2394055,51.8728301,0
-                6.240853,51.8719785,0
-                6.2414292,51.8718523,0
-                6.242722,51.8717943,0
-                6.2461156,51.8724867,0
+                6.242314,51.8761923,0
+                6.2409459,51.8753084,0
+                6.2394868,51.8746196,0
+                6.2390687,51.8737246,0
+                6.2391868,51.873021,0
+                6.2393974,51.8728573,0
+                6.2408449,51.8720057,0
+                6.2414211,51.8718795,0
+                6.2427139,51.8718215,0
+                6.2461075,51.8725139,0
                 6.2466524,51.8728134,0
                 6.2471503,51.8723806,0
                 6.2478407,51.871433,0

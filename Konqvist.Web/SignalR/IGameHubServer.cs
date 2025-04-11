@@ -3,7 +3,7 @@
 public interface IGameHubServer
 {
     Task BroadcastActorMove(ActorLocation actorLocation);
-    
+
     /// <summary>
     ///     Signals all clients that a new runner should be added to the map.
     /// </summary>
@@ -45,4 +45,6 @@ public interface IGameHubServer
     /// <param name="additionalResources"></param>
     /// <returns></returns>
     Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources);
+
+    Task SendResetGameRequest();
 }

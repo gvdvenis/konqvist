@@ -680,9 +680,9 @@
       "owner": null,
       "name": "Pann\u00E5k\u00F6i",
       "resources": {
-        "r1": 10,
+        "r1": 40,
         "r2": 30,
-        "r3": 40,
+        "r3": 10,
         "r4": 20
       },
       "isClaimable": true
@@ -809,10 +809,10 @@
       "owner": null,
       "name": "M\u00F6lenBarg",
       "resources": {
-        "r1": 10,
-        "r2": 30,
-        "r3": 40,
-        "r4": 20
+        "r1": 20,
+        "r2": 40,
+        "r3": 10,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -906,10 +906,10 @@
       "owner": null,
       "name": "Jykkel",
       "resources": {
-        "r1": 40,
-        "r2": 30,
-        "r3": 20,
-        "r4": 10
+        "r1": 20,
+        "r2": 10,
+        "r3": 40,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -1015,10 +1015,10 @@
       "owner": null,
       "name": "Sacka",
       "resources": {
-        "r1": 30,
-        "r2": 10,
-        "r3": 20,
-        "r4": 40
+        "r1": 10,
+        "r2": 20,
+        "r3": 40,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -1112,10 +1112,10 @@
       "owner": null,
       "name": "B\u00E5lla",
       "resources": {
-        "r1": 40,
-        "r2": 20,
-        "r3": 30,
-        "r4": 10
+        "r1": 10,
+        "r2": 30,
+        "r3": 20,
+        "r4": 40
       },
       "isClaimable": true
     },
@@ -1235,8 +1235,8 @@
       "resources": {
         "r1": 20,
         "r2": 40,
-        "r3": 30,
-        "r4": 10
+        "r3": 10,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -1366,10 +1366,10 @@
       "owner": null,
       "name": "TroiH\u00FCllen",
       "resources": {
-        "r1": 10,
-        "r2": 30,
-        "r3": 40,
-        "r4": 20
+        "r1": 30,
+        "r2": 40,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1451,10 +1451,10 @@
       "owner": null,
       "name": "Sol\u00E4ng",
       "resources": {
-        "r1": 40,
-        "r2": 20,
-        "r3": 10,
-        "r4": 30
+        "r1": 20,
+        "r2": 30,
+        "r3": 40,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1693,10 +1693,10 @@
       "owner": null,
       "name": "Friidrottsbana",
       "resources": {
-        "r1": 30,
-        "r2": 10,
-        "r3": 40,
-        "r4": 20
+        "r1": 40,
+        "r2": 30,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1798,10 +1798,10 @@
       "owner": null,
       "name": "Fisk butik J\u00F6rgen\n",
       "resources": {
-        "r1": 10,
-        "r2": 20,
-        "r3": 40,
-        "r4": 30
+        "r1": 30,
+        "r2": 40,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -1971,10 +1971,10 @@
       "owner": null,
       "name": "L\u00E4ngels\u00F6n",
       "resources": {
-        "r1": 10,
+        "r1": 40,
         "r2": 30,
-        "r3": 40,
-        "r4": 20
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2032,10 +2032,10 @@
       "owner": null,
       "name": "Sh\u00E4m\u00E4g\u00E5rd",
       "resources": {
-        "r1": 40,
-        "r2": 30,
-        "r3": 20,
-        "r4": 10
+        "r1": 30,
+        "r2": 10,
+        "r3": 40,
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -2173,10 +2173,10 @@
       "owner": null,
       "name": "Puck \u0026 kompani",
       "resources": {
-        "r1": 20,
-        "r2": 10,
-        "r3": 30,
-        "r4": 40
+        "r1": 30,
+        "r2": 40,
+        "r3": 20,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2290,10 +2290,10 @@
       "owner": null,
       "name": "Lit\u00F6rna",
       "resources": {
-        "r1": 40,
+        "r1": 20,
         "r2": 30,
-        "r3": 10,
-        "r4": 20
+        "r3": 40,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2427,10 +2427,10 @@
       "owner": null,
       "name": "Vitsj\u00F6",
       "resources": {
-        "r1": 40,
-        "r2": 10,
-        "r3": 20,
-        "r4": 30
+        "r1": 30,
+        "r2": 20,
+        "r3": 10,
+        "r4": 40
       },
       "isClaimable": true
     },
@@ -2538,8 +2538,8 @@
       "resources": {
         "r1": 20,
         "r2": 40,
-        "r3": 10,
-        "r4": 30
+        "r3": 30,
+        "r4": 10
       },
       "isClaimable": true
     },
@@ -2641,10 +2641,10 @@
       "owner": null,
       "name": "Dalah\u00E4st",
       "resources": {
-        "r1": 20,
+        "r1": 10,
         "r2": 30,
         "r3": 40,
-        "r4": 10
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -2735,9 +2735,9 @@
       "name": "K\u00E4ti\u00E4",
       "resources": {
         "r1": 30,
-        "r2": 10,
-        "r3": 20,
-        "r4": 40
+        "r2": 40,
+        "r3": 10,
+        "r4": 20
       },
       "isClaimable": true
     },
@@ -2879,10 +2879,10 @@
       "owner": null,
       "name": "Nattstj\u00E4rna",
       "resources": {
-        "r1": 40,
-        "r2": 20,
-        "r3": 30,
-        "r4": 10
+        "r1": 20,
+        "r2": 40,
+        "r3": 10,
+        "r4": 30
       },
       "isClaimable": true
     },
@@ -2972,10 +2972,10 @@
       "owner": null,
       "name": "T\u00E4nka",
       "resources": {
-        "r1": 10,
-        "r2": 20,
-        "r3": 30,
-        "r4": 40
+        "r1": 40,
+        "r2": 30,
+        "r3": 10,
+        "r4": 20
       },
       "isClaimable": true
     }

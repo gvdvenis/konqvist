@@ -83,6 +83,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources) =>
         _hubConnection.SendAsync(nameof(SendSetAdditionalResourcesRequest), teamName, additionalResources);
 
+    public Task SendResetGameRequest() =>
+        _hubConnection.SendAsync(nameof(SendResetGameRequest));
+
     #endregion
 
     #region IGameHubClient implements

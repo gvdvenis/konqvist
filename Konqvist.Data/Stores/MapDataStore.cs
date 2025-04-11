@@ -32,53 +32,13 @@ public class MapDataStore
     private async Task InitializeAsync()
     {
         var mapData = await MapDataHelper.GetMapData().ConfigureAwait(false);
-        await InitializeMapDataAsync(mapData);
+        _mapData = mapData;
 
         var teamsData = await MapDataHelper.GetTeamsData();
-        await InitializeTeamsDataAsync(teamsData);
+        _teamsData = [.. teamsData ?? []];
 
         //var roundsData = await MapDataHelper.GetRoundsData();
-        await InitializeRoundsDataAsync(null);
-    }
-
-    /// <summary>
-    /// Initializes the data store with map data
-    /// </summary>
-    public async Task InitializeMapDataAsync(MapData mapData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            _mapData = mapData;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    /// <summary>
-    /// Initializes the data store with team data
-    /// </summary>
-    public async Task InitializeTeamsDataAsync(IEnumerable<TeamData>? teamsData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            _teamsData = [.. teamsData ?? []];
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    public async Task InitializeRoundsDataAsync(List<RoundData>? roundsData)
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            roundsData ??=
+        List<RoundData> roundsData =
             [
                 new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
                 new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
@@ -92,12 +52,7 @@ public class MapDataStore
                 new RoundData(9, "Game Over", RoundKind.GameOver, null)
             ];
 
-            _roundsData = new RoundDataStore(roundsData);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        _roundsData = new RoundDataStore(roundsData);
     }
 
     #endregion
@@ -464,6 +419,20 @@ public class MapDataStore
                 _roundsData.CurrentRoundNumber);
 
             return _roundsData.PreviousRound();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task ResetGame()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            _snapshotDataStore.Clear();
+            await InitializeAsync();
         }
         finally
         {

@@ -20,4 +20,9 @@ internal class SnapshotDataStore
 
         _roundSnapshots[round] = newSnapshot;
     }
+
+    internal void Clear()
+    {
+        _roundSnapshots.Clear();
+    }
 }

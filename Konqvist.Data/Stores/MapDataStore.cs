@@ -18,6 +18,7 @@ public class MapDataStore
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly SnapshotDataStore _snapshotDataStore = new();
+    public bool TestmodeEnabled { get; set; }
 
     public static async Task<MapDataStore> GetInstanceAsync()
     {
@@ -53,6 +54,7 @@ public class MapDataStore
             ];
 
         _roundsDataStore = new RoundDataStore(roundsData);
+        TestmodeEnabled = false;
     }
 
     #endregion
@@ -213,6 +215,18 @@ public class MapDataStore
         }
     }
 
+    public async Task<RoundKind> GetCurrentAppState()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _roundsDataStore.GetCurrentRound().Kind;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
     #endregion
 
     #region WriteData methods

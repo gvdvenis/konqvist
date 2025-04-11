@@ -24,12 +24,13 @@
 
         if (ctx.User.Identity is { IsAuthenticated: true })
         {
-            await HttpContext.SignOutAsync();
 
             if (session.IsPlayer)
             {
                 await HubClient.SendRunnerLogoutRequest(session.TeamName);
             } 
+
+            await HttpContext.SignOutAsync();
             
             SessionProvider.ClearSession();
 

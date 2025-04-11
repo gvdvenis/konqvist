@@ -5,38 +5,43 @@
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 
-@attribute [AuthorizeGameRoles(GameRole.GameMaster)]
+@attribute [AuthorizeGameRoles(GameRole.GameMaster, GameRole.TeamLeader)]
 
 <div class="card-grid">
-    <div class="full-span"
-         style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
-        <p class="vertically-centered">
-            @_currentRound.Title
-            <FluentSpacer />
-            <FluentButton Appearance="Appearance.Outline"
-                          OnClick="NextRound"
-                          Style="border-radius: 0 15px 15px 0;"
-                          IconEnd="@(new NavIcons.ArrowRight())">
-                Volgende Ronde
-            </FluentButton>
-        </p>
-    </div>
+    @if (Session.IsAdmin)
+    {
+        <div class="full-span"
+             style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
+            <p class="vertically-centered">
+                @_currentRound.Title
+                <FluentSpacer />
+                <FluentButton Appearance="Appearance.Outline"
+                              OnClick="NextRound"
+                              Style="border-radius: 0 15px 15px 0;"
+                              IconEnd="@(new NavIcons.ArrowRight())">
+                    Volgende Ronde
+                </FluentButton>
+            </p>
+        </div>
+    }
 
     @foreach (var team in _teams)
     {
-        <TeamCard Team="@team" AllowEdit="true"/>
+        <TeamCard Team="@team" AllowEdit="@Session.IsAdmin" />
     }
-    
+
     <div class="full-span"
          style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
-        <h3>Scores:</h3>
+        <h3 class="center-content">Scores:</h3>
         <p class="vertically-centered">
+            <FluentSpacer />
             @foreach (var score in _teamScores)
             {
                 <FluentBadge Circular="true" Class="resource-badge" Height="24px">
                     @score.TeamName: @score.Score
                 </FluentBadge>
             }
+            <FluentSpacer />
         </p>
     </div>
 </div>
@@ -44,20 +49,14 @@
 <SectionContent SectionName="FooterContentSection">
     <FluentSpacer />
     <FluentToolbar>
-        <FluentButton IconEnd="@(new NavIcons.KeyReset())"
-                      OnClick="ResetClaimState"
-                      Disabled="!Session.IsAdmin"
-                      Title="Reset Claim State" />
         <FluentButton IconEnd="@(new NavIcons.Map())"
                       OnClick="ShowMap"
+                      Title="Show Map" />
+        <FluentButton IconEnd="@(new NavIcons.SignOut())"
+                      OnClick="ResetGame"
+                      BackgroundColor="var(--error)"
                       Disabled="!Session.IsAdmin"
-                      Title="Management Dashboard" />
-@*         <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
-                      OnClick="LogoutAllRunners"
-                      Appearance="Appearance.Outline"
-                      Color="red"
-                      Disabled="!Session.IsAdmin"
-                      Title="Logout all active runners" /> *@
+                      Title="Reset Game" />
     </FluentToolbar>
     <FluentSpacer />
 </SectionContent>
@@ -92,10 +91,32 @@
 
     private async Task OnNewRoundStarted(RoundData roundData)
     {
+        if (Session.IsTeamLeader)
+        {
+            switch (roundData.Kind)
+            {
+                case RoundKind.NotStarted:
+                    NavigationManager.NavigateTo("/waitforstart");
+                    break;
+                case RoundKind.Voting:
+                    NavigationManager.NavigateTo("/voting");
+                    break;
+                case RoundKind.GameOver:
+                    NavigationManager.NavigateTo("/gameover");
+                    break;
+                case RoundKind.GatherResources:
+                    NavigationManager.NavigateTo("/map");
+                    break;
+            }
+
+            return;
+        }
+
         _currentRound = roundData;
         _teamScores = await MapDataStore.GetTeamScores();
 
         await InvokeAsync(StateHasChanged);
+
     }
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
@@ -125,4 +146,10 @@
 
         await HubClient.SendRunnerLogoutRequest();
     }
+
+    private void ResetGame()
+    {
+        NavigationManager.NavigateTo("/resetgame");
+    }
+
 }

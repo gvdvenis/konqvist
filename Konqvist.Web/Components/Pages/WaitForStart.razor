@@ -1,4 +1,4 @@
-﻿@page "/voting"
+﻿@page "/waitforstart"
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -9,38 +9,42 @@
 @attribute [Authorize]
 
 <div class="center-content">
-    <h3>
-        Cast your votes please!
-    </h3>
-    <p> Sorry folks! Your favorite app developer wasn't able to get this part done in time. But he's sure y'all figure something out.</p>
+    <h3> Let the game begin! </h3>
+    <p>
+        Please wait patiently for the game master to start the game.
+    </p>
 </div>
 
 @code {
 
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-
+        
         HubClient.OnNewRoundStarted += SetAppGameState;
     }
 
-    private Task SetAppGameState(RoundData e)
+    private Task SetAppGameState(RoundData arg)
     {
-        if (SessionProvider.Session.IsAdmin) return Task.CompletedTask;
-
-        switch (e.Kind)
+        switch (arg.Kind)
         {
-            case RoundKind.GatherResources:
-                NavigationManager.NavigateTo("/map");
+            case RoundKind.Voting:
+                NavigationManager.NavigateTo("/voting");
                 break;
             case RoundKind.GameOver:
                 NavigationManager.NavigateTo("/gameover");
                 break;
-            case RoundKind.NotStarted:
-                NavigationManager.NavigateTo("/waitforstart");
+            case RoundKind.GatherResources:
+                NavigationManager.NavigateTo("/map");
                 break;
         }
 
         return Task.CompletedTask;
     }
+
+    #endregion
+
 }

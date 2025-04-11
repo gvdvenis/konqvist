@@ -1,5 +1,8 @@
 ﻿@page "/"
 @page "/map"
+@page "/maptestdisable"
+@page "/maptestenable"
+
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Diagnostics
@@ -43,7 +46,12 @@
                     <ul>
                         @foreach (var prop in district.ResourceDictionary)
                         {
-                            <li>@prop.Key: @prop.Value</li>
+                            <li>
+                                @*                                 <FluentIcon Color="Color.Custom" 
+                                            CustomColor="#000" 
+                                            Value="@(new NavIcons.CoinStack())" /> *@
+                                @prop.Key: @prop.Value
+                            </li>
                         }
                     </ul>
                     <p>Owner: @district.Owner</p>
@@ -58,20 +66,23 @@
 </FluentStack>
 
 <SectionContent SectionName="FooterContentSection">
-    <FluentSpacer/>
+    <FluentSpacer />
     <FluentToolbar>
+        <FluentButton IconEnd="@(new NavIcons.GlobeLocation())"
+                      OnClick="CenterMap"
+                      Title="Center on game area" />
         <FluentButton IconEnd="@(new NavIcons.MyLocation())"
-        OnClick="CenterLocation"
-        Title="Center on current location"/>
+                      OnClick="CenterLocation"
+                      Title="Center on current location" />
         <FluentButton IconEnd="@(new NavIcons.Eye())"
-        OnClick="@(() => _showTeams = !_showTeams)"
-        Title="Show/Hide Teams"/>
+                      OnClick="@(() => _showTeams = !_showTeams)"
+                      Title="Show/Hide Teams" />
         <FluentButton IconEnd="@(new NavIcons.Organization())"
-        OnClick="ShowDashboard"
-        Disabled="!Session.IsAdmin"
-        Title="Management Dashboard"/>
+                      OnClick="ShowDashboard"
+                      Disabled="!AllowManagement"
+                      Title="Management Dashboard" />
     </FluentToolbar>
-    <FluentSpacer/>
+    <FluentSpacer />
 </SectionContent>
 
 @code {
@@ -84,12 +95,28 @@
     private TeamsLayer? _teamsLayer;
     private DistrictsLayer? _districtsLayer;
     private UserSession Session => SessionProvider.Session;
+    private bool AllowManagement => Session.IsAdmin || Session.IsTeamLeader;
 
     #region Overrides of ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+
+        if (NavigationManager.Uri.Contains("maptestenable"))
+        {
+            MapDataStore.TestmodeEnabled = true;
+            NavigationManager.NavigateTo("/map");
+            return;
+        }
+
+        if (NavigationManager.Uri.Contains("maptestdisable"))
+        {
+            MapDataStore.TestmodeEnabled = false;
+            NavigationManager.NavigateTo("/map");
+            return;
+        }
+
         if (Session.IsPlayer)
         {
             _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
@@ -101,19 +128,26 @@
         }
 
         HubClient.OnNewRoundStarted += OnNewRoundStarted;
+        
     }
-    
+
     private Task OnNewRoundStarted(RoundData e)
     {
         if (Session.IsAdmin) return Task.CompletedTask;
 
-        else if (e.Kind == RoundKind.Voting)
+        switch (e.Kind)
         {
-            NavigationManager.NavigateTo("/voting");
-        }
-        else if (e.Kind == RoundKind.GameOver)
-        {
-            NavigationManager.NavigateTo("/gameover");
+            case RoundKind.Voting:
+                NavigationManager.NavigateTo("/voting");
+                break;
+            case RoundKind.GameOver:
+                NavigationManager.NavigateTo("/gameover");
+                break;
+            case RoundKind.NotStarted:
+                NavigationManager.NavigateTo("/waitforstart");
+                break;
+            case RoundKind.GatherResources:
+                break;
         }
 
         return Task.CompletedTask;
@@ -130,7 +164,10 @@
         Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
         if (!Debugger.IsAttached)
         {
-            OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude)).ConfigureAwait(true).GetAwaiter().GetResult();
+            OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude))
+                .ConfigureAwait(true)
+                .GetAwaiter()
+                .GetResult();
         }
     }
 
@@ -138,6 +175,8 @@
 
     private async Task OnMapClick(Coordinate coordinate)
     {
+        if (!MapDataStore.TestmodeEnabled) return;
+
         if (_districtsLayer is null) return;
 
         await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);
@@ -150,13 +189,17 @@
     {
         var team = await MapDataStore.GetTeamByName(Session.TeamName);
 
-        _center = team is not null && team.PlayerLoggedIn 
-            ? team.Location 
+        _center = team is not null && team.PlayerLoggedIn
+            ? team.Location
             : DefaultCenter;
-
-        ToastService.ShowInfo("Kaart gecentreerd");
     }
-    
+
+    private void CenterMap()
+    {
+        _center = DefaultCenter;
+    }
+
+
     private void ShowDashboard(MouseEventArgs arg)
     {
         NavigationManager.NavigateTo("/management");

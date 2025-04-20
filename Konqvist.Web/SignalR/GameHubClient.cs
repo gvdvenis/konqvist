@@ -114,7 +114,30 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    public Task NewRoundStarted(RoundData newRound) => OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
+    public Task NewRoundStarted(RoundData newRound)
+    {
+
+        if (!_sessionProvider.Session.IsAdmin)
+        {
+            switch (newRound.Kind)
+            {
+                case RoundKind.Voting:
+                    _navigationManager.NavigateTo("/voting");
+                    break;
+                case RoundKind.GameOver:
+                    _navigationManager.NavigateTo("/gameover");
+                    break;
+                case RoundKind.NotStarted:
+                    _navigationManager.NavigateTo("/waitforstart");
+                    break;
+                case RoundKind.GatherResources:
+                    _navigationManager.NavigateTo("/map");
+                    break;
+            }
+        }
+
+        return OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
+    }
 
     public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 

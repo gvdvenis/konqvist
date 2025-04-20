@@ -1,13 +1,14 @@
 ﻿@page "/login"
 @page "/login/{Password}"
 
-@using System.Diagnostics.Eventing.Reader
 @using System.Security.Claims
+@using Konqvist.Web.Services
 @using Microsoft.AspNetCore.Authentication.Cookies
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
+@inject GameModeRoutingService GameModeRoutingService
 
 <div class="center-content">
     <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit" />
@@ -64,23 +65,7 @@
         }
 
         // normal users get routed to other pages depending on current app state
-        var appState = await MapDataStore.GetCurrentAppState();
-
-        switch (appState)
-        {
-            case RoundKind.NotStarted:
-                NavigationManager.NavigateTo("/waitforstart");
-                break;
-            case RoundKind.Voting:
-                NavigationManager.NavigateTo("/voting");
-                break;
-            case RoundKind.GameOver:
-                NavigationManager.NavigateTo("/gameover");
-                break;
-            case RoundKind.GatherResources:
-                NavigationManager.NavigateTo("/map");
-                break;
-        }
+        await GameModeRoutingService.NavigateToGameMode();
     }
 
     private async Task<User?> VerifyPassword()

@@ -126,31 +126,6 @@
                     Timeout = 10000
                 });
         }
-
-        HubClient.OnNewRoundStarted += OnNewRoundStarted;
-        
-    }
-
-    private Task OnNewRoundStarted(RoundData e)
-    {
-        if (Session.IsAdmin) return Task.CompletedTask;
-
-        switch (e.Kind)
-        {
-            case RoundKind.Voting:
-                NavigationManager.NavigateTo("/voting");
-                break;
-            case RoundKind.GameOver:
-                NavigationManager.NavigateTo("/gameover");
-                break;
-            case RoundKind.NotStarted:
-                NavigationManager.NavigateTo("/waitforstart");
-                break;
-            case RoundKind.GatherResources:
-                break;
-        }
-
-        return Task.CompletedTask;
     }
 
     private void OnLocationError(GeolocationPositionError positionError)
@@ -162,21 +137,25 @@
     private void OnLocationChanged(GeolocationPosition obj)
     {
         Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
-        if (!Debugger.IsAttached)
-        {
-            OnMapClick(new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude))
-                .ConfigureAwait(true)
-                .GetAwaiter()
-                .GetResult();
-        }
+        
+        //if (Debugger.IsAttached) return;
+        
+        var coordinate = new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude);
+        UpdateLocation(coordinate).GetAwaiter().GetResult();
     }
 
     #endregion
-
-    private async Task OnMapClick(Coordinate coordinate)
+    
+    private Task OnMapClick(Coordinate coordinate)
     {
-        if (!MapDataStore.TestmodeEnabled) return;
+        // this should only work in test mode
+        return !MapDataStore.TestmodeEnabled 
+            ? Task.CompletedTask 
+            : UpdateLocation(coordinate);
+    }
 
+    private async Task UpdateLocation(Coordinate coordinate)
+    {
         if (_districtsLayer is null) return;
 
         await _districtsLayer.TryClaimDistrict(coordinate, Session.TeamName);

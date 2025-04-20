@@ -91,47 +91,19 @@
 
     private async Task OnNewRoundStarted(RoundData roundData)
     {
-        if (Session.IsTeamLeader)
-        {
-            switch (roundData.Kind)
-            {
-                case RoundKind.NotStarted:
-                    NavigationManager.NavigateTo("/waitforstart");
-                    break;
-                case RoundKind.Voting:
-                    NavigationManager.NavigateTo("/voting");
-                    break;
-                case RoundKind.GameOver:
-                    NavigationManager.NavigateTo("/gameover");
-                    break;
-                case RoundKind.GatherResources:
-                    NavigationManager.NavigateTo("/map");
-                    break;
-            }
-
-            return;
-        }
-
         _currentRound = roundData;
         _teamScores = await MapDataStore.GetTeamScores();
 
         await InvokeAsync(StateHasChanged);
-
     }
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
 
     private Task OnRunnerLoggedInOrOut() => InvokeAsync(StateHasChanged);
 
-    private Task NextRound(MouseEventArgs arg)
-    {
-        return HubClient.SendStartNewRoundRequest();
-    }
+    private Task NextRound(MouseEventArgs arg) => HubClient.SendStartNewRoundRequest();
 
-    private void ShowMap(MouseEventArgs arg)
-    {
-        NavigationManager.NavigateTo("/map");
-    }
+    private void ShowMap(MouseEventArgs arg) => NavigationManager.NavigateTo("/map");
 
     private async Task ResetClaimState()
     {

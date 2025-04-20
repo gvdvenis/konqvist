@@ -23,26 +23,6 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        
-        HubClient.OnNewRoundStarted += SetAppGameState;
-    }
-
-    private Task SetAppGameState(RoundData arg)
-    {
-        switch (arg.Kind)
-        {
-            case RoundKind.Voting:
-                NavigationManager.NavigateTo("/voting");
-                break;
-            case RoundKind.GameOver:
-                NavigationManager.NavigateTo("/gameover");
-                break;
-            case RoundKind.GatherResources:
-                NavigationManager.NavigateTo("/map");
-                break;
-        }
-
-        return Task.CompletedTask;
     }
 
     #endregion

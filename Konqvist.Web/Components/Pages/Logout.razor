@@ -1,5 +1,7 @@
 ﻿@page "/logout"
 
+@rendermode InteractiveServer
+
 @inject NavigationManager NavigationManager
 @inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
@@ -17,25 +19,30 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+        
+        if (HttpContext is not { } ctx) return; // exit if this is not a server side request
 
         var session = await SessionProvider.SessionAsync;
 
-        if (HttpContext is not { } ctx) return;
-
-        if (ctx.User.Identity is { IsAuthenticated: true })
+        if (session.IsAuthenticated)
         {
-
+            await HttpContext.SignOutAsync();
+            
+            SessionProvider.ClearSession();
+            
             if (session.IsPlayer)
             {
                 await HubClient.SendRunnerLogoutRequest(session.TeamName);
             } 
-
-            await HttpContext.SignOutAsync();
-            
-            SessionProvider.ClearSession();
-
-            NavigationManager.NavigateTo("/login", true);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        NavigationManager.NavigateTo("/login");
     }
 
     #endregion

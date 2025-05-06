@@ -1,20 +1,21 @@
-﻿namespace Konqvist.Web.Services;
+﻿using Microsoft.AspNetCore.Components.Routing;
+
+namespace Konqvist.Web.Services;
 
 public class GameModeRoutingService(
     NavigationManager navigationManager,
     SessionProvider sessionProvider,
     MapDataStore roundDataStore)
 {
-
-    public async Task NavigateToGameMode()
+    public async Task TryNavigateToGameMode()
     {
 
-        if (sessionProvider.Session.IsAuthenticated == false)
-        {
-            TryNavigate("login");
-            return;
-        }
-
+        //if (sessionProvider.Session.IsAuthenticated == false)
+        //{
+        //    TryNavigate("login");
+        //    return;
+        //}
+        
         if (sessionProvider.Session.IsAdmin) return;
         var appState = await roundDataStore.GetCurrentAppState();
 
@@ -31,6 +32,9 @@ public class GameModeRoutingService(
                 break;
             case RoundKind.GatherResources:
                 TryNavigate("map");
+                break;
+            default:
+                if (sessionProvider.Session.IsAdmin) TryNavigate("management");
                 break;
         }
     }

@@ -1,6 +1,36 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Konqvist.Web.Services
+
+@inject NavigationManager Navigation
+@inject GameModeRoutingService GameModeRoutingService
+@inject SessionProvider SessionProvider
+
+<Router AppAssembly="typeof(Program).Assembly" OnNavigateAsync="OnNavigate">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"  />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code
+{
+    private async Task OnNavigate(NavigationContext args)
+    {
+        
+        if (GameModeRoutingService is null) return;
+
+        // always allow navigation to logout page
+        if (args.Path.Contains("logout")) return;
+        
+        // otherwise, if we're already logged in, navigate to game mode
+        if (SessionProvider.Session.IsAuthenticated)
+        {
+            await GameModeRoutingService.TryNavigateToGameMode();
+            return; // exit here if we were not redirected to somewhere else
+        }
+
+        // if we're not authenticated we always want to be (re)directed to the login page
+        if (args.Path.Contains("login")) return;
+
+        Navigation.NavigateTo("login");
+    }
+}

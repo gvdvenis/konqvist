@@ -1,10 +1,9 @@
-﻿@using Konqvist.Web.Services
-@using Microsoft.FluentUI.AspNetCore.Components.Utilities
+﻿@using Microsoft.FluentUI.AspNetCore.Components.Utilities
 @inherits LayoutComponentBase
 
+
 @inject MapDataStore MapDataStore
-@inject NavigationManager NavigationManager
-@inject GameModeRoutingService GameModeRoutingService
+
 
 <FluentLayout Orientation="Orientation.Vertical">
     <FluentHeader @ref="_fluentHeader" style="@StyleValue">
@@ -70,8 +69,6 @@
         UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
 
         _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName) ?? TeamData.Empty;
-
-        await GameModeRoutingService.NavigateToGameMode();
     }
 
     #endregion

@@ -1,12 +1,15 @@
 ﻿@page "/login"
 @page "/login/{Password}"
 
+@rendermode InteractiveServer
+
 @using System.Security.Claims
 @using Konqvist.Web.Services
 @using Microsoft.AspNetCore.Authentication.Cookies
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
+@inject SessionProvider SessionProvider
 @inject IBindableHubClient HubClient
 @inject GameModeRoutingService GameModeRoutingService
 
@@ -31,10 +34,36 @@
             await TryLogin();
     }
 
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            switch (SessionProvider.Session.GameRole)
+            {
+                case GameRole.GameMaster:
+                    // admins get routed to management page
+                    NavigationManager.NavigateTo("/management");
+                    return;
+                case GameRole.Runner:
+                    await HubClient.BroadcastRunnerLogin(SessionProvider.Session.TeamName);
+                    break;
+            }
+
+            // normal users get routed to other pages depending on current app state
+            await GameModeRoutingService.TryNavigateToGameMode();
+        }
+    }
+
     #endregion
 
     private async Task TryLogin()
     {
+
+        // if already logged in we do nothing here
+        if (SessionProvider.Session.IsAuthenticated) return;
 
         if (HttpContext is null || await VerifyPassword() is not { } loginuser)
         {
@@ -53,19 +82,6 @@
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
-
-        if (loginuser.GameRole == GameRole.Runner)
-            await HubClient.BroadcastRunnerLogin(loginuser.TeamName);
-
-        // admins get routed to management page
-        if (loginuser.GameRole == GameRole.GameMaster)
-        {
-            NavigationManager.NavigateTo("/management");
-            return;
-        }
-
-        // normal users get routed to other pages depending on current app state
-        await GameModeRoutingService.NavigateToGameMode();
     }
 
     private async Task<User?> VerifyPassword()

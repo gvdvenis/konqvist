@@ -5,7 +5,6 @@
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-@using System.Diagnostics
 @using TeamResources = Konqvist.Web.Components.TeamResources
 
 @implements IAsyncDisposable
@@ -14,7 +13,6 @@
 
 @inject IGeolocationService GeolocationService
 @inject IToastService ToastService
-@inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore

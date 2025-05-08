@@ -5,7 +5,7 @@
 
 @inject NavigationManager NavigationManager
 @inject IBindableHubClient HubClient
-
+@inject SessionKeyProvider SessionKeyProvider
 
 <div class="center-content" >
     <h3 style="margin-top: 30px; margin-left:20%; margin-right:20%;" > Please be careful! When you press the button below, all current game data will be lost</h3>
@@ -24,6 +24,7 @@
 
     private async Task ResetGameNow()
     {
+        SessionKeyProvider.InvalidateGameInstanceKey();
         await HubClient.SendResetGameRequest();
         
         NavigationManager.NavigateTo("/management", true);

@@ -10,19 +10,27 @@
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
 @inject SessionProvider SessionProvider
-@inject IBindableHubClient HubClient
 @inject GameModeRoutingService GameModeRoutingService
+@inject SessionKeyProvider SessionKeyProvider
 
 <div class="center-content">
-    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit" />
-    <h3>
-        Scan QR-code to login
+    <h3 style="color:red">
+        @_errorMessage
     </h3>
+    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit"/>
+    @if (_errorMessage == "")
+    {
+        <h3>
+            Scan QR-code to login
+        </h3>
+    }
 </div>
 
 @code {
     [CascadingParameter] HttpContext? HttpContext { get; set; }
     [Parameter] public string? Password { get; set; }
+    private string _errorMessage = "";
+
 
     #region Overrides of ComponentBase
 
@@ -34,26 +42,23 @@
             await TryLogin();
     }
 
-    /// <inheritdoc />
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        if (firstRender)
-        {
-            switch (SessionProvider.Session.GameRole)
-            {
-                case GameRole.GameMaster:
-                    // admins get routed to management page
-                    NavigationManager.NavigateTo("/management");
-                    return;
-                case GameRole.Runner:
-                    await HubClient.BroadcastRunnerLogin(SessionProvider.Session.TeamName);
-                    break;
-            }
+        // This method handles client-side edge cases where users manually navigate to invalid routes.
+        // It ensures that authenticated users are redirected to the appropriate page based on routing rules.
 
-            // normal users get routed to other pages depending on current app state
-            await GameModeRoutingService.TryNavigateToGameMode();
+        if (firstRender && SessionProvider.Session.IsAuthenticated)
+        {
+            // Delegate routing decisions to GameModeRoutingService
+            var validationResult = await GameModeRoutingService.ValidateRoute(NavigationManager.Uri);
+
+            if (!validationResult.IsAllowed)
+            {
+                // Redirect to the appropriate page if the current route is not allowed
+                NavigationManager.NavigateTo(validationResult.RedirectPage);
+            }
         }
     }
 
@@ -61,13 +66,12 @@
 
     private async Task TryLogin()
     {
-
-        // if already logged in we do nothing here
+        // If already logged in, do nothing
         if (SessionProvider.Session.IsAuthenticated) return;
 
         if (HttpContext is null || await VerifyPassword() is not { } loginuser)
         {
-            NavigationManager.NavigateTo("/access-denied");
+            _errorMessage = "Invalid credentials or already logged in";
             return;
         }
 
@@ -76,12 +80,14 @@
             new(ClaimTypes.Name, loginuser.Name),
             new(ClaimTypes.Role, loginuser.GameRole.ToString()),
             new(ClaimTypes.UserData, loginuser.TeamName),
-            new(ClaimTypes.NameIdentifier, loginuser.TeamName)
+            new(ClaimTypes.NameIdentifier, loginuser.TeamName),
+            new("SessionVersion", SessionKeyProvider.GameInstanceKey)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
+
     }
 
     private async Task<User?> VerifyPassword()

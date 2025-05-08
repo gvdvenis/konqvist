@@ -116,7 +116,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task NewRoundStarted(RoundData newRound)
     {
-
         if (!_sessionProvider.Session.IsAdmin)
         {
             switch (newRound.Kind)

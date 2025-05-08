@@ -1,7 +1,11 @@
 
+using System.Security.Claims;
 using Konqvist.Data;
+using Konqvist.Web;
 using Konqvist.Web.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.FluentUI.AspNetCore.Components;
 
@@ -21,6 +25,7 @@ builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
 builder.Services.AddScoped<SessionProvider>();
 builder.Services.AddScoped<GameModeRoutingService>();
+builder.Services.AddSingleton<SessionKeyProvider>();
 builder.Services.AddSingleton(_ => MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -33,8 +38,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
         options.AccessDeniedPath = "/access-denied";
+        options.Events = new CookieAuthenticationEvents()
+        {
+            OnRedirectToLogin = AuthenticationHelpers.StripRedirectUrlParams,
+            OnValidatePrincipal = AuthenticationHelpers.ValidateSessionKey
+        };
     });
-    
 
 // Add to your existing service registration section
 

@@ -3,48 +3,52 @@
 namespace Konqvist.Web.Services;
 
 public class GameModeRoutingService(
-    NavigationManager navigationManager,
     SessionProvider sessionProvider,
     MapDataStore mapDataStore)
 {
-    public async Task TryNavigateToGameMode()
-    {
-        if (sessionProvider.Session.IsAdmin) return;
-        var appState = await mapDataStore.GetCurrentAppState();
 
-        switch (appState)
-        {
-            case RoundKind.Voting:
-                TryNavigate("voting");
-                break;
-            case RoundKind.GameOver:
-                TryNavigate("gameover");
-                break;
-            case RoundKind.NotStarted:
-                TryNavigate("waitforstart");
-                break;
-            case RoundKind.GatherResources:
-                TryNavigate("map");
-                break;
-            default:
-                if (sessionProvider.Session.IsAdmin) TryNavigate("management");
-                break;
-        }
-    }
-
-    public RoutingRule GetRoutingRule(GameRole role, string page)
+    public async Task<RoutingRule> GetRoutingRule(GameRole role, string page)
     {
         var rule = _routingRules.FirstOrDefault(rule => rule.Role == role && Regex.IsMatch(page, rule.PagePattern));
 
-        if (rule is not null) return rule;
+        if (rule is not null)
+        {
+            if (rule.RedirectOnMatch == "{GameState}")
+                return rule with { RedirectOnMatch = await GetGameStateRoutePath() };
+
+            return rule;
+        }
 
         Console.WriteLine($"Warning: No routing rule defined for role '{role}' and page '{page}'. Redirecting to root path.");
         return new RoutingRule(role, ".*", false, false, "/");
     }
 
-    public async Task<string> DetermineGameStateRedirect()
+    /// <summary>
+    ///     Validates whether the specified route is allowed based on the user's session and role.
+    /// </summary>
+    /// <remarks>
+    ///     The validation considers the user's authentication status and role, as well as the routing
+    ///     rules associated with the specified path. 
+    /// </remarks>
+    /// <param name="path">The requested route path to validate.</param>
+    /// <returns>
+    ///     The redirect page to navigate to if the route matches a specific route rule, or
+    ///     <see langword="null"/> if no redirection is required.
+    /// </returns>
+    public async Task<string?> GetForcedRedirectRoute(string path)
     {
-        var appState = await mapDataStore.GetCurrentAppState();
+        var session = sessionProvider.Session;
+        var role = session.GameRole;
+
+        // Find the matching routing rule
+        var rule = await GetRoutingRule(role, path);
+        
+        return rule.RedirectOnMatch;
+    }
+
+    public async Task<string?> GetGameStateRoutePath(RoundKind? appState = null)
+    {
+        appState ??= await mapDataStore.GetCurrentAppState();
 
         return appState switch
         {
@@ -52,37 +56,8 @@ public class GameModeRoutingService(
             RoundKind.GameOver => "gameover",
             RoundKind.NotStarted => "waitforstart",
             RoundKind.GatherResources => "map",
-            _ => "management"
+            _ => null
         };
-    }
-
-    public async Task<(bool IsAllowed, string? RedirectPage)> ValidateRoute(string path)
-    {
-        var session = sessionProvider.Session;
-        var role = session.GameRole;
-        bool isAuthenticated = session.IsAuthenticated;
-
-        // Find the matching routing rule
-        var rule = GetRoutingRule(role, path);
-
-        if (rule.IsAllowed && (!rule.RequiresLogin || isAuthenticated))
-            return (true, rule.RedirectOnMatch);
-
-        // Determine the redirect page
-        if (rule.RedirectOnMatch != "{GameState}")
-            return (rule.IsAllowed, rule.RedirectOnMatch);
-
-        // Use TryNavigateToGameMode logic to determine the actual redirect page
-        string redirectPage = await DetermineGameStateRedirect();
-        return (rule.IsAllowed, redirectPage);
-    }
-
-    private void TryNavigate(string page)
-    {
-        if (navigationManager.Uri.Contains(page))
-            return;
-
-        navigationManager.NavigateTo($"/{page}");
     }
 
     private readonly List<RoutingRule> _routingRules =
@@ -92,7 +67,7 @@ public class GameModeRoutingService(
 
         // GameMaster rules
         new (GameRole.GameMaster, "^(login|\\s*)$", true, true, "management"),
-        new (GameRole.GameMaster, "^(management|map|voting|resetgame|logout)$", true, true),
+        new (GameRole.GameMaster, "^(management|map|maptestenable|maptestdisable|voting|resetgame|logout)$", true, true),
         new (GameRole.GameMaster, "^(waitforstart|gameover)$", true, false, "management"),
 
         // TeamLeader rules
@@ -107,4 +82,9 @@ public class GameModeRoutingService(
     ];
 }
 
-public record RoutingRule(GameRole Role, string PagePattern, bool RequiresLogin, bool IsAllowed, string? RedirectOnMatch = null);
+public record RoutingRule(
+    GameRole Role,
+    string PagePattern,
+    bool RequiresLogin,
+    bool IsAllowed,
+    string? RedirectOnMatch = null);

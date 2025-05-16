@@ -12,6 +12,7 @@
 @inject SessionProvider SessionProvider
 @inject GameModeRoutingService GameModeRoutingService
 @inject SessionKeyProvider SessionKeyProvider
+@inject IBindableHubClient GameHubClient
 
 <div class="center-content">
     <h3 style="color:red">
@@ -31,7 +32,6 @@
     [Parameter] public string? Password { get; set; }
     private string _errorMessage = "";
 
-
     #region Overrides of ComponentBase
 
     protected override async Task OnInitializedAsync()
@@ -48,18 +48,18 @@
 
         // This method handles client-side edge cases where users manually navigate to invalid routes.
         // It ensures that authenticated users are redirected to the appropriate page based on routing rules.
-
         if (firstRender && SessionProvider.Session.IsAuthenticated)
         {
-            // Delegate routing decisions to GameModeRoutingService
-            var validationResult = await GameModeRoutingService.ValidateRoute(NavigationManager.Uri);
+            string? forcedRedirectRoute = await GameModeRoutingService.GetForcedRedirectRoute(NavigationManager.Uri);
 
-            if (!validationResult.IsAllowed)
+            if (forcedRedirectRoute is not null)
             {
                 // Redirect to the appropriate page if the current route is not allowed
-                NavigationManager.NavigateTo(validationResult.RedirectPage);
+                NavigationManager.NavigateTo(forcedRedirectRoute!);
             }
         }
+
+        // Delegate routing decisions to GameModeRoutingService
     }
 
     #endregion
@@ -87,7 +87,7 @@
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
-
+        await GameHubClient.BroadcastRunnerLogin(loginuser.TeamName);
     }
 
     private async Task<User?> VerifyPassword()
@@ -95,8 +95,8 @@
         (TeamData? teamData, TeamMemberRole role)? login =
             await MapDataStore.TryLoginTeamMember(Password);
 
-        return login is null
-            ? null
+        return login is null 
+            ? null 
             : UserFromTeamDataLogin(login.Value);
     }
 

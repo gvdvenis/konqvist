@@ -1,4 +1,5 @@
-﻿using Microsoft.FluentUI.AspNetCore.Components;
+﻿using Konqvist.Web.Services;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 namespace Konqvist.Web.SignalR;
 
@@ -11,6 +12,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     private readonly SessionProvider _sessionProvider;
     private readonly NavigationManager _navigationManager;
     private readonly IToastService _toastService;
+    private readonly GameModeRoutingService _routingService;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="GameHubClient"/> class. This
@@ -19,12 +21,18 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// <param name="navigationManager">The navigation manager to get the base URI.</param>
     /// <param name="sessionProvider"></param>
     /// <param name="toastService"></param>
-    public GameHubClient(NavigationManager navigationManager, SessionProvider sessionProvider, IToastService toastService)
+    /// <param name="routingService"></param>
+    public GameHubClient(
+        IToastService toastService,
+        NavigationManager navigationManager,
+        SessionProvider sessionProvider,
+        GameModeRoutingService routingService)
     {
         string hubUrl = navigationManager.BaseUri.TrimEnd('/') + GameHubServer.HubUrl;
         _navigationManager = navigationManager;
         _sessionProvider = sessionProvider;
         _toastService = toastService;
+        _routingService = routingService;
 
         _hubConnection ??= new HubConnectionBuilder()
             .WithUrl(hubUrl)
@@ -114,28 +122,15 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    public Task NewRoundStarted(RoundData newRound)
+    public async Task NewRoundStarted(RoundData newRound)
     {
-        if (!_sessionProvider.Session.IsAdmin)
-        {
-            switch (newRound.Kind)
-            {
-                case RoundKind.Voting:
-                    _navigationManager.NavigateTo("/voting");
-                    break;
-                case RoundKind.GameOver:
-                    _navigationManager.NavigateTo("/gameover");
-                    break;
-                case RoundKind.NotStarted:
-                    _navigationManager.NavigateTo("/waitforstart");
-                    break;
-                case RoundKind.GatherResources:
-                    _navigationManager.NavigateTo("/map");
-                    break;
-            }
-        }
+        if (_sessionProvider.Session.IsAdmin == false &&
+            await _routingService.GetGameStateRoutePath(newRound.Kind) is { } routePath)
+            _navigationManager.NavigateTo(routePath, false);
 
-        return OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
+        if (OnNewRoundStarted is null) return;
+
+        await OnNewRoundStarted.Invoke(newRound);
     }
 
     public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;

@@ -28,14 +28,6 @@ public class District : Region
     public Resources Resources { get; set; }
     public Dictionary<string, int> ResourceDictionary { get; }
 
-    internal async Task SetOwner(Team newOwner)
-    {
-        Owner = newOwner;
-        Owner.TextColor = newOwner.TextColor;
-        Styles = [MapStyles.DistrictOwnerStyle(Owner?.TextColor ?? "Transparent")];
-        await UpdateShape();
-    }
-
     /// <summary>
     ///     Check if the given location is within the trigger circle of this district
     /// </summary>

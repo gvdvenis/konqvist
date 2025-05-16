@@ -2,7 +2,6 @@
 
 @inject NavigationManager Navigation
 @inject GameModeRoutingService GameModeRoutingService
-@inject SessionProvider SessionProvider
 
 <Router AppAssembly="typeof(Program).Assembly" OnNavigateAsync="OnNavigate">
     <Found Context="routeData">
@@ -17,18 +16,16 @@
     {
         if (GameModeRoutingService is null) return;
 
-        var authenticated = SessionProvider.Session.IsAuthenticated;
+        // validate the route using the routing rules
+        string? requiredRedirectRoute = await GameModeRoutingService.GetForcedRedirectRoute(args.Path);
 
-        // Validate the route using the routing rules
-        var validationResult = await GameModeRoutingService.ValidateRoute(args.Path);
-
-        if (!string.IsNullOrWhiteSpace(validationResult.RedirectPage) && !validationResult.RedirectPage.Equals(args.Path, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(requiredRedirectRoute) && 
+            !requiredRedirectRoute.Equals(args.Path, StringComparison.OrdinalIgnoreCase))
         {
-            // Redirect to the appropriate page
-            Navigation.NavigateTo(validationResult.RedirectPage);
-            return;
+            // intercept and redirect to the appropriate page
+            Navigation.NavigateTo(requiredRedirectRoute);
         }
 
-        // Otherwise, allow navigation
+        // allow navigation to proceed
     }
 }

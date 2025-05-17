@@ -2,6 +2,7 @@
 using Konqvist.Data.Models;
 using OpenLayers.Blazor;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Konqvist.Data.Stores;
 
@@ -19,7 +20,7 @@ public class MapDataStore
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly SnapshotDataStore _snapshotDataStore = new();
     private readonly VotingDataStore _votingDataStore = new();
-    public bool TestmodeEnabled { get; set; }
+    public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
 
     public static async Task<MapDataStore> GetInstanceAsync()
     {
@@ -55,7 +56,6 @@ public class MapDataStore
             ];
 
         _roundsDataStore = new RoundDataStore(roundsData);
-        TestmodeEnabled = false;
     }
 
     #endregion
@@ -228,6 +228,21 @@ public class MapDataStore
             _semaphore.Release();
         }
     }
+
+    public async Task<bool> HasTeamVotedInCurrentRound(string teamName)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int roundNumber = _roundsDataStore.CurrentRoundNumber;
+            return _votingDataStore.HasTeamVoted(roundNumber, teamName);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     #endregion
 
     #region WriteData methods

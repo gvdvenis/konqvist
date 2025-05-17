@@ -47,4 +47,12 @@ public interface IGameHubServer
     Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources);
 
     Task SendResetGameRequest();
+
+    /// <summary>
+    ///     Sends a request to cast a vote with a specified weight for a team.
+    /// </summary>
+    /// <param name="teamName"></param>
+    /// <param name="voteWeight"></param>
+    /// <returns></returns>
+    Task SendCastVoteRequest(string teamName, int voteWeight);
 }

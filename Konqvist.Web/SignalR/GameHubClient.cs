@@ -63,6 +63,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         _hubConnection.On<RoundData, Task>(nameof(NewRoundStarted), NewRoundStarted);
 
         _hubConnection.On<string, Task>(nameof(TeamResourcesChanged), TeamResourcesChanged);
+
+        _hubConnection.On<Dictionary<string, int>, Task>(nameof(VotesUpdated), VotesUpdated);
     }
 
     #region IGameHubServer implements
@@ -93,6 +95,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task SendResetGameRequest() =>
         _hubConnection.SendAsync(nameof(SendResetGameRequest));
+
+    public Task SendCastVoteRequest(string teamName, int voteWeight) =>
+        _hubConnection.SendAsync(nameof(SendCastVoteRequest), teamName, voteWeight);
 
     #endregion
 
@@ -135,6 +140,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 
+    public Task VotesUpdated(Dictionary<string, int> votes) => OnVotesUpdated?.Invoke(votes) ?? Task.CompletedTask;
+
     #endregion
 
     #region IBindableHubClient implements
@@ -152,6 +159,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
     public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
+
+    public Func<Dictionary<string, int>, Task>? OnVotesUpdated { get; set; }
 
     #endregion
 

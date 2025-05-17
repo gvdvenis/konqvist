@@ -3,7 +3,6 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @inject IBindableHubClient HubClient
-@inject NavigationManager NavigationManager
 @inject SessionProvider SessionProvider
 @inject MapDataStore MapDataStore
 
@@ -50,12 +49,16 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+        
         // Get current team name from session
         _currentTeamName = SessionProvider.Session.TeamName;
+        
         // Get teams
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
+        
         // Initialize votes to 0
         _teamVotes = _teams.ToDictionary(t => t.Name, t => 0);
+     
         // Get vote weight (resources) for current team
         if (!string.IsNullOrEmpty(_currentTeamName))
         {
@@ -65,21 +68,36 @@
             _voteWeight = resources.CalculateVoteWeight(resourceOfInterest);
             if (_voteWeight < 1) _voteWeight = 1;
         }
+
+        // Subscribe to SignalR votes update
+        HubClient.OnVotesUpdated = async votes =>
+        {
+            if (_teamVotes is not null)
+            {
+                foreach (var kvp in votes.Where(kvp => _teamVotes.ContainsKey(kvp.Key)))
+                {
+                    _teamVotes[kvp.Key] = kvp.Value;
+                }
+            }
+            await InvokeAsync(StateHasChanged);
+        };
     }
 
     private async Task CastVote(string teamName)
     {
         if (!CanVote || teamName == _currentTeamName || _teamVotes is null) return;
-        _teamVotes[teamName] += _voteWeight;
         _hasVoted = true;
+        await HubClient.SendCastVoteRequest(teamName, _voteWeight);
         StateHasChanged();
     }
 
     private int GetBarHeight(string teamName)
     {
         if (_teamVotes is null) return 10;
+
         int maxVotes = _teamVotes.Values.DefaultIfEmpty(1).Max();
         int votes = _teamVotes[teamName];
+
         // Scale bar height between 10 and 200px
         return 10 + (maxVotes == 0 ? 0 : (int)(190.0 * votes / maxVotes));
     }

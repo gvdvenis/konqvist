@@ -7,8 +7,29 @@ public class ResourcesData
     public int R2 { get; set; }
     public int R3 { get; set; }
     public int R4 { get; set; }
+    public int Total => R1 + R2 + R3 + R4;
 
     public static ResourcesData Empty { get; } = new();
+
+    /// <summary>
+    ///     Calculates the vote weight by combining the total weight with the weight of a specified resource.
+    /// </summary>
+    /// <param name="resourceOfInterest">The name of the resource whose weight should be included in the returned total</param>
+    /// <returns>The calculated vote weight, which is the sum of the total weight and the weight of the specified resource.</returns>
+    public int CalculateVoteWeight(string? resourceOfInterest)
+    {
+        // get resource property value based on the given resourceOfInterest
+        int roi = resourceOfInterest switch
+        {
+            nameof(R1) => R1,
+            nameof(R2) => R2,
+            nameof(R3) => R3,
+            nameof(R4) => R4,
+            _ => 0
+        };
+
+        return Total + roi;
+    }
 
     /// <summary>
     ///    Adds a value to all the resources
@@ -151,4 +172,5 @@ public class ResourcesData
             _ => 0
         };
     }
+
 }

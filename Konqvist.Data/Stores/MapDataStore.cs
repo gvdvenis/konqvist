@@ -18,6 +18,7 @@ public class MapDataStore
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly SnapshotDataStore _snapshotDataStore = new();
+    private readonly VotingDataStore _votingDataStore = new();
     public bool TestmodeEnabled { get; set; }
 
     public static async Task<MapDataStore> GetInstanceAsync()
@@ -474,6 +475,62 @@ public class MapDataStore
         try
         {
             team.AdditionalResources += resourcesReplacement;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task AddVoteForCurrentRound(string teamName, int voteWeight)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int roundNumber = _roundsDataStore.CurrentRoundNumber;
+            _votingDataStore.AddVote(roundNumber, teamName, voteWeight);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<int> GetVotesForTeamInCurrentRound(string teamName)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int roundNumber = _roundsDataStore.CurrentRoundNumber;
+            return _votingDataStore.GetVotesForTeam(roundNumber, teamName);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<Dictionary<string, int>> GetVotesForCurrentRound()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int roundNumber = _roundsDataStore.CurrentRoundNumber;
+            return _votingDataStore.GetVotesForRound(roundNumber);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task ClearVotesForCurrentRound()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            int roundNumber = _roundsDataStore.CurrentRoundNumber;
+            _votingDataStore.ClearVotesForRound(roundNumber);
         }
         finally
         {

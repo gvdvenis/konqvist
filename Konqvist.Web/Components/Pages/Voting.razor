@@ -5,20 +5,82 @@
 @inject IBindableHubClient HubClient
 @inject NavigationManager NavigationManager
 @inject SessionProvider SessionProvider
+@inject MapDataStore MapDataStore
 
 @attribute [Authorize]
 
 <div class="center-content">
-    <h3>
-        Cast your votes please!
-    </h3>
-    <p> Sorry folks! Your favorite app developer wasn't able to get this part done in time. But he's sure y'all figure something out.</p>
+    <h3>Cast your votes please!</h3>
+    <div class="voting-bars" style="display: flex; gap: 2rem; justify-content: center; align-items: end; min-height: 350px;">
+        @if (_teams is not null && _teamVotes is not null)
+        {
+            foreach (var team in _teams)
+            {
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="height: 200px; width: 40px; display: flex; align-items: flex-end;">
+                        <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
+                    </div>
+                    <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
+                    <span style="font-size: 0.9em;">Votes: @_teamVotes[team.Name]</span>
+                    <button class="fluent-button" style="margin-top: 0.5rem;" 
+                        disabled="@(!CanVote || team.Name == _currentTeamName)" 
+                        @onclick="() => CastVote(team.Name)">VOTE</button>
+                </div>
+            }
+        }
+        else
+        {
+            <span>Loading teams...</span>
+        }
+    </div>
+    @if (_hasVoted)
+    {
+        <div style="margin-top: 1rem; color: green;">Thank you for voting!</div>
+    }
 </div>
 
 @code {
+    private List<TeamData>? _teams;
+    private Dictionary<string, int>? _teamVotes;
+    private bool _hasVoted;
+    private string? _currentTeamName;
+    private int _voteWeight = 1;
+    private bool CanVote => !_hasVoted && SessionProvider.Session.GameRole == GameRole.TeamLeader;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+        // Get current team name from session
+        _currentTeamName = SessionProvider.Session.TeamName;
+        // Get teams
+        _teams = await MapDataStore.GetTeams(includeDisabled: false);
+        // Initialize votes to 0
+        _teamVotes = _teams.ToDictionary(t => t.Name, t => 0);
+        // Get vote weight (resources) for current team
+        if (!string.IsNullOrEmpty(_currentTeamName))
+        {
+            var resources = await MapDataStore.GetResourcesForTeam(_currentTeamName);
+            string? resourceOfInterest = await MapDataStore.GetCurrentResourceOfInterest();
+
+            _voteWeight = resources.CalculateVoteWeight(resourceOfInterest);
+            if (_voteWeight < 1) _voteWeight = 1;
+        }
+    }
+
+    private async Task CastVote(string teamName)
+    {
+        if (!CanVote || teamName == _currentTeamName || _teamVotes is null) return;
+        _teamVotes[teamName] += _voteWeight;
+        _hasVoted = true;
+        StateHasChanged();
+    }
+
+    private int GetBarHeight(string teamName)
+    {
+        if (_teamVotes is null) return 10;
+        int maxVotes = _teamVotes.Values.DefaultIfEmpty(1).Max();
+        int votes = _teamVotes[teamName];
+        // Scale bar height between 10 and 200px
+        return 10 + (maxVotes == 0 ? 0 : (int)(190.0 * votes / maxVotes));
     }
 }

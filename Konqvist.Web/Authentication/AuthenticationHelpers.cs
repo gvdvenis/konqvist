@@ -16,14 +16,12 @@ public static class AuthenticationHelpers
     /// </summary>
     /// <param name="ctx"></param>
     /// <returns></returns>
-    public static Task ValidateSessionKey(this CookieValidatePrincipalContext ctx)
+    public static async Task ValidateSessionKey(this CookieValidatePrincipalContext ctx)
     {
         // Game Master sessions are never invalidated
         string? roleClaim = ctx.Principal?.FindFirstValue(ClaimTypes.Role);
         if (roleClaim == nameof(GameRole.GameMaster))
-        {
-            return Task.CompletedTask;
-        }
+            return;
 
         // Additional validation based on the session key.
         string? sessionClaim = ctx.Principal?.FindFirstValue("SessionVersion");
@@ -33,14 +31,10 @@ public static class AuthenticationHelpers
             .GetRequiredService<SessionKeyProvider>();
 
         if (sessionClaim == sessionVersionProvider.GameInstanceKey)
-        {
-            return Task.CompletedTask;
-        }
+            return;
 
         ctx.RejectPrincipal();
-        ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-        return Task.CompletedTask;
+        await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); 
     }
 
     /// <summary>
@@ -53,7 +47,7 @@ public static class AuthenticationHelpers
     {
         // strip the default returnUrl query parameter from the uri
         string uri = redirectContext.RedirectUri;
-        UriHelper.FromAbsolute(uri, out string scheme, out var host, out var path, out var query, out var fragment);
+        UriHelper.FromAbsolute(uri, out string scheme, out var host, out var path, out _, out _);
         uri = UriHelper.BuildAbsolute(scheme, host, path);
         redirectContext.Response.Redirect(uri);
         return Task.CompletedTask;

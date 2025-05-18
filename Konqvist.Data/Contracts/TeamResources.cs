@@ -10,11 +10,8 @@ public record TeamResources(
 {
     public int GetScore()
     {
-        if (RelevantResourceName is null)
-        {
-            return 0;
-        }
-
-        return AdditionalResources.GetScore(RelevantResourceName) + DistrictResources.GetScore(RelevantResourceName);
+        return RelevantResourceName is null
+            ? 0
+            : AdditionalResources.GetScore(RelevantResourceName) + DistrictResources.GetScore(RelevantResourceName);
     }
 }

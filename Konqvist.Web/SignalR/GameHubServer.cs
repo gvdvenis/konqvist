@@ -46,7 +46,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
             return;
         }
 
-        Console.WriteLine($"+++ Start round number {nextRound.Order}");
+        Console.WriteLine($"+++ Start round number {nextRound.Index}");
 
         // Broadcast to all clients
         await Clients.All.NewRoundStarted(nextRound);
@@ -100,6 +100,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         // Add the vote to the store for the receiving team, from the casting team
         await dataStore.AddVoteForCurrentRound(receivingTeamName, castingTeamName, voteWeight);
         var votes = await dataStore.GetVotesForCurrentRound();
+
         // Broadcast the updated votes to all clients, include the casting team name
         await Clients.All.VotesUpdated(votes, castingTeamName);
     }

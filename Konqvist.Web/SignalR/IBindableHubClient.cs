@@ -16,5 +16,5 @@ public interface IBindableHubClient : IGameHubClient, IGameHubServer
 
     Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
-    Func<Dictionary<string, int>, string?, Task>? OnVotesUpdatedWithCaster { get; set; }
+    Func<List<TeamVote>, string?, Task>? OnVotesUpdated { get; set; }
 }

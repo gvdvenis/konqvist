@@ -13,10 +13,9 @@ public class GameModeRoutingService(
 
         if (rule is not null)
         {
-            if (rule.RedirectOnMatch == "{GameState}")
-                return rule with { RedirectOnMatch = await GetGameStateRoutePath() };
-
-            return rule;
+            return rule.RedirectOnMatch == "{GameState}"
+                ? rule with { RedirectOnMatch = await GetGameStateRoutePath() }
+                : rule;
         }
 
         Console.WriteLine($"Warning: No routing rule defined for role '{role}' and page '{page}'. Redirecting to root path.");

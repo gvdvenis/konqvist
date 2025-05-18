@@ -1,55 +1,78 @@
 using System.Collections.Concurrent;
+using Konqvist.Data.Contracts;
 
 namespace Konqvist.Data.Stores;
 
 public class VotingDataStore
 {
-    // Dictionary<roundNumber, Dictionary<teamName, votes>>
-    private readonly ConcurrentDictionary<int, ConcurrentDictionary<string, int>> _votesPerRound = new();
+    // Dictionary<roundNumber, List<TeamVote>>
+    private readonly ConcurrentDictionary<int, List<TeamVote>> _votesPerRound = new();
     // Dictionary<roundNumber, HashSet<voterTeamName>>
-    private readonly ConcurrentDictionary<int, ConcurrentDictionary<string, bool>> _teamsVotedPerRound = new();
-    // Dictionary<roundNumber, Dictionary<voterTeamName, recipientTeamName>>
-    private readonly ConcurrentDictionary<int, ConcurrentDictionary<string, string>> _votersPerRound = new();
+    private readonly ConcurrentDictionary<int, HashSet<string>> _teamsVotedPerRound = new();
+    // Dictionary<roundNumber, List<Voter>>
+    private readonly ConcurrentDictionary<int, List<Voter>> _votersPerRound = new();
 
     public void AddVote(int roundNumber, string recipientTeamName, string voterTeamName, int voteWeight)
     {
-        var roundVotes = _votesPerRound.GetOrAdd(roundNumber, _ => new ConcurrentDictionary<string, int>());
-        roundVotes.AddOrUpdate(recipientTeamName, voteWeight, (_, old) => old + voteWeight);
+        var roundVotes = _votesPerRound.GetOrAdd(roundNumber, _ => []);
+        var existingVote = roundVotes.FirstOrDefault(tv => tv.RecipientTeamName == recipientTeamName);
+        if (existingVote != null)
+        {
+            roundVotes.Remove(existingVote);
+            roundVotes.Add(new TeamVote(recipientTeamName, existingVote.VoteCount + voteWeight));
+        }
+        else
+        {
+            roundVotes.Add(new TeamVote(recipientTeamName, voteWeight));
+        }
 
-        var votedSet = _teamsVotedPerRound.GetOrAdd(roundNumber, _ => new ConcurrentDictionary<string, bool>());
-        votedSet[voterTeamName] = true;
+        var votedSet = _teamsVotedPerRound.GetOrAdd(roundNumber, _ => []);
+        votedSet.Add(voterTeamName);
 
-        var voters = _votersPerRound.GetOrAdd(roundNumber, _ => new ConcurrentDictionary<string, string>());
-        voters[voterTeamName] = recipientTeamName;
+        var voters = _votersPerRound.GetOrAdd(roundNumber, _ => []);
+        var existingVoter = voters.FirstOrDefault(v => v.VoterTeamName == voterTeamName);
+        if (existingVoter != null)
+        {
+            voters.Remove(existingVoter);
+        }
+        voters.Add(new Voter(voterTeamName, recipientTeamName));
     }
 
     public int GetVotesForTeam(int roundNumber, string teamName)
     {
-        if (_votesPerRound.TryGetValue(roundNumber, out var roundVotes) && roundVotes.TryGetValue(teamName, out int votes))
-            return votes;
-        return 0;
+        if (!_votesPerRound.TryGetValue(roundNumber, out var roundVotes)) return 0;
+        var vote = roundVotes.FirstOrDefault(tv => tv.RecipientTeamName == teamName);
+        return vote?.VoteCount ?? 0;
     }
 
-    public Dictionary<string, int> GetVotesForRound(int roundNumber)
+    public List<TeamVote> GetVotesForRound(int roundNumber)
     {
-        return _votesPerRound.TryGetValue(roundNumber, out var roundVotes) 
-            ? new (roundVotes) 
-            : new ();
+        return _votesPerRound.TryGetValue(roundNumber, out var roundVotes)
+            ? [..roundVotes]
+            : [];
     }
 
     public bool HasTeamVoted(int roundNumber, string teamName)
     {
-        return _teamsVotedPerRound.TryGetValue(
-            roundNumber, 
-            out var votedSet) 
-               && votedSet.ContainsKey(teamName);
+        return _teamsVotedPerRound.TryGetValue(roundNumber, out var votedSet)
+            && votedSet.Contains(teamName);
     }
 
-    public Dictionary<string, string> GetVotersForRound(int roundNumber)
+    public List<Voter> GetVotersForRound(int roundNumber)
     {
         return _votersPerRound.TryGetValue(roundNumber, out var voters)
-            ? new(voters)
-            : new();
+            ? [..voters]
+            : [];
+    }
+
+    public IEnumerable<TeamVote> GetTeamVotesForRound(int roundNumber)
+    {
+        return GetVotesForRound(roundNumber);
+    }
+
+    public IEnumerable<Voter> GetTeamVotersForRound(int roundNumber)
+    {
+        return GetVotersForRound(roundNumber);
     }
 
     public void ClearVotesForRound(int roundNumber)

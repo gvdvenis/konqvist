@@ -46,7 +46,7 @@ public static class MapDataHelper
 
             return teams ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return [];
         }

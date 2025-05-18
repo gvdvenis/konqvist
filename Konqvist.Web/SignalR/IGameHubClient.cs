@@ -18,5 +18,5 @@ public interface IGameHubClient
 
     Task TeamResourcesChanged(string? teamName = null);
 
-    Task VotesUpdated(Dictionary<string, int> votes, string? castingTeamName);
+    Task VotesUpdated(List<TeamVote> votes, string? castingTeamName);
 }

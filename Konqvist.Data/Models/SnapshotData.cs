@@ -6,5 +6,5 @@ internal record SnapshotData(
     RoundData Round,
     IEnumerable<DistrictOwner> DistrictOwners,
     IEnumerable<TeamResources> TeamResources,
-    Dictionary<string, int> Votes,
-    Dictionary<string, string> Voters);
+    IEnumerable<TeamVote> Votes,
+    IEnumerable<Voter> Voters);

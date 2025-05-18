@@ -432,9 +432,9 @@ public class MapDataStore
                     _roundsDataStore.GetCurrentRound().ResourceOfInterest))
                 .ToList();
 
-            int roundNumber = _roundsDataStore.GetCurrentRound().Order;
-            var votes = _votingDataStore.GetVotesForRound(roundNumber);
-            var voters = _votingDataStore.GetVotersForRound(roundNumber);
+            int roundNumber = _roundsDataStore.GetCurrentRound().Index;
+            var votes = _votingDataStore.GetTeamVotesForRound(roundNumber).ToList();
+            var voters = _votingDataStore.GetTeamVotersForRound(roundNumber).ToList();
 
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
@@ -532,7 +532,7 @@ public class MapDataStore
         }
     }
 
-    public async Task<Dictionary<string, int>> GetVotesForCurrentRound()
+    public async Task<List<TeamVote>> GetVotesForCurrentRound()
     {
         await _semaphore.WaitAsync();
         try

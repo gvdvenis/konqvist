@@ -13,14 +13,14 @@ internal class SnapshotDataStore
     private const int BonusTotal = 150;
     private readonly Dictionary<int, SnapshotData> _roundSnapshots = [];
 
-    public void CreateSnapshot(MapData mapData, IEnumerable<TeamResources> teamResources, RoundData roundData, Dictionary<string, int> votes, Dictionary<string, string> voters)
+    public void CreateSnapshot(MapData mapData, IEnumerable<TeamResources> teamResources, RoundData roundData, IEnumerable<TeamVote> votes, IEnumerable<Voter> voters)
     {
         var districtOwners = mapData.Districts
             .Where(d => d.Owner != null)
             .Select(d => new DistrictOwner(d.Owner!.Name, d.Name));
 
         var newSnapshot = new SnapshotData(roundData, districtOwners, teamResources, votes, voters);
-        _roundSnapshots[roundData.Order] = newSnapshot;
+        _roundSnapshots[roundData.Index] = newSnapshot;
     }
 
     internal void Clear()
@@ -36,7 +36,7 @@ internal class SnapshotDataStore
         // Get all voting rounds in order
         var votingRounds = _roundSnapshots.Values
             .Where(s => s.Round.Kind == RoundKind.Voting)
-            .OrderBy(s => s.Round.Order)
+            .OrderBy(s => s.Round.Index)
             .ToList();
 
         // Calculate base scores for each team
@@ -48,14 +48,16 @@ internal class SnapshotDataStore
             .ToDictionary(g => g.Key, g => g.Sum(ts => ts.Score));
 
         // Calculate bonus points for the last completed voting round (if any)
-        int lastVotingRoundOrder = votingRounds.Select(vr => vr.Round.Order).DefaultIfEmpty(-1).Max();
-        var lastVotingRound = votingRounds.FirstOrDefault(vr => vr.Round.Order == lastVotingRoundOrder);
+        int lastVotingRoundOrder = votingRounds.Select(vr => vr.Round.Index).DefaultIfEmpty(-1).Max();
+        var lastVotingRound = votingRounds.FirstOrDefault(vr => vr.Round.Index == lastVotingRoundOrder);
         var bonusPoints = new Dictionary<string, int>();
-        if (lastVotingRound is { Votes.Count: > 0, Voters.Count: > 0 })
+        if (lastVotingRound is { 
+                Votes: var votes, 
+                Voters: var voters } && votes.Any() && voters.Any())
         {
-            int maxVotes = lastVotingRound.Votes.Values.Max();
-            var winningTeams = lastVotingRound.Votes.Where(kvp => kvp.Value == maxVotes).Select(kvp => kvp.Key).ToList();
-            var votersForWinners = lastVotingRound.Voters.Where(kvp => winningTeams.Contains(kvp.Value)).Select(kvp => kvp.Key).ToList();
+            int maxVotes = votes.Max(v => v.VoteCount);
+            var winningTeams = votes.Where(v => v.VoteCount == maxVotes).Select(v => v.RecipientTeamName).ToList();
+            var votersForWinners = voters.Where(v => winningTeams.Contains(v.RecipientTeamName)).Select(v => v.VoterTeamName).ToList();
             int bonusPerTeam = votersForWinners.Count > 0 ? BonusTotal / votersForWinners.Count : 0;
             foreach (string teamName in votersForWinners)
                 bonusPoints[teamName] = bonusPerTeam;

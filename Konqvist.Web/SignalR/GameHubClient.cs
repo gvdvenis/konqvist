@@ -48,15 +48,15 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// </summary>
     private void SubscribeClientHandlers()
     {
-        _hubConnection.On<DistrictOwner>(nameof(DistrictOwnerChanged), async (districtOwner) => await DistrictOwnerChanged(districtOwner));
-        _hubConnection.On<ActorLocation>(nameof(ActorMoved), async (actorLocation) => await ActorMoved(actorLocation));
-        _hubConnection.On(nameof(RunnerLoggedInOrOut), async () => await RunnerLoggedInOrOut());
-        _hubConnection.On<string>(nameof(PerformRunnerLogoutOnClient), async (teamName) => await PerformRunnerLogoutOnClient(teamName));
-        _hubConnection.On<string>(nameof(RunnerLoggedIn), async (teamName) => await RunnerLoggedIn(teamName));
-        _hubConnection.On<string[]>(nameof(RunnersLoggedOut), async (teamNames) => await RunnersLoggedOut(teamNames));
-        _hubConnection.On<RoundData>(nameof(NewRoundStarted), async (newRound) => await NewRoundStarted(newRound));
-        _hubConnection.On<string>(nameof(TeamResourcesChanged), async (teamName) => await TeamResourcesChanged(teamName));
-        _hubConnection.On<Dictionary<string, int>, string?>(nameof(VotesUpdated), async (votes, castingTeamName) => await VotesUpdated(votes, castingTeamName));
+        _hubConnection.On<DistrictOwner>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
+        _hubConnection.On<ActorLocation>(nameof(ActorMoved), ActorMoved);
+        _hubConnection.On(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
+        _hubConnection.On<string>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
+        _hubConnection.On<string>(nameof(RunnerLoggedIn), RunnerLoggedIn);
+        _hubConnection.On<string[]>(nameof(RunnersLoggedOut), RunnersLoggedOut);
+        _hubConnection.On<RoundData>(nameof(NewRoundStarted), NewRoundStarted);
+        _hubConnection.On<List<TeamVote>, string?>(nameof(VotesUpdated), VotesUpdated);
+        _hubConnection.On<string>(nameof(TeamResourcesChanged), TeamResourcesChanged);
     }
 
     #region IGameHubServer implements
@@ -124,9 +124,11 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         await OnNewRoundStarted.Invoke(newRound);
     }
 
-    public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
+    public Task TeamResourcesChanged(string? teamName) => 
+        OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 
-    public Task VotesUpdated(Dictionary<string, int> votes, string? castingTeamName) => OnVotesUpdatedWithCaster?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
+    public Task VotesUpdated(List<TeamVote> votes, string? castingTeamName) => 
+        OnVotesUpdated?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
 
     #endregion
 
@@ -146,7 +148,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
-    public Func<Dictionary<string, int>, string?, Task>? OnVotesUpdatedWithCaster { get; set; }
+    public Func<List<TeamVote>, string?, Task>? OnVotesUpdated { get; set; }
 
     #endregion
 

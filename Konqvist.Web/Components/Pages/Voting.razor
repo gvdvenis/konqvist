@@ -32,7 +32,7 @@
                             <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
                         </div>
                         <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
-                        <span style="font-size: 0.9em;">Votes: @_teamVotes[team.Name]</span>
+                        <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
                         <button class="fluent-button" style="margin-top: 0.5rem;" 
                             disabled="@(!CanVote || team.Name == _currentTeamName)" 
                             @onclick="() => CastVote(team.Name)">VOTE
@@ -53,8 +53,8 @@
 </div>
 
 @code {
-    private List<TeamData>? _teams;
-    private Dictionary<string, int> _teamVotes = [];
+    private List<TeamData> _teams = [];
+    private List<TeamVote> _teamVotes = [];
     private bool _hasVoted;
     private string? _currentTeamName;
     private int _voteWeight = 1;
@@ -69,10 +69,10 @@
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
 
-        // Ensure all teams are present in the dictionary
-        foreach (var team in _teams)
+        // Ensure all teams are present in the votes list
+        foreach (var team in _teams.Where(team => _teamVotes.All(tv => tv.RecipientTeamName != team.Name)))
         {
-            _teamVotes.TryAdd(team.Name, 0);
+            _teamVotes.Add(new TeamVote(team.Name, 0));
         }
 
         // Get vote weight (resources) for current team
@@ -85,11 +85,12 @@
         }
 
         // Subscribe to SignalR votes update
-        HubClient.OnVotesUpdatedWithCaster = async (votes, castingTeamName) =>
+        HubClient.OnVotesUpdated = async (votes, _) =>
         {
-            foreach (var kvp in votes.Where(kvp => _teamVotes.ContainsKey(kvp.Key)))
+            _teamVotes.Clear();
+            foreach (var vote in votes)
             {
-                _teamVotes[kvp.Key] = kvp.Value;
+                _teamVotes.Add(vote);
             }
             await InvokeAsync(StateHasChanged);
         };
@@ -104,10 +105,15 @@
         await HubClient.SendCastVoteRequest(teamName, _voteWeight, _currentTeamName!);
     }
 
+    private int GetVotesForTeam(string teamName)
+    {
+        return _teamVotes.FirstOrDefault(tv => tv.RecipientTeamName == teamName)?.VoteCount ?? 0;
+    }
+
     private int GetBarHeight(string teamName)
     {
-        int maxVotes = _teamVotes.Values.DefaultIfEmpty(1).Max();
-        int votes = _teamVotes[teamName];
+        int maxVotes = _teamVotes.Select(tv => tv.VoteCount).DefaultIfEmpty(1).Max();
+        int votes = GetVotesForTeam(teamName);
 
         // Scale bar height between 10 and 200px
         return 10 + (maxVotes == 0 ? 0 : (int)(190.0 * votes / maxVotes));
@@ -115,6 +121,6 @@
 
     public void Dispose()
     {
-        HubClient.OnVotesUpdatedWithCaster = null;
+        HubClient.OnVotesUpdated = null;
     }
 }

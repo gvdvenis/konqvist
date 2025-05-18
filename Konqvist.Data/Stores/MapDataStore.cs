@@ -208,7 +208,47 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            return _snapshotDataStore.GetAllTeamScores();
+            // Calculate base scores from snapshots
+            var baseScores = _snapshotDataStore.GetAllTeamScores().ToList();
+
+            // Calculate bonus points from voting for the last completed voting round
+            int lastVotingRound = _roundsDataStore.Rounds
+                .Where(r => r.Kind == RoundKind.Voting && r.Order < _roundsDataStore.CurrentRoundNumber)
+                .Select(r => r.Order)
+                .DefaultIfEmpty(-1)
+                .Max();
+
+            if (lastVotingRound >= 0)
+            {
+                var votes = _votingDataStore.GetVotesForRound(lastVotingRound);
+                var voters = _votingDataStore.GetVotersForRound(lastVotingRound);
+                if (votes.Count > 0 && voters.Count > 0)
+                {
+                    // Find the winning team (most votes)
+                    var maxVotes = votes.Values.Max();
+                    var winningTeams = votes.Where(kvp => kvp.Value == maxVotes).Select(kvp => kvp.Key).ToList();
+                    // If tie, all teams with max votes are winners
+                    var votersForWinners = voters.Where(kvp => winningTeams.Contains(kvp.Value)).Select(kvp => kvp.Key).ToList();
+                    const int BonusTotal = 150;
+                    int bonusPerTeam = votersForWinners.Count > 0 ? BonusTotal / votersForWinners.Count : 0;
+
+                    // Assign bonus points to teams
+                    foreach (var team in _teamsData)
+                    {
+                        team.BonusPointsFromVoting = votersForWinners.Contains(team.Name) ? bonusPerTeam : 0;
+                    }
+                }
+            }
+
+            // Add bonus points to base scores
+            var scoresWithBonus = baseScores.Select(bs =>
+            {
+                var team = _teamsData.FirstOrDefault(t => t.Name == bs.TeamName);
+                int bonus = team?.BonusPointsFromVoting ?? 0;
+                return new TeamScore(bs.TeamName, bs.Score + bonus);
+            }).ToList();
+
+            return scoresWithBonus;
         }
         finally
         {
@@ -425,9 +465,9 @@ public class MapDataStore
         try
         {
             var teamResouces = _teamsData
-                .Select(t => new TeamResources(t, 
-                    t.AdditionalResources, 
-                    GetCurrentDistrictResources(t), 
+                .Select(t => new TeamResources(t,
+                    t.AdditionalResources,
+                    GetCurrentDistrictResources(t),
                     _roundsDataStore.GetCurrentRound().ResourceOfInterest))
                 .ToList();
 
@@ -458,7 +498,7 @@ public class MapDataStore
             team.AdditionalResources = ResourcesData.Empty;
         }
     }
-    
+
     public async Task ResetGame()
     {
         await _semaphore.WaitAsync();
@@ -497,13 +537,13 @@ public class MapDataStore
         }
     }
 
-    public async Task AddVoteForCurrentRound(string teamName, int voteWeight)
+    public async Task AddVoteForCurrentRound(string recipientTeamName, string voterTeamName, int voteWeight)
     {
         await _semaphore.WaitAsync();
         try
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
-            _votingDataStore.AddVote(roundNumber, teamName, voteWeight);
+            _votingDataStore.AddVote(roundNumber, recipientTeamName, voterTeamName, voteWeight);
         }
         finally
         {
@@ -539,6 +579,13 @@ public class MapDataStore
         }
     }
 
+    public async Task<int> GetVoteWeightForTeam(string teamName)
+    {
+        var teamResources = await GetResourcesForTeam(teamName);
+        string? resourceOfInterest = await GetCurrentResourceOfInterest();
+        return teamResources.CalculateVoteWeight(resourceOfInterest);
+    }
+
     public async Task ClearVotesForCurrentRound()
     {
         await _semaphore.WaitAsync();
@@ -571,4 +618,5 @@ public class MapDataStore
             districtData.IsClaimable = true;
         }
     }
+
 }

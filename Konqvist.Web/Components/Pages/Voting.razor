@@ -10,6 +10,12 @@
 
 <div class="center-content">
     <h3>Cast your votes please!</h3>
+    @if (_initialized && !string.IsNullOrEmpty(_currentTeamName))
+    {
+        <div style="margin-bottom: 1rem; font-size: 1.1em; color: #444;">
+            You have <b>@_voteWeight</b> point@(_voteWeight == 1 ? "" : "s") to vote with.
+        </div>
+    }
     @if (!_initialized)
     {
         <div>Loading...</div>
@@ -48,7 +54,7 @@
 
 @code {
     private List<TeamData>? _teams;
-    private Dictionary<string, int>? _teamVotes;
+    private Dictionary<string, int> _teamVotes = [];
     private bool _hasVoted;
     private string? _currentTeamName;
     private int _voteWeight = 1;
@@ -58,68 +64,57 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        
-        // Get current team name from session
+
         _currentTeamName = SessionProvider.Session.TeamName;
-        
-        // Get teams
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
-        
-        // Fetch votes from server instead of initializing to 0
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
-        
+
         // Ensure all teams are present in the dictionary
         foreach (var team in _teams)
         {
             _teamVotes.TryAdd(team.Name, 0);
         }
-     
+
         // Get vote weight (resources) for current team
         if (!string.IsNullOrEmpty(_currentTeamName))
         {
-            var resources = await MapDataStore.GetResourcesForTeam(_currentTeamName);
-            string? resourceOfInterest = await MapDataStore.GetCurrentResourceOfInterest();
-
-            _voteWeight = resources.CalculateVoteWeight(resourceOfInterest);
-            if (_voteWeight < 1) _voteWeight = 1;
-
+            _voteWeight = await MapDataStore.GetVoteWeightForTeam(_currentTeamName);
+            
             // Check if this team has already voted
             _hasVoted = await MapDataStore.HasTeamVotedInCurrentRound(_currentTeamName);
         }
 
         // Subscribe to SignalR votes update
-        HubClient.OnVotesUpdated = async votes =>
+        HubClient.OnVotesUpdatedWithCaster = async (votes, castingTeamName) =>
         {
-            if (_teamVotes is not null)
+            foreach (var kvp in votes.Where(kvp => _teamVotes.ContainsKey(kvp.Key)))
             {
-                foreach (var kvp in votes.Where(kvp => _teamVotes.ContainsKey(kvp.Key)))
-                {
-                    _teamVotes[kvp.Key] = kvp.Value;
-                }
+                _teamVotes[kvp.Key] = kvp.Value;
             }
             await InvokeAsync(StateHasChanged);
         };
 
         _initialized = true;
-        StateHasChanged();
     }
 
     private async Task CastVote(string teamName)
     {
-        if (!CanVote || teamName == _currentTeamName || _teamVotes is null) return;
+        if (!CanVote || teamName == _currentTeamName) return;
         _hasVoted = true;
-        await HubClient.SendCastVoteRequest(teamName, _voteWeight);
-        StateHasChanged();
+        await HubClient.SendCastVoteRequest(teamName, _voteWeight, _currentTeamName!);
     }
 
     private int GetBarHeight(string teamName)
     {
-        if (_teamVotes is null) return 10;
-
         int maxVotes = _teamVotes.Values.DefaultIfEmpty(1).Max();
         int votes = _teamVotes[teamName];
 
         // Scale bar height between 10 and 200px
         return 10 + (maxVotes == 0 ? 0 : (int)(190.0 * votes / maxVotes));
+    }
+
+    public void Dispose()
+    {
+        HubClient.OnVotesUpdatedWithCaster = null;
     }
 }

@@ -51,8 +51,9 @@ public interface IGameHubServer
     /// <summary>
     ///     Sends a request to cast a vote with a specified weight for a team.
     /// </summary>
-    /// <param name="teamName"></param>
+    /// <param name="receivingTeamName"></param>
     /// <param name="voteWeight"></param>
+    /// <param name="castingTeamName"></param>
     /// <returns></returns>
-    Task SendCastVoteRequest(string teamName, int voteWeight);
+    Task SendCastVoteRequest(string receivingTeamName, int voteWeight, string castingTeamName);
 }

@@ -95,14 +95,13 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await Clients.All.ActorMoved(actorLocation);
     }
 
-    public async Task SendCastVoteRequest(string teamName, int voteWeight)
+    public async Task SendCastVoteRequest(string receivingTeamName, int voteWeight, string castingTeamName)
     {
-        // Add the vote to the store
-        await dataStore.AddVoteForCurrentRound(teamName, voteWeight);
-        // Get the updated votes for the current round
+        // Add the vote to the store for the receiving team, from the casting team
+        await dataStore.AddVoteForCurrentRound(receivingTeamName, castingTeamName, voteWeight);
         var votes = await dataStore.GetVotesForCurrentRound();
-        // Broadcast the updated votes to all clients
-        await Clients.All.VotesUpdated(votes);
+        // Broadcast the updated votes to all clients, include the casting team name
+        await Clients.All.VotesUpdated(votes, castingTeamName);
     }
 
     public override async Task OnConnectedAsync()

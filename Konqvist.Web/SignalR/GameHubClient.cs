@@ -48,23 +48,15 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// </summary>
     private void SubscribeClientHandlers()
     {
-        _hubConnection.On<DistrictOwner, Task>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
-
-        _hubConnection.On<ActorLocation, Task>(nameof(ActorMoved), ActorMoved);
-
-        _hubConnection.On<Task>(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
-
-        _hubConnection.On<string, Task>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
-
-        _hubConnection.On<string, Task>(nameof(RunnerLoggedIn), RunnerLoggedIn);
-
-        _hubConnection.On<string[], Task>(nameof(RunnersLoggedOut), RunnersLoggedOut);
-
-        _hubConnection.On<RoundData, Task>(nameof(NewRoundStarted), NewRoundStarted);
-
-        _hubConnection.On<string, Task>(nameof(TeamResourcesChanged), TeamResourcesChanged);
-
-        _hubConnection.On<Dictionary<string, int>, Task>(nameof(VotesUpdated), VotesUpdated);
+        _hubConnection.On<DistrictOwner>(nameof(DistrictOwnerChanged), async (districtOwner) => await DistrictOwnerChanged(districtOwner));
+        _hubConnection.On<ActorLocation>(nameof(ActorMoved), async (actorLocation) => await ActorMoved(actorLocation));
+        _hubConnection.On(nameof(RunnerLoggedInOrOut), async () => await RunnerLoggedInOrOut());
+        _hubConnection.On<string>(nameof(PerformRunnerLogoutOnClient), async (teamName) => await PerformRunnerLogoutOnClient(teamName));
+        _hubConnection.On<string>(nameof(RunnerLoggedIn), async (teamName) => await RunnerLoggedIn(teamName));
+        _hubConnection.On<string[]>(nameof(RunnersLoggedOut), async (teamNames) => await RunnersLoggedOut(teamNames));
+        _hubConnection.On<RoundData>(nameof(NewRoundStarted), async (newRound) => await NewRoundStarted(newRound));
+        _hubConnection.On<string>(nameof(TeamResourcesChanged), async (teamName) => await TeamResourcesChanged(teamName));
+        _hubConnection.On<Dictionary<string, int>, string?>(nameof(VotesUpdated), async (votes, castingTeamName) => await VotesUpdated(votes, castingTeamName));
     }
 
     #region IGameHubServer implements
@@ -96,8 +88,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task SendResetGameRequest() =>
         _hubConnection.SendAsync(nameof(SendResetGameRequest));
 
-    public Task SendCastVoteRequest(string teamName, int voteWeight) =>
-        _hubConnection.SendAsync(nameof(SendCastVoteRequest), teamName, voteWeight);
+    public Task SendCastVoteRequest(string receivingTeamName, int voteWeight, string castingTeamName) =>
+        _hubConnection.SendAsync(nameof(SendCastVoteRequest), receivingTeamName, voteWeight, castingTeamName);
 
     #endregion
 
@@ -116,14 +108,10 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task PerformRunnerLogoutOnClient(string? teamName)
     {
         var session = _sessionProvider.Session;
-
         if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName)
             return Task.CompletedTask;
-
         _toastService.ShowWarning("The game master has logged you out", 4000);
-
         _navigationManager.NavigateTo("logout", false);
-
         return Task.CompletedTask;
     }
 
@@ -132,15 +120,13 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         if (_sessionProvider.Session.IsAdmin == false &&
             await _routingService.GetGameStateRoutePath(newRound.Kind) is { } routePath)
             _navigationManager.NavigateTo(routePath, false);
-
         if (OnNewRoundStarted is null) return;
-
         await OnNewRoundStarted.Invoke(newRound);
     }
 
     public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 
-    public Task VotesUpdated(Dictionary<string, int> votes) => OnVotesUpdated?.Invoke(votes) ?? Task.CompletedTask;
+    public Task VotesUpdated(Dictionary<string, int> votes, string? castingTeamName) => OnVotesUpdatedWithCaster?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
 
     #endregion
 
@@ -160,16 +146,12 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
-    public Func<Dictionary<string, int>, Task>? OnVotesUpdated { get; set; }
+    public Func<Dictionary<string, int>, string?, Task>? OnVotesUpdatedWithCaster { get; set; }
 
     #endregion
-
-    #region IDisposable
 
     public async ValueTask DisposeAsync()
     {
         await _hubConnection.DisposeAsync();
     }
-
-    #endregion
 }

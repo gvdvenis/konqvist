@@ -23,26 +23,19 @@
     else
     {
         <div class="voting-bars" style="display: flex; gap: 2rem; justify-content: center; align-items: end; min-height: 350px;">
-            @if (_teams is not null && _teamVotes is not null)
+            @foreach (var team in _teams)
             {
-                foreach (var team in _teams)
-                {
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <div style="height: 200px; width: 40px; display: flex; align-items: flex-end;">
-                            <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
-                        </div>
-                        <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
-                        <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
-                        <button class="fluent-button" style="margin-top: 0.5rem;" 
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="height: 200px; width: 40px; display: flex; align-items: flex-end;">
+                        <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
+                    </div>
+                    <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
+                    <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
+                    <button class="fluent-button" style="margin-top: 0.5rem;" 
                             disabled="@(!CanVote || team.Name == _currentTeamName)" 
                             @onclick="() => CastVote(team.Name)">VOTE
-                        </button>
-                    </div>
-                }
-            }
-            else
-            {
-                <span>Loading teams...</span>
+                    </button>
+                </div>
             }
         </div>
         @if (_hasVoted)

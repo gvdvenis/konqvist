@@ -7,6 +7,10 @@ public class ResourcesData
     public int R2 { get; set; }
     public int R3 { get; set; }
     public int R4 { get; set; }
+
+    /// <summary>
+    ///     Sum of R1 - R4
+    /// </summary>
     public int Total => R1 + R2 + R3 + R4;
 
     public static ResourcesData Empty { get; } = new();

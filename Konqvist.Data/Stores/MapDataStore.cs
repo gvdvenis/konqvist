@@ -67,15 +67,7 @@ public class MapDataStore
     /// </summary>
     public async Task<MapData> GetMapData()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            return _mapData;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() => _mapData);
     }
 
     /// <summary>
@@ -90,25 +82,22 @@ public class MapDataStore
     {
         var counter = 0;
 
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             var teams = _teamsData
                  .Where(t => !onlyLoggedIn || t.PlayerLoggedIn)
                  .Where(t => includeDisabled || !t.IsDisabled);
 
-            return [.. teams.Select(td =>
+            List<TeamData> result = [];
+            foreach (var td in teams)
             {
                 td.Location = td.Location == Coordinate.Empty
                     ? GetDefaultLocation()
                     : td.Location;
-                return td;
-            })];
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+                result.Add(td);
+            }
+            return result;
+        });
 
         Coordinate GetDefaultLocation()
         {
@@ -127,16 +116,7 @@ public class MapDataStore
     /// </summary>
     public async Task<TeamData?> GetTeamByName(string teamName)
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            return _teamsData
-                .SingleOrDefault(td => td.Name == teamName);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() => _teamsData.SingleOrDefault(td => td.Name == teamName));
     }
 
     /// <summary>
@@ -144,15 +124,7 @@ public class MapDataStore
     /// </summary>
     public async Task<List<DistrictData>> GetAllDistricts()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            return [.. _mapData.Districts];
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() => _mapData.Districts.ToList());
     }
 
     /// <summary>
@@ -164,17 +136,12 @@ public class MapDataStore
     {
         var team = await GetTeamByName(teamName);
 
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             var currentAdditionalTeamResources = team?.AdditionalResources ?? ResourcesData.Empty;
             var districtResources = GetCurrentDistrictResources(team);
             return currentAdditionalTeamResources + districtResources;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     private ResourcesData GetCurrentDistrictResources(TeamData? team)
@@ -187,15 +154,8 @@ public class MapDataStore
 
     public async Task<string?> GetCurrentResourceOfInterest()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            return _roundsDataStore.GetCurrentRound().ResourceOfInterest;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() =>
+            _roundsDataStore.GetCurrentRound().ResourceOfInterest);
     }
 
     public async Task<RoundDataStore> GetRoundsDataStore()
@@ -205,43 +165,23 @@ public class MapDataStore
 
     public async Task<IEnumerable<TeamScore>> GetTeamScores()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            // Delegate to SnapshotDataStore for all score and bonus calculation
-            return _snapshotDataStore.GetAllTeamScores();
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() =>
+            _snapshotDataStore.GetAllTeamScores());
     }
 
     public async Task<RoundKind> GetCurrentAppState()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            return _roundsDataStore.GetCurrentRound().Kind;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return await ProtectedInvoke(() =>
+            _roundsDataStore.GetCurrentRound().Kind);
     }
 
     public async Task<bool> HasTeamVotedInCurrentRound(string teamName)
     {
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             return _votingDataStore.HasTeamVoted(roundNumber, teamName);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     #endregion
@@ -256,9 +196,7 @@ public class MapDataStore
         string districtName = districtOwner.DistrictName;
         string newOwnerName = districtOwner.TeamName;
 
-        await _semaphore.WaitAsync();
-
-        try
+        return await ProtectedInvoke(() =>
         {
             var district = _mapData.Districts.FirstOrDefault(d => d.Name == districtName);
             if (district is null) return false;
@@ -270,25 +208,16 @@ public class MapDataStore
             district.IsClaimable = false;
 
             return true;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task UpdateTeamPosition(string teamName, Coordinate coordinate)
     {
-        await _semaphore.WaitAsync();
-        try
+        await ProtectedInvoke(() =>
         {
             if (TeamByName(teamName) is { } team)
                 team.Location = coordinate;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<(TeamData?, TeamMemberRole role)?> TryLoginTeamMember(string? password)
@@ -350,19 +279,14 @@ public class MapDataStore
         // Team captains and observers are always allowed to log in
         if (role is not TeamMemberRole.Runner) return true;
 
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             // Runners are only allowed to log in once
             if (teamData.PlayerLoggedIn) return false;
 
             teamData.PlayerLoggedIn = true;
             return true;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<bool> LogoutRunner(string teamName)
@@ -370,24 +294,18 @@ public class MapDataStore
         // we don't bother with observers and team captains for now
         // if (role is not TeamMemberRole.Runner) return true;
 
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             var team = _teamsData.FirstOrDefault(t => t.Name == teamName);
             if (team == null) return false;
             team.PlayerLoggedIn = false;
             return true;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<List<string>> LogoutAllRunners()
     {
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             List<string> loggedOutPlayerTeamNames = [];
 
@@ -400,30 +318,20 @@ public class MapDataStore
             }
 
             return loggedOutPlayerTeamNames;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task ClearClaims(string? teamName = null)
     {
-        await _semaphore.WaitAsync();
-        try
+        await ProtectedInvoke( () =>
         {
             ClearClaimsInternal(teamName);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<RoundData?> NextRound()
     {
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             var teamResouces = _teamsData
                 .Select(t => new TeamResources(t,
@@ -432,30 +340,28 @@ public class MapDataStore
                     _roundsDataStore.GetCurrentRound().ResourceOfInterest))
                 .ToList();
 
-            int roundNumber = _roundsDataStore.GetCurrentRound().Index;
-            var votes = _votingDataStore.GetTeamVotesForRound(roundNumber).ToList();
-            var voters = _votingDataStore.GetTeamVotersForRound(roundNumber).ToList();
+            var currentRound = _roundsDataStore.GetCurrentRound();
+            int roundNumber = currentRound.Index;
+            var votingData = new VotingData(
+                _votingDataStore.GetTeamVotesForRound(roundNumber).ToList(),
+                _votingDataStore.GetTeamVotersForRound(roundNumber).ToList()
+            );
 
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
                 teamResouces,
-                _roundsDataStore.GetCurrentRound(),
-                votes,
-                voters);
+                currentRound,
+                votingData);
 
             // reset all trigger circles 
             ClearClaimsInternal(null);
 
             // we only want to reset our resources when we're exiting a voting round
-            if (_roundsDataStore.GetCurrentRound().Kind == RoundKind.Voting)
+            if (currentRound.Kind == RoundKind.Voting)
                 ClearAllTeamsAdditionalResources();
 
             return _roundsDataStore.NextRound();
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     private void ClearAllTeamsAdditionalResources()
@@ -468,16 +374,11 @@ public class MapDataStore
 
     public async Task ResetGame()
     {
-        await _semaphore.WaitAsync();
-        try
+        await ProtectedInvoke(async () =>
         {
             _snapshotDataStore.Clear();
             await InitializeAsync();
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     /// <summary>
@@ -493,57 +394,38 @@ public class MapDataStore
 
         if (team is null) return;
 
-        await _semaphore.WaitAsync();
-        try
+        await ProtectedInvoke(() =>
         {
             team.AdditionalResources += resourcesReplacement;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+            return Task.CompletedTask;
+        });
     }
 
     public async Task AddVoteForCurrentRound(string recipientTeamName, string voterTeamName, int voteWeight)
     {
-        await _semaphore.WaitAsync();
-        try
+        await ProtectedInvoke(() =>
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             _votingDataStore.AddVote(roundNumber, recipientTeamName, voterTeamName, voteWeight);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<int> GetVotesForTeamInCurrentRound(string teamName)
     {
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             return _votingDataStore.GetVotesForTeam(roundNumber, teamName);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<List<TeamVote>> GetVotesForCurrentRound()
     {
-        await _semaphore.WaitAsync();
-        try
+        return await ProtectedInvoke(() =>
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             return _votingDataStore.GetVotesForRound(roundNumber);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        });
     }
 
     public async Task<int> GetVoteWeightForTeam(string teamName)
@@ -551,20 +433,6 @@ public class MapDataStore
         var teamResources = await GetResourcesForTeam(teamName);
         string? resourceOfInterest = await GetCurrentResourceOfInterest();
         return teamResources.CalculateVoteWeight(resourceOfInterest);
-    }
-
-    public async Task ClearVotesForCurrentRound()
-    {
-        await _semaphore.WaitAsync();
-        try
-        {
-            int roundNumber = _roundsDataStore.CurrentRoundNumber;
-            _votingDataStore.ClearVotesForRound(roundNumber);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
     }
 
     #endregion
@@ -586,4 +454,31 @@ public class MapDataStore
         }
     }
 
+    // Helper for protected invocation with return value
+    private async Task<T> ProtectedInvoke<T>(Func<T> func)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return func();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+
+    private async Task ProtectedInvoke(Action mtd)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            mtd();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
 }

@@ -208,47 +208,8 @@ public class MapDataStore
         await _semaphore.WaitAsync();
         try
         {
-            // Calculate base scores from snapshots
-            var baseScores = _snapshotDataStore.GetAllTeamScores().ToList();
-
-            // Calculate bonus points from voting for the last completed voting round
-            int lastVotingRound = _roundsDataStore.Rounds
-                .Where(r => r.Kind == RoundKind.Voting && r.Order < _roundsDataStore.CurrentRoundNumber)
-                .Select(r => r.Order)
-                .DefaultIfEmpty(-1)
-                .Max();
-
-            if (lastVotingRound >= 0)
-            {
-                var votes = _votingDataStore.GetVotesForRound(lastVotingRound);
-                var voters = _votingDataStore.GetVotersForRound(lastVotingRound);
-                if (votes.Count > 0 && voters.Count > 0)
-                {
-                    // Find the winning team (most votes)
-                    var maxVotes = votes.Values.Max();
-                    var winningTeams = votes.Where(kvp => kvp.Value == maxVotes).Select(kvp => kvp.Key).ToList();
-                    // If tie, all teams with max votes are winners
-                    var votersForWinners = voters.Where(kvp => winningTeams.Contains(kvp.Value)).Select(kvp => kvp.Key).ToList();
-                    const int BonusTotal = 150;
-                    int bonusPerTeam = votersForWinners.Count > 0 ? BonusTotal / votersForWinners.Count : 0;
-
-                    // Assign bonus points to teams
-                    foreach (var team in _teamsData)
-                    {
-                        team.BonusPointsFromVoting = votersForWinners.Contains(team.Name) ? bonusPerTeam : 0;
-                    }
-                }
-            }
-
-            // Add bonus points to base scores
-            var scoresWithBonus = baseScores.Select(bs =>
-            {
-                var team = _teamsData.FirstOrDefault(t => t.Name == bs.TeamName);
-                int bonus = team?.BonusPointsFromVoting ?? 0;
-                return new TeamScore(bs.TeamName, bs.Score + bonus);
-            }).ToList();
-
-            return scoresWithBonus;
+            // Delegate to SnapshotDataStore for all score and bonus calculation
+            return _snapshotDataStore.GetAllTeamScores();
         }
         finally
         {
@@ -471,10 +432,16 @@ public class MapDataStore
                     _roundsDataStore.GetCurrentRound().ResourceOfInterest))
                 .ToList();
 
+            int roundNumber = _roundsDataStore.GetCurrentRound().Order;
+            var votes = _votingDataStore.GetVotesForRound(roundNumber);
+            var voters = _votingDataStore.GetVotersForRound(roundNumber);
+
             _snapshotDataStore.CreateSnapshot(
                 _mapData,
                 teamResouces,
-                _roundsDataStore.GetCurrentRound());
+                _roundsDataStore.GetCurrentRound(),
+                votes,
+                voters);
 
             // reset all trigger circles 
             ClearClaimsInternal(null);

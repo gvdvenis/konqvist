@@ -22,6 +22,8 @@ public class MapDataStore
     private readonly VotingDataStore _votingDataStore = new();
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
 
+    private MapDataStore(){}
+
     public static async Task<MapDataStore> GetInstanceAsync()
     {
         if (_instance != null) return _instance;

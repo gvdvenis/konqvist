@@ -1,6 +1,5 @@
 ﻿using Konqvist.Data.Contracts;
 using Konqvist.Data.Stores;
-using System.Collections.Generic;
 
 namespace Konqvist.Data.Models;
 
@@ -9,5 +8,6 @@ internal record SnapshotData(
     IEnumerable<DistrictOwner> DistrictOwners,
     IEnumerable<TeamResources> TeamResources,
     VotingData VotingData,
-    Dictionary<string, int> TeamScores
+    IEnumerable<TeamScore> VotingScores,
+    IEnumerable<TeamScore> TeamAdditionalResources
 );

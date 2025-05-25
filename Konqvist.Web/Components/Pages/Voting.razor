@@ -30,7 +30,7 @@
                         <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
                     </div>
                     <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
-                    <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
+                    <span style="font-size: 0.9em;">VoteDatas: @GetVotesForTeam(team.Name)</span>
                     <button class="fluent-button" style="margin-top: 0.5rem;" 
                             disabled="@(!CanVote || team.Name == _currentTeamName)" 
                             @onclick="() => CastVote(team.Name)">VOTE
@@ -63,7 +63,7 @@
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
 
         // Ensure all teams are present in the votes list
-        foreach (var team in _teams.Where(team => _teamVotes.All(tv => tv.RecipientTeamName != team.Name)))
+        foreach (var team in _teams.Where(team => _teamVotes.All(tv => tv.TeamName != team.Name)))
         {
             _teamVotes.Add(new TeamVote(team.Name, 0));
         }
@@ -95,17 +95,17 @@
     {
         if (!CanVote || teamName == _currentTeamName) return;
         _hasVoted = true;
-        await HubClient.SendCastVoteRequest(teamName, _voteWeight, _currentTeamName!);
+        await HubClient.SendCastVoteRequest(teamName, _currentTeamName!);
     }
 
     private int GetVotesForTeam(string teamName)
     {
-        return _teamVotes.FirstOrDefault(tv => tv.RecipientTeamName == teamName)?.VoteCount ?? 0;
+        return _teamVotes.FirstOrDefault(tv => tv.TeamName == teamName)?.Amount ?? 0;
     }
 
     private int GetBarHeight(string teamName)
     {
-        int maxVotes = _teamVotes.Select(tv => tv.VoteCount).DefaultIfEmpty(1).Max();
+        int maxVotes = _teamVotes.Select(tv => tv.Amount).DefaultIfEmpty(1).Max();
         int votes = GetVotesForTeam(teamName);
 
         // Scale bar height between 10 and 200px

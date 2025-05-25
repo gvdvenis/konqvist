@@ -4,10 +4,29 @@ namespace Konqvist.Data.Models;
 
 public class DistrictData : IShapeData
 {
-    public required IEnumerable<Coordinate> Coordinates { get; set; }
-    public Coordinate TriggerCircleCenter { get; set; }
-    public TeamData? Owner { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public ResourcesData Resources { get; set; } = ResourcesData.Empty;
-    public bool IsClaimable { get; set; } = true;
+    // Static data
+    public IEnumerable<Coordinate> Coordinates { get; init; } = [];
+    public Coordinate TriggerCircleCenter { get; internal set; }
+    public string Name { get; init; } = string.Empty;
+    public ResourcesData Resources { get; init; } = ResourcesData.Empty;
+
+    // properties that chang state during the game
+    public bool IsClaimable { get; private set; } = true;
+    public TeamData? Owner { get; private set; }
+
+    internal void AssignDistrictOwner(TeamData team)
+    {
+        Owner = team;
+        IsClaimable = false;
+    }
+
+    public void ReleaseClaim()
+    {
+        IsClaimable = true;
+    }
+
+    internal void SetTriggerCircleCenter(Coordinate parseCoordinate)
+    {
+        TriggerCircleCenter = parseCoordinate;
+    }
 }

@@ -32,13 +32,13 @@
 
     <div class="full-span"
          style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
-        <h3 class="center-content">Scores:</h3>
+        <h3 class="center-content">Amounts:</h3>
         <p class="vertically-centered">
             <FluentSpacer />
             @foreach (var score in _teamScores)
             {
                 <FluentBadge Circular="true" Class="resource-badge" Height="24px">
-                    @score.TeamName: @score.Score
+                    @score.TeamName: @score.Amount
                 </FluentBadge>
             }
             <FluentSpacer />
@@ -63,8 +63,8 @@
 
 @code {
 
-    private IEnumerable<Team> _teams = [];
-    private IEnumerable<TeamScore> _teamScores = [];
+    private List<Team> _teams = [];
+    private List<TeamScore> _teamScores = [];
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
     private RoundData _currentRound = RoundData.Empty;
     private UserSession Session => SessionProvider.Session;
@@ -77,9 +77,9 @@
         await base.OnInitializedAsync();
 
         var teamsData = await MapDataStore.GetTeams();
-        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
+        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse().ToList();
         _roundDataStore = await MapDataStore.GetRoundsDataStore();
-        _teamScores = await MapDataStore.GetTeamScores();
+        _teamScores = await MapDataStore.GetAllTeamScores();
         _currentRound = _roundDataStore.GetCurrentRound();
 
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
@@ -92,7 +92,7 @@
     private async Task OnNewRoundStarted(RoundData roundData)
     {
         _currentRound = roundData;
-        _teamScores = await MapDataStore.GetTeamScores();
+        _teamScores = await MapDataStore.GetAllTeamScores();
 
         await InvokeAsync(StateHasChanged);
     }

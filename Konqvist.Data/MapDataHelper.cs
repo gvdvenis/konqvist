@@ -51,6 +51,21 @@ public static class MapDataHelper
             return [];
         }
     }
+
+    public static Task<List<RoundData>> GetRoundsData() =>
+        Task.FromResult<List<RoundData>>(
+        [
+            new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
+            new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
+            new RoundData(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
+            new RoundData(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),
+            new RoundData(4, "Voting 2", RoundKind.Voting, nameof(ResourcesData.R4)),
+            new RoundData(5, "Running 3", RoundKind.GatherResources, nameof(ResourcesData.R2)),
+            new RoundData(6, "Voting 3", RoundKind.Voting, nameof(ResourcesData.R2)),
+            new RoundData(7, "Running 4", RoundKind.GatherResources, nameof(ResourcesData.R3)),
+            new RoundData(8, "Voting 4", RoundKind.Voting, nameof(ResourcesData.R3)),
+            new RoundData(9, "Game Over", RoundKind.GameOver, null)
+        ]);
 }
 
 public class CoordinateConverter : JsonConverter<Coordinate>

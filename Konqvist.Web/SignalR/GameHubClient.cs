@@ -88,8 +88,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task SendResetGameRequest() =>
         _hubConnection.SendAsync(nameof(SendResetGameRequest));
 
-    public Task SendCastVoteRequest(string receivingTeamName, int voteWeight, string castingTeamName) =>
-        _hubConnection.SendAsync(nameof(SendCastVoteRequest), receivingTeamName, voteWeight, castingTeamName);
+    public Task SendCastVoteRequest(string receivingTeamName, string castingTeamName) =>
+        _hubConnection.SendAsync(nameof(SendCastVoteRequest), receivingTeamName, castingTeamName);
 
     #endregion
 

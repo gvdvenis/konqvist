@@ -1,11 +1,5 @@
 ﻿@page "/waitforstart"
 
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
-
-@inject IBindableHubClient HubClient
-@inject NavigationManager NavigationManager
-@inject SessionProvider SessionProvider
-
 @attribute [Authorize]
 
 <div class="center-content">

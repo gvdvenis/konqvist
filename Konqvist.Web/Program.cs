@@ -1,17 +1,10 @@
-
-using System.Security.Claims;
 using Konqvist.Data;
 using Konqvist.Web;
 using Konqvist.Web.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//builder.AddRedisOutputCache("cache");
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -26,12 +19,13 @@ builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHu
 builder.Services.AddScoped<SessionProvider>();
 builder.Services.AddScoped<GameModeRoutingService>();
 builder.Services.AddSingleton<SessionKeyProvider>();
-builder.Services.AddSingleton(_ => MapDataStore.GetInstanceAsync().GetAwaiter().GetResult());
+builder.Services.AddSingleton<IMapDataLoader, MapDataLoader>();
+builder.Services.AddSingleton<MapDataStore>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.Cookie.Name = "ElectionGame.Auth";
+        options.Cookie.Name = "Konqvist.Auth";
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.HttpOnly = true;
         options.Cookie.MaxAge = TimeSpan.FromHours(3);
@@ -48,6 +42,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // Add to your existing service registration section
 
 var app = builder.Build();
+
+// Initialize the main application datastore
+var mapDataSource = app.Services.GetRequiredService<MapDataStore>();
+await mapDataSource.InitializeAsync();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -66,7 +64,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseHttpsRedirection();
 app.UseAntiforgery();
-//app.UseOutputCache();
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()

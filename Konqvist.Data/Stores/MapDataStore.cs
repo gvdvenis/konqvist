@@ -6,10 +6,10 @@ using System.Diagnostics;
 
 namespace Konqvist.Data.Stores;
 
-public class MapDataStore
+public class MapDataStore(IMapDataLoader mapDataLoader)
 {
+
     // Singleton instance
-    private static MapDataStore? _instance;
 
     // SemaphoreSlim for controlling concurrent read/write access
     private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -20,28 +20,18 @@ public class MapDataStore
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
 
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
-
-    private MapDataStore() { }
-
-    public static async Task<MapDataStore> GetInstanceAsync()
-    {
-        if (_instance != null) return _instance;
-        _instance = new MapDataStore();
-        await _instance.InitializeAsync().ConfigureAwait(false);
-        return _instance;
-    }
-
+    
     #region Initializers
 
-    private async Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        var mapData = await MapDataHelper.GetMapData().ConfigureAwait(false);
+        var mapData = await mapDataLoader.GetMapData();
         _mapData = mapData;
 
-        var teamsData = await MapDataHelper.GetTeamsData();
+        var teamsData = await mapDataLoader.GetTeamsData();
         _teamsData = [.. teamsData];
 
-        var roundsData = await MapDataHelper.GetRoundsData();
+        var roundsData = await mapDataLoader.GetRoundsData();
         _roundsDataStore = new RoundDataStore(roundsData);
     }
 
@@ -469,21 +459,22 @@ public class MapDataStore
         });
     }
 
-    public async Task CastVoteFor(string recipientTeamName, string voterTeamName)
+    public async Task<bool> CastVoteFor(string recipientTeamName, string voterTeamName)
     {
         int voteWeight = await GetVoteWeightForTeam(voterTeamName);
 
-        await ProtectedInvoke(() =>
+        return await ProtectedInvoke(() =>
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             var receiver = TeamByName(recipientTeamName);
             var voter = TeamByName(voterTeamName);
 
             if (voter.HasVoted(roundNumber))
-                return;
+                return false;
 
             receiver.LogReceivedVote(voter.Name, voteWeight, roundNumber);
             voter.LogCastVote(receiver.Name, roundNumber);
+            return true;
         });
     }
 

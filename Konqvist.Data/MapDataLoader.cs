@@ -6,7 +6,14 @@ using System.Text.Json.Serialization;
 
 namespace Konqvist.Data;
 
-public static class MapDataHelper
+public interface IMapDataLoader
+{
+    public Task<MapData> GetMapData();
+    public Task<TeamData[]> GetTeamsData();
+    public Task<List<RoundData>> GetRoundsData();
+}
+
+public class MapDataLoader: IMapDataLoader
 {
     private static readonly string DataFolder =
         Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)!, "Data");
@@ -19,7 +26,7 @@ public static class MapDataHelper
         Converters = { new CoordinateConverter(), new CoordinateArrayConverter() }
     };
 
-    public static async Task<MapData> GetMapData()
+    public async Task<MapData> GetMapData()
     {
         try
         {
@@ -36,7 +43,7 @@ public static class MapDataHelper
         }
     }
 
-    public static async Task<TeamData[]> GetTeamsData()
+    public async Task<TeamData[]> GetTeamsData()
     {
         try
         {
@@ -52,7 +59,7 @@ public static class MapDataHelper
         }
     }
 
-    public static Task<List<RoundData>> GetRoundsData() =>
+    public Task<List<RoundData>> GetRoundsData() =>
         Task.FromResult<List<RoundData>>(
         [
             new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),

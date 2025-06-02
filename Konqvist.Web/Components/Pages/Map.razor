@@ -136,8 +136,6 @@
     {
         Console.WriteLine($"*** Location received: {obj.Coords.Latitude}, {obj.Coords.Longitude}");
         
-        //if (Debugger.IsAttached) return;
-        
         var coordinate = new Coordinate(obj.Coords.Longitude, obj.Coords.Latitude);
         UpdateLocation(coordinate).GetAwaiter().GetResult();
     }
@@ -166,7 +164,7 @@
     {
         var team = await MapDataStore.GetTeamByName(Session.TeamName);
 
-        _center = team is not null && team.PlayerLoggedIn
+        _center = team.PlayerLoggedIn
             ? team.Location
             : DefaultCenter;
     }

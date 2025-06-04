@@ -10,7 +10,7 @@ public static class TeamDataExtensions
     /// <param name="round">The round for which the score is calculated.</param>
     /// <param name="cumulative">Indicates whether to calculate cumulative score.</param>
     /// <returns>The total (cumulative) score for the specified round.</returns>
-    public static int GetScoreTotalForRound(this TeamData team, int round, bool cumulative = false)
+    public static int GetScoreTotalForRound(this TeamData team, int round, bool cumulative = true)
     {
         return cumulative
             ? team.Scores.TakeWhile(s => s.Round <= round).Sum(s => s.Amount)

@@ -176,5 +176,4 @@ public class ResourcesData
             _ => 0
         };
     }
-
 }

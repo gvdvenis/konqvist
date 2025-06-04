@@ -30,7 +30,7 @@
                         <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
                     </div>
                     <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
-                    <span style="font-size: 0.9em;">VoteDatas: @GetVotesForTeam(team.Name)</span>
+                    <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
                     <button class="fluent-button" style="margin-top: 0.5rem;" 
                             disabled="@(!CanVote || team.Name == _currentTeamName)" 
                             @onclick="() => CastVote(team.Name)">VOTE

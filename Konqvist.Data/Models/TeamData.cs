@@ -3,11 +3,11 @@
 public class TeamData(string name, string color) : ActorData(name, color)
 {
     public static TeamData Empty { get; } = new(string.Empty, "#05203b");
-    public bool IsDisabled { get; internal set; }
+    public bool IsDisabled { get; init; }
     
-    public IReadOnlyList<ScoreData> Scores { get;  } = new List<ScoreData>();
-    public IReadOnlyList<VoteData> Votes { get; } = new List<VoteData>();
-    public IReadOnlyList<VoterData> CastVotes { get; } = new List<VoterData>();
+    public IReadOnlyList<ScoreData> Scores { get;  } = (List<ScoreData>) [];
+    public IReadOnlyList<VoteData> Votes { get; } = (List<VoteData>) [];
+    public IReadOnlyList<VoterData> CastVotes { get; } = (List<VoterData>) [];
     public ResourcesData AdditionalResources { get; internal set; } = ResourcesData.Empty;
     public bool PlayerLoggedIn { get; internal set; }
 
@@ -53,7 +53,6 @@ public class TeamData(string name, string color) : ActorData(name, color)
     {
         AdditionalResources += resourceData;
     }
-
 }
 
 public enum TeamMemberRole

@@ -73,6 +73,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
                     : td.Location;
                 result.Add(td);
             }
+            
             return result;
         });
 
@@ -144,10 +145,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
     ///     returns the team scores for all teams in the game at the current moment.
     /// </summary>
     /// <returns></returns>
-    public Task<List<TeamScore>> GetAllTeamScores()
+    public async Task<List<TeamScore>> GetAllTeamScores()
     {
-        return ProtectedInvoke(() => _teamsData
-            .Select(team => new TeamScore(team.Name,  team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber, true)))
+        var teams = await GetTeams();
+        
+        return await ProtectedInvoke(() => teams
+            .Select(team => new TeamScore(team.Name,  team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber)))
             .ToList()
         );
     }
@@ -162,7 +165,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         return ProtectedInvoke(() =>
         {
             var team = TeamByName(teamName);
-            return new TeamScore(team.Name, team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber, true));
+            return new TeamScore(team.Name, team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber));
         });
     }
 
@@ -309,10 +312,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         if (teamData is null) return false;
 
         // Team captains and observers are always allowed to log in
-        if (role is not TeamMemberRole.Runner) 
-            return true;
-
-        return await ProtectedInvoke(() =>
+        return role is not TeamMemberRole.Runner || await ProtectedInvoke(() =>
         {
             // Runners are only allowed to log in once
             if (teamData.PlayerLoggedIn) return false;
@@ -484,7 +484,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         {
             int roundNumber = _roundsDataStore.CurrentRoundNumber;
             return _teamsData
-                .Select(t => new TeamVote(t.Name, t.GetScoreTotalForRound(roundNumber)))
+                .Select(t => new TeamVote(t.Name, t.GetTotalVotesAmount(roundNumber)))
                 .ToList();
         });
     }

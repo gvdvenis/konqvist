@@ -675,7 +675,7 @@ internal class GameDataLoader : IMapDataLoader
 {
     #region Implementation of IMapDataLoader
 
-    private static readonly JsonSerializerOptions Options = new()
+    private static readonly JsonSerializerOptions _options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         AllowTrailingCommas = true,
@@ -687,14 +687,14 @@ internal class GameDataLoader : IMapDataLoader
     public Task<MapData> GetMapData()
     {
 
-        var map = JsonSerializer.Deserialize<MapData>(MockData.MapData, Options);
+        var map = JsonSerializer.Deserialize<MapData>(MockData.MapData, _options);
         return Task.FromResult(map ?? MapData.Empty);
     }
 
     /// <inheritdoc />
     public Task<TeamData[]> GetTeamsData()
     {
-        var teams = JsonSerializer.Deserialize<TeamData[]>(MockData.TeamsData, Options);
+        var teams = JsonSerializer.Deserialize<TeamData[]>(MockData.TeamsData, _options);
         return Task.FromResult(teams ?? []);
     }
 

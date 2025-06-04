@@ -155,5 +155,6 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _hubConnection.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 }

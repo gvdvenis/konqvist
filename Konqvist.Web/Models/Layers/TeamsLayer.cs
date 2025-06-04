@@ -1,6 +1,4 @@
-﻿using Microsoft.FluentUI.AspNetCore.Components;
-
-namespace Konqvist.Web.Models.Layers;
+﻿namespace Konqvist.Web.Models.Layers;
 
 public class TeamsLayer : Layer
 {
@@ -11,8 +9,7 @@ public class TeamsLayer : Layer
     public TeamsLayer(
         MapDataStore mapDataStore, 
         IBindableHubClient hubClient, 
-        SessionProvider sessionProvider, 
-        IToastService toastService)
+        SessionProvider sessionProvider)
     {
         _mapDataStore = mapDataStore;
         _hubClient = hubClient;

@@ -10,6 +10,20 @@ public class MapDataStoreTests(ITestOutputHelper testOutputHelper) : IAsyncLifet
     private readonly MapDataStore _mapDataStore = new(new GameDataLoader());
 
     [Fact]
+    public async Task GetAllTeams_Should_Only_Include_Enabled_Teams()
+    {
+        // Arrange:
+        var teams = await _mapDataStore.GetTeams();
+
+        // Act:
+        bool containsDisabledTeams = teams.Any(t => t.IsDisabled);
+
+        // Assert
+        Assert.False(containsDisabledTeams, "Only enabled teams should be returned");
+        Assert.Equal(4, teams.Count);
+    }
+
+    [Fact]
     public async Task IsClaimable_Should_Be_Reset_On_Start_Of_New_Gathering_Rounds()
     {
         // Arrange: Use MapDataStore to simulate the scenario

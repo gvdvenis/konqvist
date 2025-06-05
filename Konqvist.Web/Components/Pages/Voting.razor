@@ -77,6 +77,12 @@
             _hasVoted = await MapDataStore.HasTeamVotedInCurrentRound(_currentTeamName);
         }
 
+        HubClient.OnTeamResourcesChanged = async (team) =>
+        {
+            _voteWeight = await MapDataStore.GetVoteWeightForTeam(team);
+            await InvokeAsync(StateHasChanged);
+        };
+
         // Subscribe to SignalR votes update
         HubClient.OnVotesUpdated = async (votes, _) =>
         {

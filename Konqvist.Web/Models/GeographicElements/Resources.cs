@@ -25,7 +25,7 @@ public record Resources
         return $"{nameof(Gold)}: {Gold}, {nameof(Voters)}: {Voters}, {nameof(Likes)}: {Likes}, {nameof(Oil)}: {Oil}";
     }
 
-    public static string? ToResourceName(string resourceDataName)
+    public static string? ToResourceName(string? resourceDataName)
     {
         return resourceDataName switch
         {

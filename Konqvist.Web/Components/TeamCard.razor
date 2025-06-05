@@ -1,5 +1,4 @@
-﻿@inject SessionProvider SessionProvider
-@inject IBindableHubClient HubClient
+﻿@inject IBindableHubClient HubClient
 @inject MapDataStore MapDataStore
 
 @implements IDisposable
@@ -22,8 +21,6 @@
     [Parameter] public Team Team { get; set; } = Team.Empty;
     [Parameter] public bool AllowEdit { get; set; }
 
-    private UserSession _session = UserSession.Empty;
-    
     private Task LogoutRunner(MouseEventArgs arg)
     {
         return HubClient.SendRunnerLogoutRequest(Team.Name);
@@ -31,11 +28,9 @@
 
     #region Overrides of ComponentBase
 
-    /// <inheritdoc />
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        _session = SessionProvider.Session;
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
     }
 
@@ -43,9 +38,7 @@
     {
         var teamData = await MapDataStore.GetTeamByName(Team.Name);
 
-        Team = teamData is null
-            ? Team.Empty
-            : Team.CreateFromDataOrEmtpy(teamData);
+        Team = Team.CreateFromDataOrEmtpy(teamData);
 
         StateHasChanged();
     }
@@ -54,10 +47,9 @@
 
     #region IDisposable
 
-    /// <inheritdoc />
     public void Dispose()
     {
-        //HubClient.OnRunnerLoggedInOrOut -= OnRunnerLoggedInOrOut;
+        HubClient.OnRunnerLoggedInOrOut -= OnRunnerLoggedInOrOut;
     }
 
     #endregion

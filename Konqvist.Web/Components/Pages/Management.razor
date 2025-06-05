@@ -99,25 +99,16 @@
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
 
-    private Task OnRunnerLoggedInOrOut() => InvokeAsync(StateHasChanged);
+    private async Task OnRunnerLoggedInOrOut()
+    {
+        var teamsData = await MapDataStore.GetTeams();
+        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse().ToList();
+        await InvokeAsync(StateHasChanged);
+    }
 
     private Task NextRound(MouseEventArgs arg) => HubClient.SendStartNewRoundRequest();
 
     private void ShowMap(MouseEventArgs arg) => NavigationManager.NavigateTo("/map");
-
-    private async Task ResetClaimState()
-    {
-        await MapDataStore.ClearClaims();
-        await HubClient.BroadcastDistrictOwnerChange(DistrictOwner.Empty);
-    }
-
-    private async Task LogoutAllRunners(MouseEventArgs arg)
-    {
-        if (!Session.IsAdmin)
-            return;
-
-        await HubClient.SendRunnerLogoutRequest();
-    }
 
     private void ResetGame()
     {

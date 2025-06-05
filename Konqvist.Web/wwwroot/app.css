@@ -20,6 +20,11 @@ html, body, .body-content, .stack-vertical {
     flex-direction: column;
 }
 
+h1, h2, h3, h4, h5, h6, p, span, label {
+    user-select: none;
+    pointer-events: auto;
+}
+
 .card-grid {
     width: 100%;
     padding: 1rem;

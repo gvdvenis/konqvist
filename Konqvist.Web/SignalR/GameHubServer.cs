@@ -66,7 +66,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await dataStore.ResetGame();
         await SendRunnerLogoutRequest();
 
-        Console.WriteLine($"+++ The game was reset to go from start again");
+        Console.WriteLine("+++ The game was reset to go from start again");
         await Clients.All.DistrictOwnerChanged(DistrictOwner.Empty);
         await Clients.All.TeamResourcesChanged();
         await Clients.All.NewRoundStarted(RoundData.Empty);

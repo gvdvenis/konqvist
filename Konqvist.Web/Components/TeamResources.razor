@@ -48,16 +48,13 @@
     private Resources Resources { get; set; } = Resources.Empty;
     private string? _currentResourceOfInterest;
 
-    private DialogParameters _dlgParameters = new()
-        {
-            Title = "Resource bonus",            
-        };
+    private DialogParameters _dlgParameters = null!;
+    private FluentTextField? _entryFieldRef;
 
     protected string? StyleValue => new StyleBuilder(Style)
         .AddStyle("z-index", "1")
         .AddStyle("width", "100%")
         .Build();
-
 
     private Appearance GetBadgeAppearance(string resourceName)
     {
@@ -80,6 +77,13 @@
     {
         await base.OnInitializedAsync();
 
+        _dlgParameters = new DialogParameters
+        {
+            Title = "Resource bonus",
+            Width = "300px",
+            //OnDialogOpened = EventCallback.Factory.Create<DialogInstance>(this, OnDialogOpenedAsync)
+        };
+
         HubClient.OnDistrictOwnerChanged += owner => LoadResource(owner.TeamName);
         HubClient.OnTeamResourcesChanged += LoadResource;
 
@@ -90,13 +94,20 @@
 
     #endregion
 
+    // private Task OnDialogOpenedAsync(DialogInstance _)
+    // {
+    //     _entryFieldRef?.FocusAsync();
+        
+    //     return Task.CompletedTask;
+    // }
+
     private async Task LoadResource(string? teamName)
     {
         if (teamName is not null && teamName != TeamName)
             return;
 
         var resourcesData = await DataStore.GetResourcesForTeam(TeamName!);
-        var rdn = await DataStore.GetCurrentResourceOfInterest();
+        string? rdn = await DataStore.GetCurrentResourceOfInterest();
         _currentResourceOfInterest = Resources.ToResourceName(rdn);
 
         Resources = new Resources(resourcesData);
@@ -107,15 +118,20 @@
     private async Task ResourceClick(string resourceName)
     {
 
-        if (Enabled== false || AllowEdit == false || TeamName is null) return;
+        if (Enabled == false || AllowEdit == false || TeamName is null) return;
         var entryValue = string.Empty;
 
         var dialogInstance = await DialogService.ShowDialogAsync(
             @<div>
-                <FluentTextField  @bind-Value="@entryValue" Label="Value to add to this resource:" />
+                <FluentTextField 
+                    @ref="_entryFieldRef" 
+                    TextFieldType="TextFieldType.Number" 
+                    Autofocus="true" 
+                    InputMode="InputMode.Numeric"
+                    @bind-Value="@entryValue" 
+                    Label="Value to add to this resource:" />
             </div>
             , _dlgParameters);
-
         var result = await dialogInstance.Result;
         var additionalResources = ResourcesData.Empty;
 
@@ -125,27 +141,27 @@
             {
                 case nameof(Resources.Gold):
                     additionalResources += new ResourcesData
-                        {
-                            R1 = int.Parse(entryValue)
-                        };
+                    {
+                        R1 = int.TryParse(entryValue, out int r1) ? r1 : 0
+                    };
                     break;
                 case nameof(Resources.Voters):
                     additionalResources += new ResourcesData
-                        {
-                            R2 = int.Parse(entryValue)
-                        };
+                    {
+                        R2 = int.TryParse(entryValue, out int r2) ? r2 : 0
+                    };
                     break;
                 case nameof(Resources.Likes):
                     additionalResources += new ResourcesData
-                        {
-                            R3 = int.Parse(entryValue)
-                        };
+                    {
+                        R3 = int.TryParse(entryValue, out int r3) ? r3 : 0
+                    };
                     break;
                 case nameof(Resources.Oil):
                     additionalResources += new ResourcesData
-                        {
-                            R4 = int.Parse(entryValue)
-                        };
+                    {
+                        R4 = int.TryParse(entryValue, out int r4) ? r4 : 0
+                    };
                     break;
             }
         }

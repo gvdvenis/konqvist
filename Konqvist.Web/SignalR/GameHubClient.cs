@@ -1,4 +1,5 @@
-﻿using Microsoft.FluentUI.AspNetCore.Components;
+﻿using Konqvist.Web.Services;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 namespace Konqvist.Web.SignalR;
 
@@ -11,6 +12,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     private readonly SessionProvider _sessionProvider;
     private readonly NavigationManager _navigationManager;
     private readonly IToastService _toastService;
+    private readonly GameModeRoutingService _routingService;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="GameHubClient"/> class. This
@@ -19,12 +21,18 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// <param name="navigationManager">The navigation manager to get the base URI.</param>
     /// <param name="sessionProvider"></param>
     /// <param name="toastService"></param>
-    public GameHubClient(NavigationManager navigationManager, SessionProvider sessionProvider, IToastService toastService)
+    /// <param name="routingService"></param>
+    public GameHubClient(
+        IToastService toastService,
+        NavigationManager navigationManager,
+        SessionProvider sessionProvider,
+        GameModeRoutingService routingService)
     {
         string hubUrl = navigationManager.BaseUri.TrimEnd('/') + GameHubServer.HubUrl;
         _navigationManager = navigationManager;
         _sessionProvider = sessionProvider;
         _toastService = toastService;
+        _routingService = routingService;
 
         _hubConnection ??= new HubConnectionBuilder()
             .WithUrl(hubUrl)
@@ -40,21 +48,15 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     /// </summary>
     private void SubscribeClientHandlers()
     {
-        _hubConnection.On<DistrictOwner, Task>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
-
-        _hubConnection.On<ActorLocation, Task>(nameof(ActorMoved), ActorMoved);
-
-        _hubConnection.On<Task>(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
-
-        _hubConnection.On<string, Task>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
-
-        _hubConnection.On<string, Task>(nameof(RunnerLoggedIn), RunnerLoggedIn);
-
-        _hubConnection.On<string[], Task>(nameof(RunnersLoggedOut), RunnersLoggedOut);
-
-        _hubConnection.On<RoundData, Task>(nameof(NewRoundStarted), NewRoundStarted);
-
-        _hubConnection.On<string, Task>(nameof(TeamResourcesChanged), TeamResourcesChanged);
+        _hubConnection.On<DistrictOwner>(nameof(DistrictOwnerChanged), DistrictOwnerChanged);
+        _hubConnection.On<ActorLocation>(nameof(ActorMoved), ActorMoved);
+        _hubConnection.On(nameof(RunnerLoggedInOrOut), RunnerLoggedInOrOut);
+        _hubConnection.On<string>(nameof(PerformRunnerLogoutOnClient), PerformRunnerLogoutOnClient);
+        _hubConnection.On<string>(nameof(RunnerLoggedIn), RunnerLoggedIn);
+        _hubConnection.On<string[]>(nameof(RunnersLoggedOut), RunnersLoggedOut);
+        _hubConnection.On<RoundData>(nameof(NewRoundStarted), NewRoundStarted);
+        _hubConnection.On<List<TeamVote>, string?>(nameof(VotesUpdated), VotesUpdated);
+        _hubConnection.On<string>(nameof(TeamResourcesChanged), TeamResourcesChanged);
     }
 
     #region IGameHubServer implements
@@ -86,6 +88,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task SendResetGameRequest() =>
         _hubConnection.SendAsync(nameof(SendResetGameRequest));
 
+    public Task SendCastVoteRequest(string receivingTeamName, string castingTeamName) =>
+        _hubConnection.SendAsync(nameof(SendCastVoteRequest), receivingTeamName, castingTeamName);
+
     #endregion
 
     #region IGameHubClient implements
@@ -103,20 +108,27 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task PerformRunnerLogoutOnClient(string? teamName)
     {
         var session = _sessionProvider.Session;
-
         if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName)
             return Task.CompletedTask;
-
         _toastService.ShowWarning("The game master has logged you out", 4000);
-
-        _navigationManager.NavigateTo("logout", false);
-
+        _navigationManager.NavigateTo("logout", false, true);
         return Task.CompletedTask;
     }
 
-    public Task NewRoundStarted(RoundData newRound) => OnNewRoundStarted?.Invoke(newRound) ?? Task.CompletedTask;
+    public async Task NewRoundStarted(RoundData newRound)
+    {
+        if (_sessionProvider.Session.IsAdmin == false &&
+            await _routingService.GetGameStateRoutePath(newRound.Kind) is { } routePath)
+            _navigationManager.NavigateTo(routePath, false, true);
+        if (OnNewRoundStarted is null) return;
+        await OnNewRoundStarted.Invoke(newRound);
+    }
 
-    public Task TeamResourcesChanged(string? teamName) => OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
+    public Task TeamResourcesChanged(string? teamName) => 
+        OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
+
+    public Task VotesUpdated(List<TeamVote> votes, string? castingTeamName) => 
+        OnVotesUpdated?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
 
     #endregion
 
@@ -136,14 +148,13 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
-    #endregion
+    public Func<List<TeamVote>, string?, Task>? OnVotesUpdated { get; set; }
 
-    #region IDisposable
+    #endregion
 
     public async ValueTask DisposeAsync()
     {
         await _hubConnection.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
-
-    #endregion
 }

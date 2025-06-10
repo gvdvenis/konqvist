@@ -8,7 +8,7 @@ public enum RoundKind
     GameOver
 }
 
-public record RoundData(int Order, string Title, RoundKind Kind, string? ResourceOfInterest)
+public record RoundData(int Index, string Title, RoundKind Kind, string? ResourceOfInterest)
 {
     public static RoundData Empty { get; } = new(0, string.Empty, RoundKind.NotStarted, null);
 }

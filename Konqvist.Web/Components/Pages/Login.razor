@@ -1,24 +1,36 @@
 ﻿@page "/login"
 @page "/login/{Password}"
 
-@using System.Diagnostics.Eventing.Reader
+@rendermode InteractiveServer
+
 @using System.Security.Claims
+@using Konqvist.Web.Services
 @using Microsoft.AspNetCore.Authentication.Cookies
 
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
-@inject IBindableHubClient HubClient
+@inject SessionProvider SessionProvider
+@inject GameModeRoutingService GameModeRoutingService
+@inject SessionKeyProvider SessionKeyProvider
+@inject IBindableHubClient GameHubClient
 
 <div class="center-content">
-    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit" />
-    <h3>
-        Scan QR-code to login
+    <h3 style="color:red">
+        @_errorMessage
     </h3>
+    <img src="konqvist-logo.png" alt="- KONQVIST -" class="image-fit"/>
+    @if (_errorMessage == "")
+    {
+        <h3>
+            Scan QR-code to login
+        </h3>
+    }
 </div>
 
 @code {
     [CascadingParameter] HttpContext? HttpContext { get; set; }
     [Parameter] public string? Password { get; set; }
+    private string _errorMessage = "";
 
     #region Overrides of ComponentBase
 
@@ -30,14 +42,36 @@
             await TryLogin();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        // This method handles client-side edge cases where users manually navigate to invalid routes.
+        // It ensures that authenticated users are redirected to the appropriate page based on routing rules.
+        if (firstRender && SessionProvider.Session.IsAuthenticated)
+        {
+            string? forcedRedirectRoute = await GameModeRoutingService.GetForcedRedirectRoute(NavigationManager.Uri);
+
+            if (forcedRedirectRoute is not null)
+            {
+                // Redirect to the appropriate page if the current route is not allowed
+                NavigationManager.NavigateTo(forcedRedirectRoute!, false, true);
+            }
+        }
+
+        // Delegate routing decisions to GameModeRoutingService
+    }
+
     #endregion
 
     private async Task TryLogin()
     {
+        // If already logged in, do nothing
+        if (SessionProvider.Session.IsAuthenticated) return;
 
         if (HttpContext is null || await VerifyPassword() is not { } loginuser)
         {
-            NavigationManager.NavigateTo("/access-denied");
+            _errorMessage = "Invalid credentials or already logged in";
             return;
         }
 
@@ -46,41 +80,14 @@
             new(ClaimTypes.Name, loginuser.Name),
             new(ClaimTypes.Role, loginuser.GameRole.ToString()),
             new(ClaimTypes.UserData, loginuser.TeamName),
-            new(ClaimTypes.NameIdentifier, loginuser.TeamName)
+            new(ClaimTypes.NameIdentifier, loginuser.TeamName),
+            new("SessionVersion", SessionKeyProvider.GameInstanceKey)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
-
-        if (loginuser.GameRole == GameRole.Runner)
-            await HubClient.BroadcastRunnerLogin(loginuser.TeamName);
-
-        // admins get routed to management page
-        if (loginuser.GameRole == GameRole.GameMaster)
-        {
-            NavigationManager.NavigateTo("/management");
-            return;
-        }
-
-        // normal users get routed to other pages depending on current app state
-        var appState = await MapDataStore.GetCurrentAppState();
-
-        switch (appState)
-        {
-            case RoundKind.NotStarted:
-                NavigationManager.NavigateTo("/waitforstart");
-                break;
-            case RoundKind.Voting:
-                NavigationManager.NavigateTo("/voting");
-                break;
-            case RoundKind.GameOver:
-                NavigationManager.NavigateTo("/gameover");
-                break;
-            case RoundKind.GatherResources:
-                NavigationManager.NavigateTo("/map");
-                break;
-        }
+        await GameHubClient.BroadcastRunnerLogin(loginuser.TeamName);
     }
 
     private async Task<User?> VerifyPassword()
@@ -88,8 +95,8 @@
         (TeamData? teamData, TeamMemberRole role)? login =
             await MapDataStore.TryLoginTeamMember(Password);
 
-        return login is null
-            ? null
+        return login is null 
+            ? null 
             : UserFromTeamDataLogin(login.Value);
     }
 

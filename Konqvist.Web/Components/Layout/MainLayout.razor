@@ -1,8 +1,6 @@
 ﻿@using Microsoft.FluentUI.AspNetCore.Components.Utilities
 @inherits LayoutComponentBase
-
 @inject MapDataStore MapDataStore
-
 
 <FluentLayout Orientation="Orientation.Vertical">
     <FluentHeader @ref="_fluentHeader" style="@StyleValue">
@@ -44,7 +42,6 @@
     <span class="dismiss">🗙</span>
 </div>
 
-
 @code {
     private FluentHeader? _fluentHeader;
     private TeamData _currentTeam = TeamData.Empty;
@@ -67,8 +64,10 @@
         ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
 
         UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
-        _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName) ?? TeamData.Empty;
+
+        _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName);
     }
+
 
     #endregion
 

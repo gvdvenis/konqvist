@@ -17,4 +17,6 @@ public interface IGameHubClient
     Task NewRoundStarted(RoundData newRoundNumber);
 
     Task TeamResourcesChanged(string? teamName = null);
+
+    Task VotesUpdated(List<TeamVote> votes, string? castingTeamName);
 }

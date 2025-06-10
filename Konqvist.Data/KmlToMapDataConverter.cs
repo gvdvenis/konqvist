@@ -68,7 +68,6 @@ public class KmlToMapDataConverter
                 {
                     Name = placemark.Element(_ns + "name")?.Value ?? "Unnamed District",
                     Coordinates = ExtractCoordinatesFromElement(element),
-                    IsClaimable = true, // Default value, adjust as needed
                     Resources = GenerateRandomResources() // Assign randomized resources
                 });
             });
@@ -89,7 +88,7 @@ public class KmlToMapDataConverter
                     .Trim() is not { } coordinate)
                     return;
 
-                matchingDistrict.TriggerCircleCenter = ParseCoordinate(coordinate);
+                matchingDistrict.SetTriggerCircleCenter(ParseCoordinate(coordinate));
             });
 
             return mapData;

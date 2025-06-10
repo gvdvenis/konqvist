@@ -7,6 +7,8 @@
 
 @attribute [AuthorizeGameRoles(GameRole.GameMaster, GameRole.TeamLeader)]
 
+<DefaultDesignTokens />
+
 <div class="card-grid">
     @if (Session.IsAdmin)
     {
@@ -19,7 +21,7 @@
                               OnClick="NextRound"
                               Style="border-radius: 0 15px 15px 0;"
                               IconEnd="@(new NavIcons.ArrowRight())">
-                    Volgende Ronde
+                    Next round
                 </FluentButton>
             </p>
         </div>
@@ -32,13 +34,13 @@
 
     <div class="full-span"
          style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
-        <h3 class="center-content">Scores:</h3>
+        <h3 class="center-content">Scores</h3>
         <p class="vertically-centered">
             <FluentSpacer />
             @foreach (var score in _teamScores)
             {
                 <FluentBadge Circular="true" Class="resource-badge" Height="24px">
-                    @score.TeamName: @score.Score
+                    @score.TeamName: @score.Amount
                 </FluentBadge>
             }
             <FluentSpacer />
@@ -63,8 +65,8 @@
 
 @code {
 
-    private IEnumerable<Team> _teams = [];
-    private IEnumerable<TeamScore> _teamScores = [];
+    private List<Team> _teams = [];
+    private List<TeamScore> _teamScores = [];
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
     private RoundData _currentRound = RoundData.Empty;
     private UserSession Session => SessionProvider.Session;
@@ -77,9 +79,9 @@
         await base.OnInitializedAsync();
 
         var teamsData = await MapDataStore.GetTeams();
-        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse();
+        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse().ToList();
         _roundDataStore = await MapDataStore.GetRoundsDataStore();
-        _teamScores = await MapDataStore.GetTeamScores();
+        _teamScores = await MapDataStore.GetAllTeamScores();
         _currentRound = _roundDataStore.GetCurrentRound();
 
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
@@ -91,61 +93,24 @@
 
     private async Task OnNewRoundStarted(RoundData roundData)
     {
-        if (Session.IsTeamLeader)
-        {
-            switch (roundData.Kind)
-            {
-                case RoundKind.NotStarted:
-                    NavigationManager.NavigateTo("/waitforstart");
-                    break;
-                case RoundKind.Voting:
-                    NavigationManager.NavigateTo("/voting");
-                    break;
-                case RoundKind.GameOver:
-                    NavigationManager.NavigateTo("/gameover");
-                    break;
-                case RoundKind.GatherResources:
-                    NavigationManager.NavigateTo("/map");
-                    break;
-            }
-
-            return;
-        }
-
         _currentRound = roundData;
-        _teamScores = await MapDataStore.GetTeamScores();
+        _teamScores = await MapDataStore.GetAllTeamScores();
 
         await InvokeAsync(StateHasChanged);
-
     }
 
     private Task OnDistrictOwnerChanged(DistrictOwner arg) => InvokeAsync(StateHasChanged);
 
-    private Task OnRunnerLoggedInOrOut() => InvokeAsync(StateHasChanged);
-
-    private Task NextRound(MouseEventArgs arg)
+    private async Task OnRunnerLoggedInOrOut()
     {
-        return HubClient.SendStartNewRoundRequest();
+        var teamsData = await MapDataStore.GetTeams();
+        _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse().ToList();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void ShowMap(MouseEventArgs arg)
-    {
-        NavigationManager.NavigateTo("/map");
-    }
+    private Task NextRound(MouseEventArgs arg) => HubClient.SendStartNewRoundRequest();
 
-    private async Task ResetClaimState()
-    {
-        await MapDataStore.ClearClaims();
-        await HubClient.BroadcastDistrictOwnerChange(DistrictOwner.Empty);
-    }
-
-    private async Task LogoutAllRunners(MouseEventArgs arg)
-    {
-        if (!Session.IsAdmin)
-            return;
-
-        await HubClient.SendRunnerLogoutRequest();
-    }
+    private void ShowMap(MouseEventArgs arg) => NavigationManager.NavigateTo("/map");
 
     private void ResetGame()
     {

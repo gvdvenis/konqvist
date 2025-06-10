@@ -4,10 +4,32 @@ namespace Konqvist.Data.Models;
 
 public class DistrictData : IShapeData
 {
-    public required IEnumerable<Coordinate> Coordinates { get; set; }
-    public Coordinate TriggerCircleCenter { get; set; }
-    public TeamData? Owner { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public ResourcesData Resources { get; set; } = ResourcesData.Empty;
-    public bool IsClaimable { get; set; } = true;
+    // static data
+    public IEnumerable<Coordinate> Coordinates { get; init; } = [];
+    public string Name { get; init; } = string.Empty;
+    public ResourcesData Resources { get; init; } = ResourcesData.Empty;
+
+    // Todo: because this is set by the KML parser, it cannot not be init-only yet
+    public Coordinate TriggerCircleCenter { get; set; } 
+
+    // properties that change state during the game
+    public bool IsClaimable { get; private set; } = true;
+    public TeamData? Owner { get; private set; }
+
+    internal void AssignDistrictOwner(TeamData team)
+    {
+        Owner = team;
+        IsClaimable = false;
+    }
+
+    public void ReleaseClaim()
+    {
+        IsClaimable = true;
+    }
+
+    [Obsolete("this method should be removed. the caller should pass this as part of initialization instead")]
+    internal void SetTriggerCircleCenter(Coordinate parseCoordinate)
+    {
+        TriggerCircleCenter = parseCoordinate;
+    }
 }

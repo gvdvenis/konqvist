@@ -7,5 +7,5 @@ public interface IShapeData
 {
     [JsonPropertyName("coordinates")]
     [JsonConverter(typeof(CoordinateArrayConverter))]
-    public IEnumerable<Coordinate> Coordinates { get; set; }
+    public IEnumerable<Coordinate> Coordinates { get; }
 }

@@ -1,4 +1,6 @@
-﻿namespace Konqvist.Web.Models.GeographicElements;
+﻿using Microsoft.FluentUI.AspNetCore.Components;
+
+namespace Konqvist.Web.Models.GeographicElements;
 
 public record Resources
 {
@@ -25,7 +27,7 @@ public record Resources
         return $"{nameof(Gold)}: {Gold}, {nameof(Voters)}: {Voters}, {nameof(Likes)}: {Likes}, {nameof(Oil)}: {Oil}";
     }
 
-    public static string? ToResourceName(string resourceDataName)
+    public static string? ToResourceName(string? resourceDataName)
     {
         return resourceDataName switch
         {
@@ -37,14 +39,14 @@ public record Resources
         };
     }
 
-    public Dictionary<string, int> ToDictionary()
+    public Dictionary<string, (int Amount, Icon Icon)> ToDictionary()
     {
-        return new Dictionary<string, int>
+        return new Dictionary<string, (int, Icon)>
         {
-            {nameof(Gold), Gold},
-            {nameof(Voters), Voters},
-            {nameof(Likes), Likes},
-            {nameof(Oil), Oil}
+            {nameof(Gold), (Gold, new NavIcons.CoinStack())},
+            {nameof(Voters), (Voters, new NavIcons.Vote()) } ,
+            {nameof(Likes), (Likes, new NavIcons.ThumbLike()) },
+            {nameof(Oil), (Oil, new NavIcons.Drop())}
         };
     }
 }

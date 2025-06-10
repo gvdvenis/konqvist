@@ -18,6 +18,16 @@ html, body, .body-content, .stack-vertical {
     margin: 0;
     display: flex;
     flex-direction: column;
+    user-select: none
+}
+
+h1, h2, h3, h4, h5, h6, p, span, label {
+    user-select: none;
+    pointer-events: auto;
+}
+
+fluent-toolbar {
+    background-color: transparent;
 }
 
 .card-grid {
@@ -39,18 +49,23 @@ html, body, .body-content, .stack-vertical {
     margin-bottom: 0
 }
 
-.ol-box {
-    box-sizing: border-box;
-    border-radius: 5px;
-    min-height: 50px;
-    min-width: 150px;
-    padding: 5px;
-    border: 4px solid var(--ol-background-color);
-    background-color: var(--ol-partial-background-color);
+.static-popup {
+    display: flex;
+    margin: 10px;
+    position: absolute;
+    z-index: 3;
+    align-self: end;
+    flex-direction: column;
 }
 
-:root {
-    --header-height: 50px;
+.ol-box {
+    box-sizing: border-box;
+    border-radius: 10px !important;
+    min-height: 50px;
+    min-width: 150px;
+    padding: 5px 10px;
+    border: 4px solid var(--ol-background-color);
+    background-color: var(--ol-partial-background-color);
 }
 
 header {
@@ -68,9 +83,9 @@ header {
 }
 
 .resource-badge span {
-    padding: 13px 5px;
-    height: 35px;
-    user-select: none;
+    font-size: 12px;
+    padding: 13px 2px 13px 0px;
+    height: 38px;
 }
 
 .resource-badge-icon {
@@ -149,69 +164,3 @@ header {
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
-
-code {
-    color: #c02d76;
-}
-
-@media (max-width: 600px) {
-    .header-gutters {
-        margin: 0.5rem 3rem 0.5rem 1.5rem !important;
-    }
-
-    [dir="rtl"] .header-gutters {
-        margin: 0.5rem 1.5rem 0.5rem 3rem !important;
-    }
-
-    .main {
-        flex-direction: column !important;
-        row-gap: 0 !important;
-    }
-
-    nav.sitenav {
-        width: 100%;
-        height: 100%;
-    }
-
-    #main-menu {
-        width: 100% !important;
-    }
-
-        #main-menu > div:first-child:is(.expander) {
-            display: none;
-        }
-
-    .navmenu {
-        width: 100%;
-    }
-
-    #navmenu-toggle {
-        appearance: none;
-    }
-
-        #navmenu-toggle ~ nav {
-            display: none;
-        }
-
-        #navmenu-toggle:checked ~ nav {
-            display: block;
-        }
-
-    .navmenu-icon {
-        cursor: pointer;
-        z-index: 10;
-        display: block;
-        position: absolute;
-        top: 15px;
-        left: unset;
-        right: 20px;
-        width: 20px;
-        height: 20px;
-        border: none;
-    }
-
-    [dir="rtl"] .navmenu-icon {
-        left: 20px;
-        right: unset;
-    }
-}

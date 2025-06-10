@@ -7,7 +7,7 @@ public static class MapStyles
 {
     public static StyleOptions SelectedDistrictStyle { get; } = new SelectedDistrictStyle();
     public static StyleOptions DistrictTriggerStyle { get; } = new DistritcTriggerStyle();
-    public static StyleOptions DistrictOwnerStyle(string ownerColor)
+    public static StyleOptions DistrictOwnerStyle(string? ownerColor)
     {
         return new DistrictOwnerStyle(ownerColor);
     }
@@ -28,9 +28,9 @@ file class DistritcTriggerStyle : StyleOptions
 
 file class DistrictOwnerStyle : StyleOptions
 {
-    public DistrictOwnerStyle(string ownerColor)
+    public DistrictOwnerStyle(string? ownerColor)
     {
-        string semitransparentColor = ConvertToSemitransparent(ownerColor, 0.7);
+        string semitransparentColor = ConvertToSemitransparent(ownerColor ?? "Transparent", 0.3);
 
         Stroke = new StrokeOptions
         {
@@ -53,7 +53,7 @@ file class DistrictOwnerStyle : StyleOptions
         try
         {
             // Assuming the input is a valid HTML color (e.g., "#RRGGBB" or "rgb(r, g, b)")
-            Color parsedColor = ColorTranslator.FromHtml(color);
+            var parsedColor = ColorTranslator.FromHtml(color);
 
             opacity = parsedColor.A == 0 ? 0 : opacity;
 

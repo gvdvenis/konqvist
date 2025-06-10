@@ -46,7 +46,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
             return;
         }
 
-        Console.WriteLine($"+++ Start round number {nextRound.Order}");
+        Console.WriteLine($"+++ Start round number {nextRound.Index}");
 
         // Broadcast to all clients
         await Clients.All.NewRoundStarted(nextRound);
@@ -66,7 +66,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await dataStore.ResetGame();
         await SendRunnerLogoutRequest();
 
-        Console.WriteLine($"+++ The game was reset to go from start again");
+        Console.WriteLine("+++ The game was reset to go from start again");
         await Clients.All.DistrictOwnerChanged(DistrictOwner.Empty);
         await Clients.All.TeamResourcesChanged();
         await Clients.All.NewRoundStarted(RoundData.Empty);
@@ -93,6 +93,16 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
     {
         await dataStore.UpdateTeamPosition(actorLocation.Name, actorLocation.Location);
         await Clients.All.ActorMoved(actorLocation);
+    }
+
+    public async Task SendCastVoteRequest(string receivingTeamName, string castingTeamName)
+    {
+        // Add the vote to the store for the receiving team, from the casting team
+        await dataStore.CastVoteFor(receivingTeamName, castingTeamName);
+        var votes = await dataStore.GetVotesForCurrentRound();
+
+        // Broadcast the updated votes to all clients, include the casting team name
+        await Clients.All.VotesUpdated(votes, castingTeamName);
     }
 
     public override async Task OnConnectedAsync()

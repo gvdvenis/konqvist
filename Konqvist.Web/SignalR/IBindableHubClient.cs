@@ -15,4 +15,6 @@ public interface IBindableHubClient : IGameHubClient, IGameHubServer
     Func<RoundData, Task>? OnNewRoundStarted { get; set; }
 
     Func<string?, Task>? OnTeamResourcesChanged { get; set; }
+
+    Func<List<TeamVote>, string?, Task>? OnVotesUpdated { get; set; }
 }

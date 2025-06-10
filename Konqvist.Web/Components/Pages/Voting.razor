@@ -3,44 +3,125 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @inject IBindableHubClient HubClient
-@inject NavigationManager NavigationManager
 @inject SessionProvider SessionProvider
+@inject MapDataStore MapDataStore
 
 @attribute [Authorize]
 
+<DefaultDesignTokens />
+
 <div class="center-content">
-    <h3>
-        Cast your votes please!
-    </h3>
-    <p> Sorry folks! Your favorite app developer wasn't able to get this part done in time. But he's sure y'all figure something out.</p>
+    <h3>Cast your votes please!</h3>
+    @if (_initialized && !string.IsNullOrEmpty(_currentTeamName))
+    {
+        <div style="margin-bottom: 1rem; font-size: 1.1em; color: #444;">
+            You have <b>@_voteWeight</b> point@(_voteWeight == 1 ? "" : "s") to vote with.
+        </div>
+    }
+    @if (!_initialized)
+    {
+        <div>Loading...</div>
+    }
+    else
+    {
+        <div class="voting-bars" style="display: flex; gap: 2rem; justify-content: center; align-items: end; min-height: 350px;">
+            @foreach (var team in _teams)
+            {
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="height: 200px; width: 40px; display: flex; align-items: flex-end;">
+                        <div style="background: @team.Color; width: 100%; height: @(GetBarHeight(team.Name))px; transition: height 0.3s;"></div>
+                    </div>
+                    <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
+                    <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
+                    <button class="fluent-button" style="margin-top: 0.5rem;" 
+                            disabled="@(!CanVote || team.Name == _currentTeamName)" 
+                            @onclick="() => CastVote(team.Name)">VOTE
+                    </button>
+                </div>
+            }
+        </div>
+        @if (_hasVoted)
+        {
+            <div style="margin-top: 1rem; color: green;">Thank you for voting!</div>
+        }
+    }
 </div>
 
 @code {
+    private List<TeamData> _teams = [];
+    private List<TeamVote> _teamVotes = [];
+    private bool _hasVoted;
+    private string? _currentTeamName;
+    private int _voteWeight = 1;
+    private bool _initialized;
+    private bool CanVote => !_hasVoted && SessionProvider.Session.GameRole == GameRole.TeamLeader;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
-        HubClient.OnNewRoundStarted += SetAppGameState;
-    }
+        _currentTeamName = SessionProvider.Session.TeamName;
+        _teams = await MapDataStore.GetTeams(includeDisabled: false);
+        _teamVotes = await MapDataStore.GetVotesForCurrentRound();
 
-    private Task SetAppGameState(RoundData e)
-    {
-        if (SessionProvider.Session.IsAdmin) return Task.CompletedTask;
-
-        switch (e.Kind)
+        // Ensure all teams are present in the votes list
+        foreach (var team in _teams.Where(team => _teamVotes.All(tv => tv.TeamName != team.Name)))
         {
-            case RoundKind.GatherResources:
-                NavigationManager.NavigateTo("/map");
-                break;
-            case RoundKind.GameOver:
-                NavigationManager.NavigateTo("/gameover");
-                break;
-            case RoundKind.NotStarted:
-                NavigationManager.NavigateTo("/waitforstart");
-                break;
+            _teamVotes.Add(new TeamVote(team.Name, 0));
         }
 
-        return Task.CompletedTask;
+        // Get vote weight (resources) for current team
+        if (!string.IsNullOrEmpty(_currentTeamName))
+        {
+            _voteWeight = await MapDataStore.GetVoteWeightForTeam(_currentTeamName);
+            
+            // Check if this team has already voted
+            _hasVoted = await MapDataStore.HasTeamVotedInCurrentRound(_currentTeamName);
+        }
+
+        HubClient.OnTeamResourcesChanged = async (team) =>
+        {
+            _voteWeight = await MapDataStore.GetVoteWeightForTeam(team);
+            await InvokeAsync(StateHasChanged);
+        };
+
+        // Subscribe to SignalR votes update
+        HubClient.OnVotesUpdated = async (votes, _) =>
+        {
+            _teamVotes.Clear();
+            foreach (var vote in votes)
+            {
+                _teamVotes.Add(vote);
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+
+        _initialized = true;
+    }
+
+    private async Task CastVote(string teamName)
+    {
+        if (!CanVote || teamName == _currentTeamName) return;
+        _hasVoted = true;
+        await HubClient.SendCastVoteRequest(teamName, _currentTeamName!);
+    }
+
+    private int GetVotesForTeam(string teamName)
+    {
+        return _teamVotes.FirstOrDefault(tv => tv.TeamName == teamName)?.Amount ?? 0;
+    }
+
+    private int GetBarHeight(string teamName)
+    {
+        int maxVotes = _teamVotes.Select(tv => tv.Amount).DefaultIfEmpty(1).Max();
+        int votes = GetVotesForTeam(teamName);
+
+        // Scale bar height between 10 and 200px
+        return 10 + (maxVotes == 0 ? 0 : (int)(190.0 * votes / maxVotes));
+    }
+
+    public void Dispose()
+    {
+        HubClient.OnVotesUpdated = null;
     }
 }

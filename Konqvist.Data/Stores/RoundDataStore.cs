@@ -11,7 +11,7 @@ public class RoundDataStore(List<RoundData> rounds)
 
     public RoundData GetCurrentRound()
     {
-        return Rounds.FirstOrDefault(r => r.Order == CurrentRoundNumber) ?? RoundData.Empty;
+        return Rounds.FirstOrDefault(r => r.Index == CurrentRoundNumber) ?? RoundData.Empty;
     }
 
     public RoundData? NextRound()

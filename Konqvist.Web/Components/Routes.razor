@@ -1,6 +1,31 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Konqvist.Web.Services
+
+@inject NavigationManager Navigation
+@inject GameModeRoutingService GameModeRoutingService
+
+<Router AppAssembly="typeof(Program).Assembly" OnNavigateAsync="OnNavigate">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"  />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code
+{
+    private async Task OnNavigate(NavigationContext args)
+    {
+        if (GameModeRoutingService is null) return;
+
+        // validate the route using the routing rules
+        string? requiredRedirectRoute = await GameModeRoutingService.GetForcedRedirectRoute(args.Path);
+
+        if (!string.IsNullOrWhiteSpace(requiredRedirectRoute) && 
+            !requiredRedirectRoute.Equals(args.Path, StringComparison.OrdinalIgnoreCase))
+        {
+            // intercept and redirect to the appropriate page
+            Navigation.NavigateTo(requiredRedirectRoute);
+        }
+
+        // allow navigation to proceed
+    }
+}

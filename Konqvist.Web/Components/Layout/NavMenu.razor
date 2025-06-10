@@ -3,11 +3,6 @@
     <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new NavIcons.Navigation())" Color="Color.Fill" /></label>
     <nav class="sitenav" aria-labelledby="main-menu" style="">
         <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="_expanded" CustomToggle="true">
-@*             <AuthorizeView>
-                <NotAuthorized>
-                    <FluentNavLink Href="login" Match="NavLinkMatch.All" Icon="@(new NavIcons.LockClosed())" IconColor="Color.Accent">Login</FluentNavLink>
-                </NotAuthorized>
-            </AuthorizeView> *@
 
             <AuthorizeView>
                 <Authorized>
@@ -38,5 +33,5 @@
 @code {
     private bool _expanded = true;
 
-    private string GameRoles(params GameRole[] roles) => string.Join(",", roles.Select(r => r.ToString()));
+    private static string GameRoles(params GameRole[] roles) => string.Join(",", roles.Select(r => r.ToString()));
 }

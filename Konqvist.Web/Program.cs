@@ -3,6 +3,7 @@ using Konqvist.Web;
 using Konqvist.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
+using Konqvist.Web.DevUtils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,6 @@ builder.Services.AddHttpClient();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddAuthorization();
 builder.Services.AddGeolocationServices();
-
 builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
 builder.Services.AddScoped<SessionProvider>();
@@ -39,7 +39,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 
-// Add to your existing service registration section
+// configure Kestrel to use our dev certificate for network access during local development
+builder.AddLocalDevCertificate(7040);
 
 var app = builder.Build();
 

@@ -1,9 +1,6 @@
 ﻿@using Microsoft.FluentUI.AspNetCore.Components.Utilities
 @inherits LayoutComponentBase
-
-
 @inject MapDataStore MapDataStore
-
 
 <FluentLayout Orientation="Orientation.Vertical">
     <FluentHeader @ref="_fluentHeader" style="@StyleValue">
@@ -68,8 +65,9 @@
 
         UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
 
-        _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName) ?? TeamData.Empty;
+        _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName);
     }
+
 
     #endregion
 

@@ -27,6 +27,6 @@
         SessionKeyProvider.InvalidateGameInstanceKey();
         await HubClient.SendResetGameRequest();
         
-        NavigationManager.NavigateTo("/management", true);
+        NavigationManager.NavigateTo("/management", true, true);
     }
 }

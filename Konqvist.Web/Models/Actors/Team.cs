@@ -2,14 +2,7 @@
 
 public class Team : Actor
 {
-    public static Team Empty { get; } = new("Unknown");
-
-    public static Team? CreateFromDataOrDefault(TeamData? teamData)
-    {
-        return teamData is null
-            ? null
-            : new Team(teamData);
-    }
+    public static Team Empty { get; } = new("-");
 
     public static Team CreateFromDataOrEmtpy(TeamData? teamData)
     {
@@ -30,7 +23,7 @@ public class Team : Actor
         Text = "\uf206";
         TextScale = 1.2;
         RunnerLoggedIn = false;
-        }
+    }
 
     public Team(TeamData teamData) : this(teamData.Name)
     {
@@ -38,6 +31,8 @@ public class Team : Actor
         Coordinate = teamData.Location;
         RunnerLoggedIn = teamData.PlayerLoggedIn;
     }
+
+    //public new string TextColor { get; set; } = "Transparent";
 
     #region Overrides of Object
 

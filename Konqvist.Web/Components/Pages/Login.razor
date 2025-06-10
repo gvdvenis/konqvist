@@ -55,7 +55,7 @@
             if (forcedRedirectRoute is not null)
             {
                 // Redirect to the appropriate page if the current route is not allowed
-                NavigationManager.NavigateTo(forcedRedirectRoute!);
+                NavigationManager.NavigateTo(forcedRedirectRoute!, false, true);
             }
         }
 

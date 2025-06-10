@@ -49,7 +49,6 @@
     private string? _currentResourceOfInterest;
 
     private DialogParameters _dlgParameters = null!;
-    private FluentTextField? _entryFieldRef;
 
     protected string? StyleValue => new StyleBuilder(Style)
         .AddStyle("z-index", "1")
@@ -80,8 +79,7 @@
         _dlgParameters = new DialogParameters
         {
             Title = "Resource bonus",
-            Width = "300px",
-            //OnDialogOpened = EventCallback.Factory.Create<DialogInstance>(this, OnDialogOpenedAsync)
+            Width = "330px",
         };
 
         HubClient.OnDistrictOwnerChanged += owner => LoadResource(owner.TeamName);
@@ -93,13 +91,6 @@
     }
 
     #endregion
-
-    // private Task OnDialogOpenedAsync(DialogInstance _)
-    // {
-    //     _entryFieldRef?.FocusAsync();
-        
-    //     return Task.CompletedTask;
-    // }
 
     private async Task LoadResource(string? teamName)
     {
@@ -124,7 +115,6 @@
         var dialogInstance = await DialogService.ShowDialogAsync(
             @<div>
                 <FluentTextField 
-                    @ref="_entryFieldRef" 
                     TextFieldType="TextFieldType.Number" 
                     Autofocus="true" 
                     InputMode="InputMode.Numeric"
@@ -168,5 +158,4 @@
 
         await HubClient.SendSetAdditionalResourcesRequest(TeamName, additionalResources);
     }
-
 }

@@ -19,15 +19,6 @@ public class DistrictsLayer : Layer
         SelectionEnabled = true;
 
         hubClient.OnDistrictOwnerChanged += DistrictOwnerChanged;
-        SelectionChanged = EventCallback.Factory.Create<SelectionChangedArgs>(this, ShowPopup);
-    }
-
-    private static async Task ShowPopup(SelectionChangedArgs sca)
-    {
-        if (sca.SelectedShapes.OfType<District>().FirstOrDefault() is { } district)
-        {
-            await district.ShowPopup();
-        }
     }
 
     public async Task<bool> TryClaimDistrict(Coordinate location, string teamName)
@@ -38,12 +29,11 @@ public class DistrictsLayer : Layer
             return false;
         }
 
-        var foundDistrict = _districts
-            .FirstOrDefault(d => d.IsAtLocation(location));
+        var foundDistrict = GetDistrictAtCoordinate(location);
 
         Console.WriteLine($">>> Try claim district {foundDistrict?.Name ?? "NO DISTRICT"} by team '{teamName}'");
         if (foundDistrict is null || // nothing to claim
-            foundDistrict.Owner?.Name == teamName && // already claimed by this team
+            foundDistrict.Owner.Name == teamName && // already claimed by this team
             foundDistrict.IsClaimable == false) // not in a claimable state 
             return false;
 
@@ -54,6 +44,12 @@ public class DistrictsLayer : Layer
         await _hubClient.BroadcastDistrictOwnerChange(new DistrictOwner(teamName, foundDistrict.Name));
 
         return true;
+    }
+
+    private District? GetDistrictAtCoordinate(Coordinate location)
+    {
+        return _districts
+            .FirstOrDefault(d => d.IsAtLocation(location));
     }
 
     private async Task DistrictOwnerChanged(DistrictOwner districtOwner)

@@ -7,6 +7,8 @@
 
 @attribute [AuthorizeGameRoles(GameRole.GameMaster, GameRole.TeamLeader)]
 
+<DefaultDesignTokens />
+
 <div class="card-grid">
     @if (Session.IsAdmin)
     {

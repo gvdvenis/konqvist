@@ -111,7 +111,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName)
             return Task.CompletedTask;
         _toastService.ShowWarning("The game master has logged you out", 4000);
-        _navigationManager.NavigateTo("logout", false);
+        _navigationManager.NavigateTo("logout", false, true);
         return Task.CompletedTask;
     }
 
@@ -119,7 +119,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     {
         if (_sessionProvider.Session.IsAdmin == false &&
             await _routingService.GetGameStateRoutePath(newRound.Kind) is { } routePath)
-            _navigationManager.NavigateTo(routePath, false);
+            _navigationManager.NavigateTo(routePath, false, true);
         if (OnNewRoundStarted is null) return;
         await OnNewRoundStarted.Invoke(newRound);
     }

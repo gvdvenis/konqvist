@@ -353,14 +353,6 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         });
     }
 
-    public async Task ClearClaims(string? teamName = null)
-    {
-        await ProtectedInvoke(() =>
-        {
-            ClearClaimsInternal(teamName);
-        });
-    }
-
     public async Task<RoundData?> NextRound()
     {
         return await ProtectedInvoke(() =>
@@ -489,8 +481,10 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         });
     }
 
-    public async Task<int> GetVoteWeightForTeam(string teamName)
+    public async Task<int> GetVoteWeightForTeam(string? teamName)
     {
+        if (teamName is null) return 0;
+
         var teamResources = await GetResourcesForTeam(teamName);
         string? resourceOfInterest = await GetCurrentResourceOfInterest();
         return teamResources.CalculateVoteWeight(resourceOfInterest);

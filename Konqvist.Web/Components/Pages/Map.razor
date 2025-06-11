@@ -16,8 +16,9 @@
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 @inject MapDataStore MapDataStore
+@inject IJSRuntime JsRuntime
 
-<DefaultDesignTokens/>
+<DefaultDesignTokens />
 
 @if (_context is { } district)
 {
@@ -47,6 +48,7 @@
                    @bind-Center="_center"
                    OnClick="OnMapClick"
                    OnShapeClick="OnShapeClick"
+                   ConfigureJsMethod="mapModule.configureMap"
                    OnRenderComplete="@(() => _ = "for some reason this makes the popup work")"
                    ZoomSliderControl
                    InitialCenter="@_center"
@@ -84,36 +86,36 @@
             {
                 <FluentButton IconEnd="@(new NavIcons.LocationArrow())"
                               OnClick="ToggleLocationTracking"
-                              Title="Enable Location Tracking"/>
+                              Title="Enable Location Tracking" />
             }
 
             <FluentButton IconEnd="@(new NavIcons.MyLocation())"
                           OnClick="CenterLocation"
-                          Title="Center map on your current location"/>
+                          Title="Center map on your current location" />
         }
 
         <FluentButton IconEnd="@(new NavIcons.GlobeLocation())"
                       OnClick="CenterMap"
-                      Title="Center on game area"/>
+                      Title="Center on game area" />
 
         @if (_showTeams)
         {
             <FluentButton IconEnd="@(new NavIcons.Eye())"
                           OnClick="@(() => _showTeams = false)"
-                          Title="Hide Teams"/>
+                          Title="Hide Teams" />
         }
         else
         {
             <FluentButton IconEnd="@(new NavIcons.EyeOff())"
                           OnClick="@(() => _showTeams = true)"
-                          Title="Show Teams"/>
+                          Title="Show Teams" />
         }
 
         @if (AllowManagement)
         {
             <FluentButton IconEnd="@(new NavIcons.Organization())"
                           OnClick="ShowDashboard"
-                          Title="Management Dashboard"/>
+                          Title="Management Dashboard" />
         }
     </FluentToolbar>
     <FluentSpacer />
@@ -121,7 +123,6 @@
 
 @code {
     private static readonly Coordinate DefaultCenter = new([6.261195479378347, 51.87638698662113]);
-
     private Coordinate _center = DefaultCenter;
     private Coordinate _lastLocation = DefaultCenter;
     private double _rotation;
@@ -134,8 +135,21 @@
     private OpenStreetMap? _map;
     private UserSession Session => SessionProvider.Session;
     private bool AllowManagement => Session.IsAdmin || Session.IsTeamLeader;
+    private DotNetObjectReference<Map>? _dotNetRef;
+    private IJSObjectReference? _mapModule;
 
     #region Overrides of ComponentBase
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _mapModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/mapInterop.js");
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await _mapModule.InvokeVoidAsync("registerMapDotNetRef", _dotNetRef);
+            // No need for eval or global assignment here; handled in JS file
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -186,10 +200,27 @@
 
     private void OnShapeClick(Shape shape)
     {
-        if (_map is not null && shape is District district)
+        if (_map is null || shape is not District district) return;
+        // _context is used for popup display
+        _context = district;
+        // Set selection in OpenLayers via JS interop (fire-and-forget is fine here)
+        _ = _mapModule?.InvokeVoidAsync("setSelectedDistrict", district.Id);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task InvokeShapeClickFromJs(string? districtId)
+    {
+        // Find the district by id and call OnShapeClick logic
+        if (_districtsLayer is not null && !string.IsNullOrEmpty(districtId))
         {
-            _context = district;
+            var district = _districtsLayer.GetDistrictById(districtId);
+            if (district != null)
+            {
+                OnShapeClick(district);
+            }
         }
+        return Task.CompletedTask;
     }
 
     private async Task OnMapClick(Coordinate coordinate)
@@ -237,19 +268,18 @@
             await _map.SetZoom(17);
             TrackLocation(_lastLocation);
             return;
-        } 
-     
+        }
+
         await _map.SetZoom(14);
     }
 
     private async Task CenterLocation()
     {
-        if (_map != null)
-        {
-            _trackingEnabled = false;
-            await _map.SetZoom(14);
-        }
+        if (_map == null) return;
 
+        await _map.SetZoom(14);
+        _trackingEnabled = false;
+        
         var team = await MapDataStore.GetTeamByName(Session.TeamName);
 
         _center = team.PlayerLoggedIn
@@ -259,7 +289,10 @@
 
     private async Task CenterMap()
     {
-        if (_map != null) await _map.SetZoom(14);
+        if (_map is null) return;
+
+        await _map.SetZoom(14);
+        _trackingEnabled = false;
         _center = DefaultCenter;
     }
 
@@ -272,10 +305,11 @@
 
     public async ValueTask DisposeAsync()
     {
+        if (_mapModule is not null)
+            await _mapModule.DisposeAsync();
         await GeolocationService.ClearWatchAsync(_watchId);
+        _dotNetRef?.Dispose();
     }
 
     #endregion
-
-
 }

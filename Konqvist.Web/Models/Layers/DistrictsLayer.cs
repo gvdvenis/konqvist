@@ -46,6 +46,11 @@ public class DistrictsLayer : Layer
         return true;
     }
 
+    public District? GetDistrictById(string id)
+    {
+        return _districts.FirstOrDefault(d => d.Id == id);
+    }
+
     private District? GetDistrictAtCoordinate(Coordinate location)
     {
         return _districts

@@ -8,7 +8,6 @@
     <ApplicationIcon>wwwroot\icons\favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Konqvist.Data\Konqvist.Data.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5" />

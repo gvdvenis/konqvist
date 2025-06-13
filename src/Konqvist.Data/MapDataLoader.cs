@@ -131,6 +131,7 @@ public class CoordinateArrayConverter : JsonConverter<List<Coordinate>>
         {
             JsonSerializer.Serialize(writer, coordinate, options);
         }
+
         writer.WriteEndArray();
     }
 }

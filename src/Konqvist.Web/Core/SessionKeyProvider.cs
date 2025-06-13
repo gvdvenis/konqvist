@@ -1,4 +1,4 @@
-namespace Konqvist.Web;
+namespace Konqvist.Web.Core;
 
 public class SessionKeyProvider
 {

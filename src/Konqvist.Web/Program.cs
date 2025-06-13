@@ -1,9 +1,8 @@
 using Konqvist.Data;
-using Konqvist.Web;
 using Konqvist.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FluentUI.AspNetCore.Components;
-using Konqvist.Web.DevUtils;
+using Konqvist.Web.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 

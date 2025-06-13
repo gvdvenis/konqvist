@@ -5,7 +5,7 @@ $warn = [char]9888    # Unicode warning sign
 $bullet = [char]8226  # Unicode bullet point
 
 # Set output directory to obj
-$outputDir = Join-Path $PSScriptRoot '..\obj'
+$outputDir = Join-Path $PSScriptRoot '..\.certs'
 if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir | Out-Null
 }

@@ -1,4 +1,5 @@
 ﻿@page "/resetgame"
+@using Konqvist.Web.Core
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @attribute [AuthorizeGameRoles(GameRole.GameMaster)]

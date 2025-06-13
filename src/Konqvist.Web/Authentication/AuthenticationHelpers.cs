@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http.Extensions;
 using System.Security.Claims;
+using Konqvist.Web.Core;
 
 namespace Konqvist.Web.Authentication;
 

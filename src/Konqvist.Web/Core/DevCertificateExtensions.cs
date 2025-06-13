@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Konqvist.Web.DevUtils;
+namespace Konqvist.Web.Core;
 
 public static class DevCertificateExtensions
 {
@@ -21,8 +21,8 @@ public static class DevCertificateExtensions
         if (!builder.Environment.IsDevelopment()) return;
             
         // Look for devcert.pfx in the obj folder
-        string certPath = Path.Combine(Directory.GetCurrentDirectory(), "obj", "devcert.pfx");
-            
+        string certPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".certs", "devcert.pfx");
+        
         if (File.Exists(certPath))
         {
             builder.WebHost.ConfigureKestrel(options =>
@@ -37,8 +37,8 @@ public static class DevCertificateExtensions
         {
             builder.WebHost.UseUrls($"https://0.0.0.0:{port}");
             // Print colored info message for missing dev cert
-            const string cyan = "\e[36m"; // ANSI cyan
-            const string reset = "\e[0m";
+            const string cyan = "\u001b[36m"; // ANSI cyan
+            const string reset = "\u001b[0m";
             Console.WriteLine($"{cyan}• To enable local network HTTPS access, run: setup-local-ssl.cmd{reset}");
             Debug.WriteLine("• To enable local network HTTPS access, run: setup-local-ssl.cmd");
         }

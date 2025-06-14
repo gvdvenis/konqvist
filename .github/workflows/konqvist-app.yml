@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
 env:
   AZURE_WEBAPP_NAME: konqvist-app
-  AZURE_WEBAPP_PACKAGE_PATH: Konqvist.Web/published
+  AZURE_WEBAPP_PACKAGE_PATH: src/Konqvist.Web/published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
-  WORKING_DIRECTORY: Konqvist.Web
+  WORKING_DIRECTORY: src/Konqvist.Web
 jobs:
   build:
     runs-on: ubuntu-latest

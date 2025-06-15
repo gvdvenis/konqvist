@@ -1,0 +1,72 @@
+{
+  "name": "KonqVist",
+  "short_name": "KonqVist",
+  "description": "An immersive strategy game experience in your browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [ "window-controls-overlay", "standalone", "fullscreen", "minimal-ui", "browser" ],
+  "background_color": "#181a1b",
+  "theme_color": "#181a1b",
+  "orientation": "portrait",
+  "categories": [ "game", "strategy", "multiplayer"],
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play Now",
+      "short_name": "Play",
+      "description": "Jump straight into the game!",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/favicon-192.png",
+          "sizes": "144x144",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Management",
+      "short_name": "Management",
+      "description": "Show management interface",
+      "url": "/management",
+      "icons": [
+        {
+          "src": "/icons/favicon-192.png",
+          "sizes": "144x144",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/konqvist-runner-cycle-tracking-mode.png",
+      "sizes": "360x740",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/konqvist-runner-district-resource-details.png",
+      "sizes": "360x740",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/konqvist-gamehost-management.png",
+      "sizes": "360x740",
+      "type": "image/png"
+    }
+  ]
+}

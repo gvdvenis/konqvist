@@ -21,7 +21,7 @@ public static class DevCertificateExtensions
         if (!builder.Environment.IsDevelopment()) return;
             
         // Look for devcert.pfx in the obj folder
-        string certPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".certs", "devcert.pfx");
+        string certPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".certs", "devcert.pfx");
         
         if (File.Exists(certPath))
         {

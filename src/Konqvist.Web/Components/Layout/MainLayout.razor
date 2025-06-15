@@ -4,20 +4,20 @@
 
 <FluentLayout Orientation="Orientation.Vertical">
     <FluentHeader @ref="_fluentHeader" style="@StyleValue">
-        <FluentSpacer/>
         @if (UserSession.IsAuthenticated)
         {
-            <span>
-                @UserSession.TeamName (@UserSession.GameRole)
-            </span>
+            @UserSession.TeamName 
+            <FluentSpacer />
+            <img src="/icons/konqvist-logo-light.svg" height="38" alt="KonqVist Logo" />
+            <FluentSpacer />
+            <FluentIcon Color="Color.Fill" Width="20" Style="margin-left:10px; font-weight:bolder" Value="UserSession.Icon" />
         }
         else
         {
-            <span>
-                - KONQVIST -
-            </span>
+            <FluentSpacer />
+            <img src="/icons/konqvist-logo-light.svg" height="42" alt="KonqVist Logo" />
+            <FluentSpacer />
         }
-        <FluentSpacer/>
     </FluentHeader>
 
     <FluentBodyContent>
@@ -25,15 +25,15 @@
     </FluentBodyContent>
 
     <FluentFooter>
-        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer"/>
+        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer" />
     </FluentFooter>
 
-    <FluentDialogProvider @rendermode="InteractiveServer"/>
+    <FluentDialogProvider @rendermode="InteractiveServer" />
     <FluentToastProvider MaxToastCount="3"
-    RemoveToastsOnNavigation="false"
-    Position="ToastPosition.BottomCenter"
-    Timeout="5000"
-    @rendermode="InteractiveServer"/>
+                         RemoveToastsOnNavigation="false"
+                         Position="ToastPosition.BottomCenter"
+                         Timeout="5000"
+                         @rendermode="InteractiveServer" />
 </FluentLayout>
 
 <div id="blazor-error-ui" data-nosnippet>

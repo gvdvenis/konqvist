@@ -1,7 +1,7 @@
 ﻿@page "/management"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
-@inject MapDataStore MapDataStore
 @inject IBindableHubClient HubClient
+@inject MapDataStore MapDataStore
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
 
@@ -13,7 +13,12 @@
     @if (Session.IsAdmin)
     {
         <div class="full-span"
-             style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
+             style="
+                padding: 15px; 
+                border-style: solid; 
+                border-color: lightgray; 
+                border-width:1px; 
+                border-radius: calc(var(--layer-corner-radius) * 1px); ">
             <p class="vertically-centered">
                 @_currentRound.Title
                 <FluentSpacer />
@@ -33,7 +38,12 @@
     }
 
     <div class="full-span"
-         style="padding: 15px; border-style: solid; border-color: lightgray; border-width:1px; border-radius: calc(var(--layer-corner-radius) * 1px); ">
+         style="
+            padding: 15px; 
+            border-style: solid; 
+            border-color: lightgray; 
+            border-width:1px; 
+            border-radius: calc(var(--layer-corner-radius) * 1px);">
         <h3 class="center-content">Scores</h3>
         <p class="vertically-centered">
             <FluentSpacer />

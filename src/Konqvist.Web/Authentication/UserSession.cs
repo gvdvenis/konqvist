@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 namespace Konqvist.Web.Authentication;
 
@@ -12,6 +13,13 @@ public record UserSession
     public bool IsAdmin => GameRole == GameRole.GameMaster;
     public bool IsPlayer => GameRole == GameRole.Runner;
     public bool IsTeamLeader => GameRole == GameRole.TeamLeader;
+    public Icon? Icon => GameRole switch
+    {
+        GameRole.GameMaster => new NavIcons.Crown(),
+        GameRole.Runner => new NavIcons.VehicleBicycle(),
+        GameRole.TeamLeader => new NavIcons.ShieldPerson(),
+        _ => null
+    };
 
     public static UserSession Empty { get; } = new()
     {

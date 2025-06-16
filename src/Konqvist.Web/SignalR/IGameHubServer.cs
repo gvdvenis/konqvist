@@ -55,4 +55,10 @@ public interface IGameHubServer
     /// <param name="castingTeamName"></param>
     /// <returns></returns>
     Task SendCastVoteRequest(string receivingTeamName, string castingTeamName);
+
+    /// <summary>
+    ///     Sends a request to start the voting process.
+    /// </summary>
+    /// <returns></returns>
+    Task SendStartVotingRequest();
 }

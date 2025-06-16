@@ -5,18 +5,24 @@
 @inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
 @inject MapDataStore MapDataStore
+@inject NavigationManager NavigationManager
 
 @attribute [Authorize]
 
 <DefaultDesignTokens />
 
-<div class="center-content">
-    <h3>Cast your votes please!</h3>
+<div class="center-content" style="padding: 30px;">
     @if (_initialized && !string.IsNullOrEmpty(_currentTeamName))
     {
-        <div style="margin-bottom: 1rem; font-size: 1.1em; color: #444;">
-            You have <b>@_voteWeight</b> point@(_voteWeight == 1 ? "" : "s") to vote with.
-        </div>
+        <h4>
+            So, what's at stake?
+        </h4>
+        <p>
+            The winner of this voting round will get a free pass to enter the toilet tent before anyone waiting in line.
+        </p>
+        <p>
+            Your team has <b>@_voteWeight</b> point@(_voteWeight == 1 ? "" : "s") to vote with.
+        </p>
     }
     @if (!_initialized)
     {
@@ -33,34 +39,73 @@
                     </div>
                     <span style="margin-top: 0.5rem; font-weight: bold;">@team.Name</span>
                     <span style="font-size: 0.9em;">Votes: @GetVotesForTeam(team.Name)</span>
-                    <button class="fluent-button" style="margin-top: 0.5rem;" 
-                            disabled="@(!CanVote || team.Name == _currentTeamName)" 
-                            @onclick="() => CastVote(team.Name)">VOTE
+
+                    <button class="fluent-button" style="margin-top: 0.5rem;"
+                            disabled="@(!CanVote || team.Name == _currentTeamName)"
+                            @onclick="() => CastVote(team.Name)">
+                        VOTE
                     </button>
                 </div>
             }
         </div>
+    }
+    <div style="margin-top: 50px;">
+
         @if (_hasVoted)
         {
-            <div style="margin-top: 1rem; color: green;">Thank you for voting!</div>
+            <h5 style="color: green;">Thank you for voting!</h5>
         }
-    }
+        else if (!CanVote)
+        {
+            <h5>
+                Let's wait for the voting to start. You can only vote once the voting is open.
+            </h5>
+        }
+        else
+        {
+            <h5>Cast your votes please!</h5>
+        }
+
+    </div>
 </div>
 
+@if (Session.IsTeamLeader)
+{
+    <SectionContent SectionName="FooterContentSection">
+        <FluentSpacer />
+        <FluentToolbar>
+            @if (Session.IsAdmin)
+            {
+                <FluentButton IconEnd="@(new NavIcons.Map())"
+                              OnClick="ShowMap"
+                              Title="Show Map" />
+            }
+            <FluentButton IconEnd="@(new NavIcons.Organization())"
+                          OnClick="ShowDashboard"
+                          Title="Management Dashboard" />
+        </FluentToolbar>
+        <FluentSpacer />
+    </SectionContent>
+}
+
 @code {
+
+    private UserSession Session => SessionProvider.Session;
     private List<TeamData> _teams = [];
     private List<TeamVote> _teamVotes = [];
     private bool _hasVoted;
     private string? _currentTeamName;
     private int _voteWeight = 1;
     private bool _initialized;
-    private bool CanVote => !_hasVoted && SessionProvider.Session.GameRole == GameRole.TeamLeader;
+    private bool _isVotingOpen;
+    private bool CanVote => _isVotingOpen && !_hasVoted && SessionProvider.Session.GameRole == GameRole.TeamLeader;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
         _currentTeamName = SessionProvider.Session.TeamName;
+
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
 
@@ -74,7 +119,7 @@
         if (!string.IsNullOrEmpty(_currentTeamName))
         {
             _voteWeight = await MapDataStore.GetVoteWeightForTeam(_currentTeamName);
-            
+
             // Check if this team has already voted
             _hasVoted = await MapDataStore.HasTeamVotedInCurrentRound(_currentTeamName);
         }
@@ -93,6 +138,12 @@
             {
                 _teamVotes.Add(vote);
             }
+            await InvokeAsync(StateHasChanged);
+        };
+
+        HubClient.OnVotingStarted = async () =>
+        {
+            _isVotingOpen = true;
             await InvokeAsync(StateHasChanged);
         };
 
@@ -123,5 +174,11 @@
     public void Dispose()
     {
         HubClient.OnVotesUpdated = null;
+        HubClient.OnVotingStarted = null;
     }
+
+    private void ShowDashboard() => NavigationManager.NavigateTo("/management");
+
+    private void ShowMap() => NavigationManager.NavigateTo("/map");
+
 }

@@ -53,6 +53,12 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         await Clients.All.TeamResourcesChanged();
     }
 
+    public async Task SendStartVotingRequest()
+    {
+        // Broadcast to all clients that voting has started
+        await Clients.All.VotingStarted();
+    }
+
     public async Task SendSetAdditionalResourcesRequest(string teamName, ResourcesData additionalResources)
     {
         await dataStore.SetAdditionalTeamResource(teamName, additionalResources);

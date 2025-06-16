@@ -57,6 +57,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         _hubConnection.On<RoundData>(nameof(NewRoundStarted), NewRoundStarted);
         _hubConnection.On<List<TeamVote>, string?>(nameof(VotesUpdated), VotesUpdated);
         _hubConnection.On<string>(nameof(TeamResourcesChanged), TeamResourcesChanged);
+        _hubConnection.On(nameof(VotingStarted), VotingStarted);
     }
 
     #region IGameHubServer implements
@@ -90,6 +91,9 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
 
     public Task SendCastVoteRequest(string receivingTeamName, string castingTeamName) =>
         _hubConnection.SendAsync(nameof(SendCastVoteRequest), receivingTeamName, castingTeamName);
+
+    public Task SendStartVotingRequest() =>
+        _hubConnection.SendAsync(nameof(SendStartVotingRequest));
 
     #endregion
 
@@ -130,6 +134,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Task VotesUpdated(List<TeamVote> votes, string? castingTeamName) => 
         OnVotesUpdated?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
 
+    public Task VotingStarted() => OnVotingStarted?.Invoke() ?? Task.CompletedTask;
+
     #endregion
 
     #region IBindableHubClient implements
@@ -149,6 +155,8 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
     public Func<string?, Task>? OnTeamResourcesChanged { get; set; }
 
     public Func<List<TeamVote>, string?, Task>? OnVotesUpdated { get; set; }
+
+    public Func<Task>? OnVotingStarted { get; set; }
 
     #endregion
 

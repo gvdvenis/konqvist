@@ -1,6 +1,7 @@
 ﻿@page "/management"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject IBindableHubClient HubClient
+@inject IMessageService MessageService
 @inject MapDataStore MapDataStore
 @inject SessionProvider SessionProvider
 @inject NavigationManager NavigationManager
@@ -14,21 +15,33 @@
     {
         <div class="full-span"
              style="
-                padding: 15px; 
-                border-style: solid; 
-                border-color: lightgray; 
-                border-width:1px; 
-                border-radius: calc(var(--layer-corner-radius) * 1px); ">
-            <p class="vertically-centered">
-                @_currentRound.Title
+                            padding: 15px;
+                            border-style: solid;
+                            border-color: lightgray;
+                            border-width:1px;
+                            border-radius: calc(var(--layer-corner-radius) * 1px); ">
+            <div class="vertically-centered">
+                <h5 class="vertically-centered">
+                    @_currentRound.Title
+                </h5>
+                <FluentSpacer />
+                @if (Session.IsAdmin && _currentRound.Kind == RoundKind.Voting)
+                {
+                    <FluentButton Appearance="Appearance.Accent"
+                                  OnClick="StartVoting"
+                                  Style="border-radius: 15px;"
+                                  IconEnd="@(new NavIcons.Vote())">
+                        Start Voting
+                    </FluentButton>
+                }
                 <FluentSpacer />
                 <FluentButton Appearance="Appearance.Outline"
-                              OnClick="NextRound"
-                              Style="border-radius: 0 15px 15px 0;"
+                              OnClick="DisplayMessage"
+                              Style="border-radius:15px;"
                               IconEnd="@(new NavIcons.ArrowRight())">
-                    Next round
+                    Next
                 </FluentButton>
-            </p>
+            </div>
         </div>
     }
 
@@ -39,10 +52,10 @@
 
     <div class="full-span"
          style="
-            padding: 15px; 
-            border-style: solid; 
-            border-color: lightgray; 
-            border-width:1px; 
+            padding: 15px;
+            border-style: solid;
+            border-color: lightgray;
+            border-width:1px;
             border-radius: calc(var(--layer-corner-radius) * 1px);">
         <h3 class="center-content">Scores</h3>
         <p class="vertically-centered">
@@ -64,11 +77,19 @@
         <FluentButton IconEnd="@(new NavIcons.Map())"
                       OnClick="ShowMap"
                       Title="Show Map" />
-        <FluentButton IconEnd="@(new NavIcons.SignOut())"
-                      OnClick="ResetGame"
-                      BackgroundColor="var(--error)"
-                      Disabled="!Session.IsAdmin"
-                      Title="Reset Game" />
+
+        @if (Session.IsAdmin)
+        {
+            <FluentButton IconEnd="@(new NavIcons.Vote())"
+                          OnClick="ShowVoting"
+                          Title="Show Voting" />
+
+            <FluentButton IconEnd="@(new NavIcons.SignOut())"
+                          OnClick="ResetGame"
+                          BackgroundColor="var(--error)"
+                          Title="Reset Game" />
+        }
+
     </FluentToolbar>
     <FluentSpacer />
 </SectionContent>
@@ -101,6 +122,29 @@
 
     #endregion
 
+    void DisplayMessage()
+    {
+        ActionButton<Message> nextRound = new()
+        {
+            Text = "YES!",
+            OnClick = async _ =>
+            {
+                await HubClient.SendStartNewRoundRequest();
+                MessageService.Clear("MESSAGES_TOP");
+            }
+        };
+
+        MessageService.ShowMessageBar(options =>
+        {
+            options.Section = "MESSAGES_TOP";
+            options.Title = "Sure to start next round?";
+            options.Intent = MessageIntent.Warning;
+            options.Icon = new NavIcons.PersonWarning();
+            options.ClearAfterNavigation = true;
+            options.PrimaryAction = nextRound;
+        });
+    }
+
     private async Task OnNewRoundStarted(RoundData roundData)
     {
         _currentRound = roundData;
@@ -118,9 +162,11 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private Task NextRound(MouseEventArgs arg) => HubClient.SendStartNewRoundRequest();
+    private async Task StartVoting() => await HubClient.SendStartVotingRequest();
 
-    private void ShowMap(MouseEventArgs arg) => NavigationManager.NavigateTo("/map");
+    private void ShowMap() => NavigationManager.NavigateTo("/map");
+
+    private void ShowVoting() => NavigationManager.NavigateTo("/voting");
 
     private void ResetGame()
     {

@@ -41,7 +41,6 @@
     </div>
 }
 
-
 <FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
     <OpenStreetMap @ref="_map"
                    @bind-Rotation="_rotation"
@@ -110,13 +109,19 @@
                           OnClick="@(() => _showTeams = true)"
                           Title="Show Teams" />
         }
-
+        @if (Session.IsAdmin)
+        {
+            <FluentButton IconEnd="@(new NavIcons.Vote())"
+                          OnClick="ShowVoting"
+                          Title="Show Voting" />
+        }
         @if (AllowManagement)
         {
             <FluentButton IconEnd="@(new NavIcons.Organization())"
                           OnClick="ShowDashboard"
                           Title="Management Dashboard" />
         }
+        
     </FluentToolbar>
     <FluentSpacer />
 </SectionContent>
@@ -296,10 +301,9 @@
         _center = DefaultCenter;
     }
 
-    private void ShowDashboard(MouseEventArgs arg)
-    {
-        NavigationManager.NavigateTo("/management");
-    }
+    private void ShowDashboard() => NavigationManager.NavigateTo("/management");
+
+    private void ShowVoting() => NavigationManager.NavigateTo("/voting");
 
     #region Implementation of IAsyncDisposable
 
@@ -312,4 +316,7 @@
     }
 
     #endregion
+
+
+
 }

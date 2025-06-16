@@ -62,7 +62,7 @@ public class MapDataLoader: IMapDataLoader
     public Task<List<RoundData>> GetRoundsData() =>
         Task.FromResult<List<RoundData>>(
         [
-            new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
+            new RoundData(0, "Awaiting Start", RoundKind.NotStarted,null),
             new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
             new RoundData(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
             new RoundData(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),

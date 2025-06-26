@@ -10,65 +10,72 @@
 
 <DefaultDesignTokens />
 
-<div class="card-grid">
-    @if (Session.IsAdmin)
-    {
-        <div class="full-span"
-             style="
-                            padding: 15px;
-                            border-style: solid;
-                            border-color: lightgray;
-                            border-width:1px;
-                            border-radius: calc(var(--layer-corner-radius) * 1px); ">
-            <div class="vertically-centered">
-                <h5 class="vertically-centered">
+@if (Session.IsAdmin)
+{
+    <div class="center-col-content" style="padding: 1rem 1rem 0 1rem; row-gap: 1rem">
+
+        <FluentCard MinimalStyle="true"  >
+            <div class="center-row-content vertically-centered">
+                <h5 class="vertically-centered" >
                     @_currentRound.Title
                 </h5>
-                <FluentSpacer />
-                @if (Session.IsAdmin && _currentRound.Kind == RoundKind.Voting)
-                {
-                    <FluentButton Appearance="Appearance.Accent"
-                                  OnClick="StartVoting"
-                                  Style="border-radius: 15px;"
-                                  IconEnd="@(new NavIcons.Vote())">
-                        Start Voting
-                    </FluentButton>
-                }
-                <FluentSpacer />
+                <FluentSpacer/>
                 <FluentButton Appearance="Appearance.Outline"
                               OnClick="DisplayMessage"
                               Style="border-radius:15px;"
                               IconEnd="@(new NavIcons.ArrowRight())">
-                    Next
+                    Next Round
                 </FluentButton>
             </div>
-        </div>
-    }
+            
+        </FluentCard>
+
+        @if (_currentRound.Kind == RoundKind.Voting)
+        {
+
+            <FluentCard MinimalStyle="true"  >
+                <div class="center-row-content vertically-centered">
+                    <h5 class="vertically-centered" >
+                        @_startVotingCta
+                    </h5>
+                    <FluentSpacer/>
+                    <FluentButton Appearance="_startVotingAppearance"
+                                  OnClick="StartVoting"
+                                  Title="Start Voting"
+                                  Style="border-radius: 15px;"
+                                  IconEnd="@(new NavIcons.Vote())">
+                        Start
+                    </FluentButton>
+                </div>
+                
+            </FluentCard>
+        }
+    </div>
+}
+
+<div class="card-grid">
 
     @foreach (var team in _teams)
     {
         <TeamCard Team="@team" AllowEdit="@Session.IsAdmin" />
     }
+</div>
 
-    <div class="full-span"
-         style="
-            padding: 15px;
-            border-style: solid;
-            border-color: lightgray;
-            border-width:1px;
-            border-radius: calc(var(--layer-corner-radius) * 1px);">
-        <h3 class="center-content">Scores</h3>
-        <p class="vertically-centered">
-            <FluentSpacer />
+<div class="center-col-content" style="padding: 0 1rem;">
+
+    <FluentCard MinimalStyle="true" Class="center-col-content" >
+        <h3>Scores</h3>
+        <div class="center-row-content" style="column-gap: 0.5rem">
+            
             @foreach (var score in _teamScores)
             {
                 <FluentBadge Circular="true" Class="resource-badge" Height="24px">
                     @score.TeamName: @score.Amount
                 </FluentBadge>
             }
-            <FluentSpacer />
-        </p>
-    </div>
+           
+        </div>
+    </FluentCard>
 </div>
 
 <SectionContent SectionName="FooterContentSection">
@@ -101,6 +108,8 @@
     private RoundDataStore _roundDataStore = RoundDataStore.Empty;
     private RoundData _currentRound = RoundData.Empty;
     private UserSession Session => SessionProvider.Session;
+    private Appearance _startVotingAppearance = Appearance.Accent;
+    private string _startVotingCta = "Press to start voting";
     public string TeamName { get; set; } = "";
 
     #region Overrides of ComponentBase
@@ -118,6 +127,7 @@
         HubClient.OnRunnerLoggedInOrOut += OnRunnerLoggedInOrOut;
         HubClient.OnDistrictOwnerChanged += OnDistrictOwnerChanged;
         HubClient.OnNewRoundStarted += OnNewRoundStarted;
+        HubClient.OnVotingStarted += OnVotingStarted;
     }
 
     #endregion
@@ -148,6 +158,9 @@
     private async Task OnNewRoundStarted(RoundData roundData)
     {
         _currentRound = roundData;
+        _startVotingAppearance = Appearance.Accent;
+        _startVotingCta = "Press to start voting";
+
         _teamScores = await MapDataStore.GetAllTeamScores();
 
         await InvokeAsync(StateHasChanged);
@@ -160,6 +173,13 @@
         var teamsData = await MapDataStore.GetTeams();
         _teams = teamsData.Select(Team.CreateFromDataOrEmtpy).Reverse().ToList();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnVotingStarted()
+    {
+        _startVotingAppearance = Appearance.Outline;
+        _startVotingCta = "Voting started";
+        await InvokeAsync(StateHasChanged); 
     }
 
     private async Task StartVoting() => await HubClient.SendStartVotingRequest();

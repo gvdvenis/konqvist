@@ -11,14 +11,14 @@
 
 <DefaultDesignTokens />
 
-<div class="center-content" style="padding: 30px;">
+<div class="center-col-content" style="padding: 30px;">
     @if (_initialized && !string.IsNullOrEmpty(_currentTeamName))
     {
         <h4>
             So, what's at stake?
         </h4>
         <p>
-            The winner of this voting round will get a free pass to enter the toilet tent before anyone waiting in line.
+            @_currentRound.Stakes
         </p>
         <p>
             Your team has <b>@_voteWeight</b> point@(_voteWeight == 1 ? "" : "s") to vote with.
@@ -49,27 +49,38 @@
             }
         </div>
     }
-    <div style="margin-top: 50px;">
 
-        @if (_hasVoted)
+
+    <div style="margin-top: 50px;">
+        @if (Session.IsTeamLeader)
         {
-            <h5 style="color: green;">Thank you for voting!</h5>
-        }
-        else if (!CanVote)
-        {
-            <h5>
-                Let's wait for the voting to start. You can only vote once the voting is open.
-            </h5>
+
+            @if (_hasVoted)
+            {
+                <h5 style="color: green;">Thank you for voting!</h5>
+            }
+            else if (!CanVote)
+            {
+                <h5>
+                    Let's wait for the voting to start. 
+                </h5>
+            }
+            else
+            {
+                <h5>Cast your votes please!</h5>
+            }
+
         }
         else
         {
-            <h5>Cast your votes please!</h5>
+            <h5>
+                You are not allowed to vote. Only Team Leaders can cast votes
+            </h5>
         }
-
     </div>
 </div>
 
-@if (Session.IsTeamLeader)
+@if (Session.IsTeamLeader || Session.IsAdmin)
 {
     <SectionContent SectionName="FooterContentSection">
         <FluentSpacer />
@@ -91,8 +102,10 @@
 @code {
 
     private UserSession Session => SessionProvider.Session;
+
     private List<TeamData> _teams = [];
     private List<TeamVote> _teamVotes = [];
+    private RoundData _currentRound = RoundData.Empty;
     private bool _hasVoted;
     private string? _currentTeamName;
     private int _voteWeight = 1;
@@ -108,6 +121,7 @@
 
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
+        _currentRound = MapDataStore.GetCurrentRoundData();
 
         // Ensure all teams are present in the votes list
         foreach (var team in _teams.Where(team => _teamVotes.All(tv => tv.TeamName != team.Name)))

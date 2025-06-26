@@ -48,6 +48,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
     }
 
     /// <summary>
+    ///     Returns the current rounds data
+    /// </summary>
+    /// <returns></returns>
+    public RoundData GetCurrentRoundData() => _roundsDataStore.GetCurrentRound();
+
+    /// <summary>
     ///     Gets a copy of all teams data, optionally filtering out
     ///     teams where no runner is logged in (they should not be shown on the map)
     ///     and/or teams that have been disabled (not participating in the game).

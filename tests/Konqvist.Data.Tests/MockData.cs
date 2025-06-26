@@ -675,7 +675,7 @@ internal class GameDataLoader : IMapDataLoader
 {
     #region Implementation of IMapDataLoader
 
-    private static readonly JsonSerializerOptions _options = new()
+    private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         AllowTrailingCommas = true,
@@ -687,14 +687,14 @@ internal class GameDataLoader : IMapDataLoader
     public Task<MapData> GetMapData()
     {
 
-        var map = JsonSerializer.Deserialize<MapData>(MockData.MapData, _options);
+        var map = JsonSerializer.Deserialize<MapData>(MockData.MapData, Options);
         return Task.FromResult(map ?? MapData.Empty);
     }
 
     /// <inheritdoc />
     public Task<TeamData[]> GetTeamsData()
     {
-        var teams = JsonSerializer.Deserialize<TeamData[]>(MockData.TeamsData, _options);
+        var teams = JsonSerializer.Deserialize<TeamData[]>(MockData.TeamsData, Options);
         return Task.FromResult(teams ?? []);
     }
 
@@ -703,16 +703,16 @@ internal class GameDataLoader : IMapDataLoader
     {
         return Task.FromResult<List<RoundData>>(
         [
-            new RoundData(0, "Waiting for Game Start", RoundKind.NotStarted,null),
-            new RoundData(1, "Running 1", RoundKind.GatherResources, nameof(ResourcesData.R1)),
-            new RoundData(2, "Voting 1", RoundKind.Voting,nameof(ResourcesData.R1)),
-            new RoundData(3, "Running 2", RoundKind.GatherResources, nameof(ResourcesData.R4)),
-            new RoundData(4, "Voting 2", RoundKind.Voting, nameof(ResourcesData.R4)),
-            new RoundData(5, "Running 3", RoundKind.GatherResources, nameof(ResourcesData.R2)),
-            new RoundData(6, "Voting 3", RoundKind.Voting, nameof(ResourcesData.R2)),
-            new RoundData(7, "Running 4", RoundKind.GatherResources, nameof(ResourcesData.R3)),
-            new RoundData(8, "Voting 4", RoundKind.Voting, nameof(ResourcesData.R3)),
-            new RoundData(9, "Game Over", RoundKind.GameOver, null)
+            RoundData.WaitForStartRound(0, "Waiting for Game Start"),
+            RoundData.RunningRound(1, "Running 1", nameof(ResourcesData.R1)),
+            RoundData.VoteRound(2, "Voting 1", nameof(ResourcesData.R1), "The winner of this voting round will get a free pass to enter the toilet tent before anyone waiting in line."),
+            RoundData.RunningRound(3, "Running 2", nameof(ResourcesData.R4)),
+            RoundData.VoteRound(4, "Voting 2", nameof(ResourcesData.R4), "The winner of this voting round will have to scrub the toilets tonight"),
+            RoundData.RunningRound(5, "Running 3", nameof(ResourcesData.R2)),
+            RoundData.VoteRound(6, "Voting 3", nameof(ResourcesData.R2), "The winner of this voting round get's a candellight supper"),
+            RoundData.RunningRound(7, "Running 4", nameof(ResourcesData.R3)),
+            RoundData.VoteRound(8, "Voting 4", nameof(ResourcesData.R3), "The winner of this voting round have to orchestrate a vocal harmony choir with all those present at the meal tonightr"),
+            RoundData.GameOverRound(9, "Game Over")
         ]);
     }
 

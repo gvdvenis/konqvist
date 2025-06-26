@@ -15,17 +15,17 @@
 @inject SessionKeyProvider SessionKeyProvider
 @inject IBindableHubClient GameHubClient
 
-<div class="center-content">
+<div class="center-col-content">
     <h3 style="color:red">
         @_errorMessage
     </h3>
-    <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
     @if (_errorMessage == "")
     {
         <h3>
             Scan QR-code to login
         </h3>
     }
+    <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
 </div>
 
 @code {

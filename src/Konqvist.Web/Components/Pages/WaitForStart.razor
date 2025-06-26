@@ -2,24 +2,11 @@
 
 @attribute [Authorize]
 
-<div class="center-content">
+<div class="center-col-content">
     <h3> Let the game begin! </h3>
-    <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
     <p>
         Please wait patiently for the game master to start the game.
     </p>
+    <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
 </div>
 
-@code {
-
-    #region Overrides of ComponentBase
-
-    /// <inheritdoc />
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-    }
-
-    #endregion
-
-}

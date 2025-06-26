@@ -10,7 +10,8 @@
 <div @attributes="AdditionalAttributes" style="@StyleValue;">
     <FluentStack HorizontalAlignment="HorizontalAlignment.Center"
                  VerticalGap="0"
-                 HorizontalGap="2">
+                 HorizontalGap="2"
+                 >
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Gold))"
                      OnClick="() => ResourceClick(nameof(Resources.Gold))">
@@ -42,7 +43,6 @@
 
     [Parameter] public string? TeamName { get; set; }
     [Parameter] public bool ShowTitle { get; set; } = true;
-    [Parameter] public bool Enabled { get; set; } = true;
     [Parameter] public bool AllowEdit { get; set; }
 
     private Resources Resources { get; set; } = Resources.Empty;
@@ -57,11 +57,6 @@
 
     private Appearance GetBadgeAppearance(string resourceName)
     {
-
-        // if not enabled, return neutral appearance
-        if (!Enabled)
-            return Appearance.Lightweight;
-
         // if enabled, check if resource is the current resource of interest -> return green
         if (_currentResourceOfInterest is not null && resourceName == _currentResourceOfInterest)
             return Appearance.Accent;
@@ -109,7 +104,7 @@
     private async Task ResourceClick(string resourceName)
     {
 
-        if (Enabled == false || AllowEdit == false || TeamName is null) return;
+        if (AllowEdit == false || TeamName is null) return;
         var entryValue = string.Empty;
 
         var dialogInstance = await DialogService.ShowDialogAsync(

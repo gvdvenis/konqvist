@@ -8,9 +8,8 @@
 @inject IBindableHubClient HubClient
 @inject SessionKeyProvider SessionKeyProvider
 
-<div class="center-content" >
-    <h3 style="margin-top: 30px; margin-left:20%; margin-right:20%;" > Please be careful! When you press the button below, all current game data will be lost</h3>
-    <p>
+<div class="center-col-content" >
+    <h3 style="margin-top: 30px; max-width: 600px; margin-left:5%; margin-right:5%; text-align: center" > Please be careful! When you press the button below, all current game data will be lost</h3>
         <FluentButton IconEnd="@(new NavIcons.Delete().WithColor(Color.FillInverse))"
                       OnClick="ResetGameNow"
                       BackgroundColor="var(--error)" 
@@ -18,7 +17,6 @@
                       Style="margin-top: 20px; width: 50%; height:80px ">
             Reset Game
         </FluentButton>
-    </p>
 </div>
 
 @code {

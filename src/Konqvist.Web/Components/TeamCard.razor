@@ -3,21 +3,24 @@
 
 @implements IDisposable
 
-<FluentCard MinimalStyle="true">
-    <h3 class="vertically-centered">
+<FluentCard MinimalStyle="true" >
+    <h3 class="vertically-centered center-row-content">
         @Team.Name
-        <FluentSpacer />
-        <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
-        OnClick="LogoutRunner"
-        Disabled="@(!Team.RunnerLoggedIn)"
-        Title="Logout this runner" />
+        @if (AllowEdit)
+        {
+            <FluentSpacer />
+            <FluentButton IconEnd="@(new NavIcons.ArrowExit().WithColor(Color.Error))"
+                          OnClick="LogoutRunner"
+                          Disabled="@(!Team.RunnerLoggedIn)"
+                          Title="Logout this runner"
+                          />
+        }
     </h3>
-    <hr style="color:@(Team.RunnerLoggedIn ? Team.TextColor : "#DDD"); border-width: 5px; opacity:1; border-radius: 5px;" />
+    <hr style="color:@(Team.RunnerLoggedIn? Team.TextColor: "#DDD"); border-width: 5px; opacity:1; border-radius: 5px;" />
     <TeamResources Enabled="@Team.RunnerLoggedIn" TeamName="@Team.Name" ShowTitle="false" AllowEdit="@AllowEdit" />
 </FluentCard>
 
 @code {
-
     [Parameter] public Team Team { get; set; } = Team.Empty;
     [Parameter] public bool AllowEdit { get; set; }
 

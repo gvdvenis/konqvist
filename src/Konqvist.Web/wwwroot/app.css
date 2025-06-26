@@ -77,10 +77,24 @@ header {
     max-height: calc(95vh - var(--header-height) - var(--type-ramp-plus-3-line-height));
 }
 
-.center-content {
+.center-col-content {
     width: 100%;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
+    .center-col-content p {
+        text-align: center;
+    }
+
+.center-row-content {
+    width: 100%;
+    display: flex;
+    justify-content: center; 
+    flex-direction: row;
+}
+
 
 .resource-badge span {
     font-size: 12px;
@@ -164,3 +178,4 @@ header {
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
+

@@ -118,6 +118,7 @@
         await base.OnInitializedAsync();
 
         _currentTeamName = SessionProvider.Session.TeamName;
+
         _teams = await MapDataStore.GetTeams(includeDisabled: false);
         _teamVotes = await MapDataStore.GetVotesForCurrentRound();
         _currentRound = MapDataStore.GetCurrentRoundData();

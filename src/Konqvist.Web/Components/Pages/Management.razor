@@ -36,7 +36,7 @@
             <FluentCard MinimalStyle="true"  >
                 <div class="center-row-content vertically-centered">
                     <h5 class="vertically-centered" >
-                        @_startVotingCTA
+                        @_startVotingCta
                     </h5>
                     <FluentSpacer/>
                     <FluentButton Appearance="_startVotingAppearance"
@@ -109,7 +109,7 @@
     private RoundData _currentRound = RoundData.Empty;
     private UserSession Session => SessionProvider.Session;
     private Appearance _startVotingAppearance = Appearance.Accent;
-    private string _startVotingCTA = "Press to start voting";
+    private string _startVotingCta = "Press to start voting";
     public string TeamName { get; set; } = "";
 
     #region Overrides of ComponentBase
@@ -159,7 +159,7 @@
     {
         _currentRound = roundData;
         _startVotingAppearance = Appearance.Accent;
-        _startVotingCTA = "Press to start voting";
+        _startVotingCta = "Press to start voting";
 
         _teamScores = await MapDataStore.GetAllTeamScores();
 
@@ -178,7 +178,7 @@
     private async Task OnVotingStarted()
     {
         _startVotingAppearance = Appearance.Outline;
-        _startVotingCTA = "Voting started";
+        _startVotingCta = "Voting started";
         await InvokeAsync(StateHasChanged); 
     }
 

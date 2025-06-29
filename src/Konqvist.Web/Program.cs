@@ -10,7 +10,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient();
-builder.Services.AddFluentUIComponents();
 builder.Services.AddAuthorization();
 builder.Services.AddGeolocationServices();
 builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
@@ -21,6 +20,7 @@ builder.Services.AddSingleton<SessionKeyProvider>();
 builder.Services.AddSingleton<IMapDataLoader, MapDataLoader>();
 builder.Services.AddSingleton<MapDataStore>();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddFluentUIComponents();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -45,6 +45,7 @@ var app = builder.Build();
 
 // Initialize the main application datastore
 var mapDataSource = app.Services.GetRequiredService<MapDataStore>();
+
 await mapDataSource.InitializeAsync();
 
 if (!app.Environment.IsDevelopment())

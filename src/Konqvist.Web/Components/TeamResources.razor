@@ -15,25 +15,25 @@
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Gold))"
                      OnClick="() => ResourceClick(nameof(Resources.Gold))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />
+            <FluentIcon Color="Color.FillInverse" Class="resource-badge-icon" Value="@(new NavIcons.CoinStack())" />
             @(ShowTitle ? $"{nameof(Resources.Gold)}:" : "") @Resources.Gold
         </FluentBadge>
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Voters))"
                      OnClick="() => ResourceClick(nameof(Resources.Voters))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
+            <FluentIcon Color="Color.FillInverse" Class="resource-badge-icon" Value="@(new NavIcons.People())" />
             @(ShowTitle ? $"{nameof(Resources.Voters)}:" : "") @Resources.Voters
         </FluentBadge>
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Likes))"
                      OnClick="() => ResourceClick(nameof(Resources.Likes))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.ThumbLike())" />
+            <FluentIcon Color="Color.FillInverse" Class="resource-badge-icon" Value="@(new NavIcons.ThumbLike())" />
             @(ShowTitle ? $"{nameof(Resources.Likes)}:" : "") @Resources.Likes
         </FluentBadge>
 
         <FluentBadge Circular="true" Class="resource-badge" Height="24px" Appearance="@GetBadgeAppearance(nameof(Resources.Oil))"
                      OnClick="() => ResourceClick(nameof(Resources.Oil))">
-            <FluentIcon Color="Color.Custom" CustomColor="#000" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />
+            <FluentIcon Color="Color.FillInverse" Class="resource-badge-icon" Value="@(new NavIcons.Drop())" />
             @(ShowTitle ? $"{nameof(Resources.Oil)}:" : "") @Resources.Oil
         </FluentBadge>
     </FluentStack>

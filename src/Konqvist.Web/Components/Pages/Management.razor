@@ -1,5 +1,5 @@
 ﻿@page "/management"
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
 @inject IBindableHubClient HubClient
 @inject IMessageService MessageService
 @inject MapDataStore MapDataStore
@@ -27,7 +27,6 @@
                     Next Round
                 </FluentButton>
             </div>
-            
         </FluentCard>
 
         @if (_currentRound.Kind == RoundKind.Voting)
@@ -53,16 +52,7 @@
     </div>
 }
 
-<div class="card-grid">
-
-    @foreach (var team in _teams)
-    {
-        <TeamCard Team="@team" AllowEdit="@Session.IsAdmin" />
-    }
-</div>
-
-<div class="center-col-content" style="padding: 0 1rem;">
-
+<div class="center-col-content" style="padding: 1rem 1rem 0 1rem;">
     <FluentCard MinimalStyle="true" Class="center-col-content" >
         <h3>Scores</h3>
         <div class="center-row-content" style="column-gap: 0.5rem">
@@ -76,6 +66,13 @@
            
         </div>
     </FluentCard>
+</div>
+
+<div class="card-grid">
+    @foreach (var team in _teams)
+    {
+        <TeamCard Team="@team" AllowEdit="@Session.IsAdmin" />
+    }
 </div>
 
 <SectionContent SectionName="FooterContentSection">
@@ -111,7 +108,6 @@
     private Appearance _startVotingAppearance = Appearance.Accent;
     private string _startVotingCta = "Press to start voting";
     public string TeamName { get; set; } = "";
-
     #region Overrides of ComponentBase
 
     protected override async Task OnInitializedAsync()
@@ -132,7 +128,7 @@
 
     #endregion
 
-    void DisplayMessage()
+    async Task DisplayMessage()
     {
         ActionButton<Message> nextRound = new()
         {
@@ -144,7 +140,7 @@
             }
         };
 
-        MessageService.ShowMessageBar(options =>
+        await MessageService.ShowMessageBarAsync(options =>
         {
             options.Section = "MESSAGES_TOP";
             options.Title = "Sure to start next round?";
@@ -152,6 +148,7 @@
             options.Icon = new NavIcons.PersonWarning();
             options.ClearAfterNavigation = true;
             options.PrimaryAction = nextRound;
+            
         });
     }
 

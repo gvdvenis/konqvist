@@ -2,42 +2,43 @@
 @inherits LayoutComponentBase
 @inject MapDataStore MapDataStore
 
-<FluentLayout Orientation="Orientation.Vertical">
-    <FluentHeader @ref="_fluentHeader" style="@StyleValue">
-        @if (UserSession.IsAuthenticated)
-        {
-            @UserSession.TeamName 
-            <FluentSpacer />
-            <img src="/icons/konqvist-logo-light.svg" height="38" alt="KonqVist Logo" />
-            <FluentSpacer />
-            <FluentIcon Color="Color.Fill" Width="20" Style="margin-left:10px; font-weight:bolder" Value="UserSession.Icon" />
-        }
-        else
-        {
-            <FluentSpacer />
-            <img src="/icons/konqvist-logo-light.svg" height="42" alt="KonqVist Logo" />
-            <FluentSpacer />
-        }
-    </FluentHeader>
+<FluentDesignTheme StorageName="theme" Mode="DesignThemeModes.Dark" >
+    <FluentLayout Orientation="Orientation.Vertical">
+        <FluentHeader @ref="_fluentHeader" style="@StyleValue">
+            @if (UserSession.IsAuthenticated)
+            {
+                @UserSession.TeamName
+                <FluentSpacer />
+                <img src="/icons/konqvist-logo-light.svg" height="38" alt="KonqVist Logo" />
+                <FluentSpacer />
+                <FluentIcon Color="Color.Custom" CustomColor="#ffffff" Width="30px" Style="margin-left:10px; font-weight:bolder" Value="UserSession.Icon" />
+            }
+            else
+            {
+                <FluentSpacer />
+                <img src="/icons/konqvist-logo-light.svg" height="42" alt="KonqVist Logo" />
+                <FluentSpacer />
+            }
+        </FluentHeader>
 
-    <FluentBodyContent>
-        <FluentMessageBarProvider Style="padding: 15px 15px 0 15px; width: 100%" Section="MESSAGES_TOP" @rendermode="InteractiveServer" />
-        @Body
-    </FluentBodyContent>
+        <FluentBodyContent>
+            <FluentMessageBarProvider Section="MESSAGES_TOP" MaxMessageCount="1" Style="padding: 1rem 1rem 0 1rem; width: 100%;" />
+            @Body
+        </FluentBodyContent>
 
-    <FluentFooter>
-        <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer" />
-    </FluentFooter>
+        <FluentFooter>
+            <SectionOutlet SectionName="FooterContentSection" />
+        </FluentFooter>
 
-    <FluentDialogProvider @rendermode="InteractiveServer" />
-    <FluentToastProvider MaxToastCount="3"
-                         RemoveToastsOnNavigation="false"
-                         Position="ToastPosition.BottomCenter"
-                         Timeout="5000"
-                         @rendermode="InteractiveServer" />
-</FluentLayout>
+        <FluentDialogProvider />
+        <FluentToastProvider MaxToastCount="3"
+                             RemoveToastsOnNavigation="false"
+                             Position="ToastPosition.BottomCenter"
+                             Timeout="5000"/>
+    </FluentLayout>
+</FluentDesignTheme>
 
-<div id="blazor-error-ui" data-nosnippet>
+<div id="blazor-error-ui" data-nosnippet style="color: var(--neutral-fill-rest);">
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
@@ -52,6 +53,7 @@
 
     private string? StyleValue => new StyleBuilder(_fluentHeader?.Style)
         .AddStyle("background-color", _currentTeam.Color)
+        .AddStyle("color", "#ffffff")
         .Build();
 
     #region Overrides of ComponentBase

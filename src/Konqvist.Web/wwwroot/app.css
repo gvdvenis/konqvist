@@ -55,7 +55,8 @@ fluent-toolbar {
     position: absolute;
     z-index: 3;
     align-self: end;
-    flex-direction: column;
+    flex-direction: column; 
+    color: var(--ol-foreground-color)
 }
 
 .ol-box {
@@ -84,7 +85,11 @@ header {
     align-items: center;
 }
 
-    .center-col-content p {
+    .center-col-content p,
+    .center-col-content h2,
+    .center-col-content h3,
+    .center-col-content h4,
+    .center-col-content h5 {
         text-align: center;
     }
 
@@ -105,6 +110,7 @@ header {
 .resource-badge-icon {
     margin-right: 3px;
     user-select: none;
+    
 }
 
 .fluent-card {

@@ -142,6 +142,7 @@
     private bool AllowManagement => Session.IsAdmin || Session.IsTeamLeader;
     private DotNetObjectReference<Map>? _dotNetRef;
     private IJSObjectReference? _mapModule;
+    private bool _isInitialized;
 
     #region Overrides of ComponentBase
 
@@ -152,7 +153,9 @@
             _mapModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/mapInterop.js");
             _dotNetRef = DotNetObjectReference.Create(this);
             await _mapModule.InvokeVoidAsync("registerMapDotNetRef", _dotNetRef);
-            // No need for eval or global assignment here; handled in JS file
+            
+            // Initialize location tracking after render
+            await InitializeLocationTracking();
         }
     }
 
@@ -174,16 +177,32 @@
             return;
         }
 
+        // Set initial location from team data without JavaScript interop
         if (Session.IsPlayer)
         {
             var currentTeam = await MapDataStore.GetTeamByName(Session.TeamName);
             _lastLocation = currentTeam.Location;
+        }
+    }
+
+    private async Task InitializeLocationTracking()
+    {
+        if (_isInitialized || !Session.IsPlayer) return;
+        
+        try
+        {
             _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
             {
                 MaximumAge = 5000,
                 EnableHighAccuracy = true,
                 Timeout = 10000
             });
+            _isInitialized = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to initialize location tracking: {ex.Message}");
+            ToastService.ShowError("Failed to initialize location tracking");
         }
     }
 
@@ -217,14 +236,14 @@
     public Task InvokeShapeClickFromJs(string? districtId)
     {
         // Find the district by id and call OnShapeClick logic
-        if (_districtsLayer is not null && !string.IsNullOrEmpty(districtId))
-        {
-            var district = _districtsLayer.GetDistrictById(districtId);
-            if (district != null)
-            {
-                OnShapeClick(district);
-            }
-        }
+        if (_districtsLayer is null || string.IsNullOrEmpty(districtId)) 
+            return Task.CompletedTask;
+
+        var district = _districtsLayer.GetDistrictById(districtId);
+
+        if (district != null)
+            OnShapeClick(district);
+
         return Task.CompletedTask;
     }
 
@@ -311,12 +330,12 @@
     {
         if (_mapModule is not null)
             await _mapModule.DisposeAsync();
-        await GeolocationService.ClearWatchAsync(_watchId);
+        
+        if (_isInitialized && _watchId > 0)
+            await GeolocationService.ClearWatchAsync(_watchId);
+        
         _dotNetRef?.Dispose();
     }
 
     #endregion
-
-
-
 }

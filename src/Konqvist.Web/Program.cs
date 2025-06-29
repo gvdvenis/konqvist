@@ -16,6 +16,7 @@ builder.Services.AddScoped<IBindableHubClient, GameHubClient>();
 builder.Services.AddScoped<IGameHubClient>(x => x.GetRequiredService<IBindableHubClient>());
 builder.Services.AddScoped<SessionProvider>();
 builder.Services.AddScoped<GameModeRoutingService>();
+builder.Services.AddScoped<IThemeService, ThemeService>();
 builder.Services.AddSingleton<SessionKeyProvider>();
 builder.Services.AddSingleton<IMapDataLoader, MapDataLoader>();
 builder.Services.AddSingleton<MapDataStore>();

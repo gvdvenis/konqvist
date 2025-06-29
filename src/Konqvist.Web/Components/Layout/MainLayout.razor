@@ -1,8 +1,11 @@
-﻿@using Microsoft.FluentUI.AspNetCore.Components.Utilities
+﻿@using Konqvist.Web.Services
+@using Microsoft.FluentUI.AspNetCore.Components.Utilities
 @inherits LayoutComponentBase
 @inject MapDataStore MapDataStore
+@inject IThemeService ThemeService
+@implements IDisposable
 
-<FluentDesignTheme StorageName="theme" Mode="DesignThemeModes.Dark" >
+<FluentDesignTheme StorageName="theme" Mode="@_themeMode">
     <FluentLayout Orientation="Orientation.Vertical">
         <FluentHeader @ref="_fluentHeader" style="@StyleValue">
             @if (UserSession.IsAuthenticated)
@@ -11,7 +14,7 @@
                 <FluentSpacer />
                 <img src="/icons/konqvist-logo-light.svg" height="38" alt="KonqVist Logo" />
                 <FluentSpacer />
-                <FluentIcon Color="Color.Custom" CustomColor="#ffffff" Width="30px" Style="margin-left:10px; font-weight:bolder" Value="UserSession.Icon" />
+                <FluentIcon OnClick="ToggleTheme" Color="Color.Custom" CustomColor="#ffffff" Width="30px" Style="margin-left:10px; font-weight:bolder" Value="UserSession.Icon" />
             }
             else
             {
@@ -47,6 +50,7 @@
 @code {
     private FluentHeader? _fluentHeader;
     private TeamData _currentTeam = TeamData.Empty;
+    private DesignThemeModes _themeMode = DesignThemeModes.Dark;
 
     [CascadingParameter] Task<AuthenticationState>? AuthenticationStateTask { get; set; }
     private UserSession UserSession { get; set; } = UserSession.Empty;
@@ -67,11 +71,30 @@
         ArgumentNullException.ThrowIfNull(AuthenticationStateTask);
 
         UserSession = await UserSession.CreateFromAuthenticationState(AuthenticationStateTask);
-
         _currentTeam = await MapDataStore.GetTeamByName(UserSession.TeamName);
-    }
 
+        ThemeService.ThemeChanged += OnThemeChanged;
+        _themeMode = ThemeService.CurrentTheme;
+    }
+    
+    public void Dispose()
+    {
+        ThemeService.ThemeChanged -= OnThemeChanged;
+    }
 
     #endregion
 
+    private void OnThemeChanged(DesignThemeModes newTheme)
+    {
+        _themeMode = newTheme;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleTheme()
+    {
+        _themeMode = _themeMode == DesignThemeModes.Dark 
+            ? DesignThemeModes.Light 
+            : DesignThemeModes.Dark;
+        ThemeService.SetTheme(_themeMode);
+    }
 }

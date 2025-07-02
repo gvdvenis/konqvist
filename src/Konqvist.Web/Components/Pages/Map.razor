@@ -143,6 +143,7 @@
     private DotNetObjectReference<Map>? _dotNetRef;
     private IJSObjectReference? _mapModule;
     private bool _isInitialized;
+    private MapAnimator? _animator;
 
     #region Overrides of ComponentBase
 
@@ -153,7 +154,7 @@
             _mapModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/mapInterop.js");
             _dotNetRef = DotNetObjectReference.Create(this);
             await _mapModule.InvokeVoidAsync("registerMapDotNetRef", _dotNetRef);
-            
+
             // Initialize location tracking after render
             await InitializeLocationTracking();
         }
@@ -185,10 +186,16 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _animator = new MapAnimator(this);
+    }
+
     private async Task InitializeLocationTracking()
     {
         if (_isInitialized || !Session.IsPlayer) return;
-        
+
         try
         {
             _watchId = await GeolocationService.WatchPositionAsync(OnLocationChanged, OnLocationError, new PositionOptions()
@@ -270,16 +277,55 @@
     /// <summary>
     ///     Update the maps position and zoom if the current player moved
     ///     a certain distance since the last location update
+    ///     Now also rotates the map so the direction of travel points upward.
     /// </summary>
     /// <returns></returns>
     private void TrackLocation(Coordinate location)
     {
         if (!_trackingEnabled) return;
 
-        var screenCenter = new Coordinate(location.X, location.Y + 0.0012);
+        // Offset the center so the user is slightly below the center
+        var screenCenter = new Coordinate(location.X, location.Y);
 
-        _center = screenCenter;
+        // Only update rotation if moved more than 3 meters
+        double distance = _lastLocation.DistanceTo(location, 4)*1000;
+        if (!(distance > 3.0)) return; // meters
+
+        double bearing = CalculateBearing(_lastLocation, location);
+        double targetRotation = MapAnimator.NormalizeAngle(-bearing);
+        double angleDiff = Math.Abs(MapAnimator.NormalizeAngle(targetRotation - _rotation));
+        const double minAngleDiff = 0.17; // ~10 degrees in radians
+
+        if (angleDiff > minAngleDiff && _animator != null)
+        {
+            _animator.AnimateTo(screenCenter, targetRotation);
+        }
+        else
+        {
+            _animator?.AnimateTo(screenCenter, _rotation);
+        }
     }
+
+    /// <summary>
+    /// Calculates the bearing in radians from one coordinate to another.
+    /// </summary>
+    private static double CalculateBearing(Coordinate from, Coordinate to)
+    {
+        // Convert degrees to radians
+        double lat1 = DegreesToRadians(from.Y);
+        double lon1 = DegreesToRadians(from.X);
+        double lat2 = DegreesToRadians(to.Y);
+        double lon2 = DegreesToRadians(to.X);
+
+        double dLon = lon2 - lon1;
+        double y = Math.Sin(dLon) * Math.Cos(lat2);
+        double x = Math.Cos(lat1) * Math.Sin(lat2) -
+                   Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(dLon);
+        double bearing = Math.Atan2(y, x);
+        return bearing; // in radians, suitable for OpenLayers rotation
+    }
+
+    private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180.0;
 
     private async Task ToggleLocationTracking()
     {
@@ -295,6 +341,7 @@
         }
 
         await _map.SetZoom(14);
+        _rotation = 0;
     }
 
     private async Task CenterLocation()
@@ -338,4 +385,80 @@
     }
 
     #endregion
+
+    // --- MapAnimator helper class ---
+    private class MapAnimator(Map parent)
+    {
+        private Timer? _timer;
+        private Coordinate _startCenter;
+        private double _startRotation;
+        private Coordinate _targetCenter;
+        private double _targetRotation;
+        private DateTime _startTime;
+        private readonly TimeSpan _duration = TimeSpan.FromMilliseconds(350);
+        private const double Epsilon = 0.00001;
+
+        public void AnimateTo(Coordinate targetCenter, double targetRotation)
+        {
+            // Stop any previous animation
+            _timer?.Dispose();
+
+            _startCenter = parent._center;
+            _startRotation = parent._rotation;
+            _targetCenter = targetCenter;
+            _targetRotation = targetRotation;
+            _startTime = DateTime.UtcNow;
+
+            _timer = new Timer(OnTick, null, 0, 16); // ~60fps
+        }
+
+        private void OnTick(object? state)
+        {
+            var elapsed = DateTime.UtcNow - _startTime;
+            double t = Math.Min(1.0, elapsed.TotalMilliseconds / _duration.TotalMilliseconds);
+
+            // Interpolate center
+            double x = Lerp(_startCenter.X, _targetCenter.X, t);
+            double y = Lerp(_startCenter.Y, _targetCenter.Y, t);
+            var newCenter = new Coordinate(x, y);
+
+            // Interpolate rotation (shortest path)
+            double rot = LerpAngle(_startRotation, _targetRotation, t);
+
+            // Update parent
+            parent._center = newCenter;
+            parent._rotation = rot;
+
+            parent.InvokeAsync(parent.StateHasChanged);
+
+            if (!(t >= 1.0)
+                && (!(Distance(parent._center, _targetCenter) < Epsilon) 
+                    || !(Math.Abs(parent._rotation - _targetRotation) < Epsilon))) return;
+
+            _timer?.Dispose();
+            _timer = null;
+        }
+
+        private static double Lerp(double a, double b, double t) => a + (b - a) * t;
+
+        private static double LerpAngle(double a, double b, double t)
+        {
+            double delta = NormalizeAngle(b - a);
+            return a + delta * t;
+        }
+
+        internal static double NormalizeAngle(double angle)
+        {
+            while (angle > Math.PI) angle -= 2 * Math.PI;
+            while (angle < -Math.PI) angle += 2 * Math.PI;
+            return angle;
+        }
+
+        private static double Distance(Coordinate a, Coordinate b)
+        {
+            double dx = a.X - b.X;
+            double dy = a.Y - b.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+    }
 }

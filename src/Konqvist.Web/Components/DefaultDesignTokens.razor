@@ -1,0 +1,25 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components.DesignTokens
+@code {
+
+    [Inject] private DesignUnit DesignUnit { get; set; } = null!;
+    [Inject] private ControlCornerRadius ControlCornerRadius { get; set; } = null!;
+
+    #region Overrides of ComponentBase
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await DesignUnit.WithDefault(6);
+            await ControlCornerRadius.WithDefault(10);
+
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    #endregion
+
+}

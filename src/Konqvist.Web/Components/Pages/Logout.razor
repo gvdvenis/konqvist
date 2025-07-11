@@ -1,0 +1,52 @@
+﻿@page "/logout"
+
+@rendermode InteractiveServer
+
+@inject NavigationManager NavigationManager
+@inject IBindableHubClient HubClient
+@inject SessionProvider SessionProvider
+@inject MapDataStore DataStore
+
+@attribute [Authorize]
+
+<h3>You've successfully logged out. Thank you for playing.</h3>
+
+@code {
+
+    [CascadingParameter] HttpContext? HttpContext { get; set; }
+
+    #region Overrides of ComponentBase
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (HttpContext is null) return; // exit if this is not a server side request
+
+        var session = await SessionProvider.SessionAsync;
+
+        if (session.IsAuthenticated)
+        {
+            await HttpContext.SignOutAsync();
+
+            SessionProvider.ClearSession();
+
+            if (session.IsPlayer && !string.IsNullOrEmpty(session.TeamName))
+            {
+                await DataStore.LogoutRunner(session.TeamName);
+                await HubClient.BroadcastRunnersLogout([session.TeamName]);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        NavigationManager.NavigateTo("/login", false, true);
+    }
+
+    #endregion
+
+}

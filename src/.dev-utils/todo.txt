@@ -1,0 +1,87 @@
+Routing rules:
+
+routes:
+*				/Login				
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> /Management			
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+
+*				/Management
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> OK 
+							| Team Captain	-> OK 
+							| Player		-> /{GameState}
+					:		-> /Login
+		
+*				/Map
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> OK			
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+
+*				/Voting
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> OK			
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+
+*				/WaitForStart
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> /Management			
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+
+*				/GameOver
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> /Management			
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+
+
+*				/ResetGame
+				|
+				Authenticated 
+					? Role  :
+							| Admin			-> OK 
+							| Team Captain	-> /{GameState}
+							| Player		-> /{GameState}
+					:		-> /Login
+					
+*				/Logout
+				|
+				-> /Login
+
+_______________________________________________________________________________________
+
+Roles per page
+
+game state	|	/WaitForStart		(R, TC)
+			|	/Map				(R, TC)
+			|	/Voting				(R, TC)
+			|	/GameOver			(R, TC)
+
+d			|	/Management			(A, TC)
+			|	/ResetGame			(A)
+			
+				
+				/Logout				(*)
+
+

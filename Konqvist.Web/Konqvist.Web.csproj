@@ -13,8 +13,6 @@
     <ProjectReference Include="..\Konqvist.Data\Konqvist.Data.csproj" />
     <PackageReference Include="Azure.Identity" Version="1.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.28.0" />
-
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.11.7" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.11.7" />
     <PackageReference Include="OpenLayers.Blazor" Version="2.4.1" />

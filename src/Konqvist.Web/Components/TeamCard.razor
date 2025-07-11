@@ -43,7 +43,7 @@
 
         Team = Team.CreateFromDataOrEmtpy(teamData);
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     #endregion

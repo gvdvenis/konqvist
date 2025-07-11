@@ -1,24 +1,24 @@
 [
   {
     "name": "Alpha",
-    "color": "#880000", // red
+    "color": "#8d30e0", // purple
     "isDisabled": true
   },
   {
     "name": "Bravo",
-    "color": "#000088" // blue
+    "color": "#0b6eb2" // blue
   },
   {
     "name": "Charly",
-    "color": "#008000" // green
+    "color": "#175637" // green
   },
   {
     "name": "Delta",
-    "color": "#888800" // yellow
+    "color": "#dcb72e" // yellow
   },
   {
     "name": "Echo",
-    "color": "#800080" // purple
+    "color": "#a2130b" // red
   },
   {
     "name": "Foxtrot",

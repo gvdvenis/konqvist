@@ -1,12 +1,26 @@
 ﻿@page "/waitforstart"
 
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
 @attribute [Authorize]
 
-<div class="center-col-content">
-    <h3> Let the game begin! </h3>
+<div class="center-col-content" style="padding-left: 1rem; padding-right: 1rem;">
+    <h3 class="page-message"> Let the game begin! </h3>
     <p>
         Please wait patiently for the game master to start the game.
     </p>
     <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
 </div>
 
+ @code
+{
+
+    #region Overrides of ComponentBase
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    #endregion
+} 

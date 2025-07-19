@@ -1,8 +1,12 @@
 @import '/_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css';
 @import '/_content/OpenLayers.Blazor/OpenLayers.Blazor.css';
 
+:root {
+    --type-ramp-base-font-size: 16px !important;
+    
+}
+
 body {
-    --body-font: "Segoe UI Variable", "Segoe UI", sans-serif;
     font-family: var(--body-font);
     font-size: var(--type-ramp-base-font-size);
     line-height: var(--type-ramp-base-line-height);
@@ -73,6 +77,11 @@ header {
     --accent-fill-rest: #04203b;
 }
 
+.page-message {
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem;
+}
+
 .image-fit {
     max-width: 100%;
     max-height: calc(95vh - var(--header-height) - var(--type-ramp-plus-3-line-height));
@@ -102,15 +111,14 @@ header {
 
 
 .resource-badge span {
-    font-size: 12px;
+    font-size: 14px;
     padding: 13px 2px 13px 0px;
     height: 38px;
 }
 
 .resource-badge-icon {
     margin-right: 3px;
-    user-select: none;
-    
+    user-select: none;    
 }
 
 .fluent-card {

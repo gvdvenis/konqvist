@@ -115,7 +115,7 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         if ((!session.IsPlayer || teamName is not null) && session.TeamName != teamName)
             return Task.CompletedTask;
         _toastService.ShowWarning("The game master has logged you out", 4000);
-        _navigationManager.NavigateTo("logout", false, true);
+        _navigationManager.NavigateTo("logout", true, true);
         return Task.CompletedTask;
     }
 
@@ -128,10 +128,10 @@ public class GameHubClient : IBindableHubClient, IAsyncDisposable
         await OnNewRoundStarted.Invoke(newRound);
     }
 
-    public Task TeamResourcesChanged(string? teamName) => 
+    public Task TeamResourcesChanged(string? teamName) =>
         OnTeamResourcesChanged?.Invoke(teamName) ?? Task.CompletedTask;
 
-    public Task VotesUpdated(List<TeamVote> votes, string? castingTeamName) => 
+    public Task VotesUpdated(List<TeamVote> votes, string? castingTeamName) =>
         OnVotesUpdated?.Invoke(votes, castingTeamName) ?? Task.CompletedTask;
 
     public Task VotingStarted() => OnVotingStarted?.Invoke() ?? Task.CompletedTask;

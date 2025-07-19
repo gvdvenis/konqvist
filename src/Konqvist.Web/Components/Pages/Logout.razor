@@ -1,7 +1,5 @@
 ﻿@page "/logout"
 
-@rendermode InteractiveServer
-
 @inject NavigationManager NavigationManager
 @inject IBindableHubClient HubClient
 @inject SessionProvider SessionProvider
@@ -9,7 +7,7 @@
 
 @attribute [Authorize]
 
-<h3>You've successfully logged out. Thank you for playing.</h3>
+<h3 class="page-message">You've successfully logged out. Thank you for playing.</h3>
 
 @code {
 

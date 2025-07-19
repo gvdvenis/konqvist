@@ -12,3 +12,15 @@
     <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
 </div>
 
+ @code
+{
+
+    #region Overrides of ComponentBase
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    #endregion
+} 

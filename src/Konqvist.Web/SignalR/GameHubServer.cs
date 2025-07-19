@@ -26,7 +26,7 @@ public class GameHubServer(MapDataStore dataStore) : Hub<IGameHubClient>, IGameH
         if (teamName == null)
         {
             var loggedOutRunnerTeamNames = await dataStore.LogoutAllRunners();
-            await Clients.All.PerformRunnerLogoutOnClient(null);
+            await Clients.All.PerformRunnerLogoutOnClient(teamName);
             await BroadcastRunnersLogout([.. loggedOutRunnerTeamNames]);
             return;
         }

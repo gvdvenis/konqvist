@@ -1,5 +1,7 @@
 ﻿@using Konqvist.Web.Services
+
 @rendermode InteractiveServer
+
 @inject NavigationManager Navigation
 @inject GameModeRoutingService GameModeRoutingService
 
@@ -21,14 +23,19 @@
     {
         if (GameModeRoutingService is null) return;
 
+
         // validate the route using the routing rules
         string? requiredRedirectRoute = await GameModeRoutingService.GetForcedRedirectRoute(args.Path);
 
-        if (!string.IsNullOrWhiteSpace(requiredRedirectRoute) && 
-            !requiredRedirectRoute.Equals(args.Path, StringComparison.OrdinalIgnoreCase))
+        string requestedPath = args.Path == string.Empty ? "/" : args.Path;
+
+        if (!string.IsNullOrWhiteSpace(requiredRedirectRoute) &&
+            !requiredRedirectRoute.Equals(requestedPath, StringComparison.OrdinalIgnoreCase))
         {
+            bool forceReloadRequired = args.Path == "logout";
+            
             // intercept and redirect to the appropriate page
-            Navigation.NavigateTo(requiredRedirectRoute);
+            Navigation.NavigateTo(requiredRedirectRoute, forceReloadRequired);
         }
 
         // allow navigation to proceed

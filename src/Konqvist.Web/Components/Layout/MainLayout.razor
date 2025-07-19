@@ -1,11 +1,14 @@
 ﻿@using Konqvist.Web.Services
 @using Microsoft.FluentUI.AspNetCore.Components.Utilities
+
+@rendermode InteractiveServer
+
 @inherits LayoutComponentBase
 @inject MapDataStore MapDataStore
 @inject IThemeService ThemeService
 @implements IDisposable
 
-<FluentDesignTheme StorageName="theme" Mode="@_themeMode">
+<FluentDesignTheme StorageName="theme" Mode="@_themeMode" >
     <FluentLayout Orientation="Orientation.Vertical">
         <FluentHeader @ref="_fluentHeader" style="@StyleValue">
             @if (UserSession.IsAuthenticated)
@@ -25,19 +28,20 @@
         </FluentHeader>
 
         <FluentBodyContent>
-            <FluentMessageBarProvider Section="MESSAGES_TOP" MaxMessageCount="1" Style="padding: 1rem 1rem 0 1rem; width: 100%;" />
+            <FluentMessageBarProvider Section="MESSAGES_TOP" MaxMessageCount="1" Style="padding: 1rem 1rem 0 1rem; width: 100%;" @rendermode="InteractiveServer" />
             @Body
         </FluentBodyContent>
 
         <FluentFooter>
-            <SectionOutlet SectionName="FooterContentSection" />
+            <SectionOutlet SectionName="FooterContentSection" @rendermode="InteractiveServer" />
         </FluentFooter>
 
-        <FluentDialogProvider />
+        <FluentDialogProvider @rendermode="InteractiveServer" />
         <FluentToastProvider MaxToastCount="3"
                              RemoveToastsOnNavigation="false"
                              Position="ToastPosition.BottomCenter"
-                             Timeout="5000"/>
+                             Timeout="5000"
+                             @rendermode="InteractiveServer" />
     </FluentLayout>
 </FluentDesignTheme>
 

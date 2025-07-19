@@ -1,5 +1,7 @@
 ﻿@page "/management"
 
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
 @inject IBindableHubClient HubClient
 @inject IMessageService MessageService
 @inject MapDataStore MapDataStore

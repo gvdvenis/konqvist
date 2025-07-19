@@ -1,5 +1,7 @@
 ﻿@page "/waitforstart"
 
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
 @attribute [Authorize]
 
 <div class="center-col-content">

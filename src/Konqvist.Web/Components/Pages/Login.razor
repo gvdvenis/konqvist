@@ -15,7 +15,7 @@
 @inject SessionKeyProvider SessionKeyProvider
 @inject IBindableHubClient GameHubClient
 
-<div class="center-col-content">
+<div class="center-col-content page-message">
     <h3 style="color:red">
         @_errorMessage
     </h3>
@@ -25,6 +25,8 @@
             Scan QR-code to login
         </h3>
     }
+</div>
+<div class="center-col-content">
     <img src="icons/favicon.svg" width="60%" alt="- KONQVIST -" class="image-fit"/>
 </div>
 
@@ -56,7 +58,7 @@
             if (forcedRedirectRoute is not null)
             {
                 // Redirect to the appropriate page if the current route is not allowed
-                NavigationManager.NavigateTo(forcedRedirectRoute!, false, true);
+                NavigationManager.NavigateTo(forcedRedirectRoute, false, true);
             }
         }
 

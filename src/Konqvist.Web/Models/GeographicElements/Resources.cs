@@ -44,7 +44,7 @@ public record Resources
         return new Dictionary<string, (int, Icon)>
         {
             {nameof(Gold), (Gold, new NavIcons.CoinStack())},
-            {nameof(Voters), (Voters, new NavIcons.Vote()) } ,
+            {nameof(Voters), (Voters, new NavIcons.People()) } ,
             {nameof(Likes), (Likes, new NavIcons.ThumbLike()) },
             {nameof(Oil), (Oil, new NavIcons.Drop())}
         };

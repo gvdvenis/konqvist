@@ -57,6 +57,26 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Districts/DistrictsPage.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcRGlzdHJpY3RzXERpc3RyaWN0c1BhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Rounds/RoundsPage.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcUm91bmRzXFJvdW5kc1BhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Session/SessionPage.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcU2Vzc2lvblxTZXNzaW9uUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Teams/TeamsPage.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVhbXNcVGVhbXNQYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Templates/TemplatesPage.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVtcGxhdGVzXFRlbXBsYXRlc1BhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Source/Repos/konqvist/src/Konqvist.Admin/Components/Layout/AuthLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcQXV0aExheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-ad2ui9atta

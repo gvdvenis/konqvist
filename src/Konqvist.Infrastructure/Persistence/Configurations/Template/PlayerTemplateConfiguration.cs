@@ -1,4 +1,5 @@
 using Konqvist.Infrastructure.Entities.Template;
+using Konqvist.Infrastructure.Persistence.SeedData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,5 +28,7 @@ public class PlayerTemplateConfiguration : IEntityTypeConfiguration<PlayerTempla
             .WithMany(entity => entity.Players)
             .HasForeignKey(entity => entity.TeamTemplateId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasData(TemplateSeedData.PlayerTemplates);
     }
 }

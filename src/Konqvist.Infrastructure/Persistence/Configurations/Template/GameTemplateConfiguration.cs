@@ -1,4 +1,5 @@
 using Konqvist.Infrastructure.Entities.Template;
+using Konqvist.Infrastructure.Persistence.SeedData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -42,5 +43,7 @@ public class GameTemplateConfiguration : IEntityTypeConfiguration<GameTemplate>
         builder.Property(entity => entity.DistrictCaptureRadiusMeters)
             .HasDefaultValue(50d)
             .IsRequired();
+
+        builder.HasData(TemplateSeedData.DemoGameTemplate);
     }
 }

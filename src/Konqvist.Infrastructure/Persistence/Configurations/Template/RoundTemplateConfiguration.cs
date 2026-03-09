@@ -1,4 +1,5 @@
 using Konqvist.Infrastructure.Entities.Template;
+using Konqvist.Infrastructure.Persistence.SeedData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -30,5 +31,7 @@ public class RoundTemplateConfiguration : IEntityTypeConfiguration<RoundTemplate
             .WithMany(entity => entity.Rounds)
             .HasForeignKey(entity => entity.GameTemplateId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasData(TemplateSeedData.RoundTemplates);
     }
 }

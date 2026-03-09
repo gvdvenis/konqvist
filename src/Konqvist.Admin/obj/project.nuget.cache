@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "dgSpecHash": "l0+XkCCzKLc=",
+  "success": true,
+  "projectFilePath": "D:\\Source\\Repos\\konqvist\\src\\Konqvist.Admin\\Konqvist.Admin.csproj",
+  "expectedPackageFiles": [
+    "D:\\.devcaches\\.nuget\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\fluentvalidation.aspnetcore\\11.3.1\\fluentvalidation.aspnetcore.11.3.1.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\fluentvalidation.dependencyinjectionextensions\\11.11.0\\fluentvalidation.dependencyinjectionextensions.11.11.0.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.aspnetcore.app.internal.assets\\10.0.2\\microsoft.aspnetcore.app.internal.assets.10.0.2.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.data.sqlite.core\\10.0.3\\microsoft.data.sqlite.core.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore\\10.0.3\\microsoft.entityframeworkcore.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.abstractions\\10.0.3\\microsoft.entityframeworkcore.abstractions.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.analyzers\\10.0.3\\microsoft.entityframeworkcore.analyzers.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.relational\\10.0.3\\microsoft.entityframeworkcore.relational.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.sqlite\\10.0.3\\microsoft.entityframeworkcore.sqlite.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.sqlite.core\\10.0.3\\microsoft.entityframeworkcore.sqlite.core.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.entityframeworkcore.sqlite.nettopologysuite\\10.0.3\\microsoft.entityframeworkcore.sqlite.nettopologysuite.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\microsoft.extensions.dependencymodel\\10.0.3\\microsoft.extensions.dependencymodel.10.0.3.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\mod_spatialite\\4.3.0.1\\mod_spatialite.4.3.0.1.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\mudblazor\\9.1.0\\mudblazor.9.1.0.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\nettopologysuite\\2.6.0\\nettopologysuite.2.6.0.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\nettopologysuite.io.spatialite\\2.0.0\\nettopologysuite.io.spatialite.2.0.0.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\sqlitepclraw.bundle_e_sqlite3\\2.1.11\\sqlitepclraw.bundle_e_sqlite3.2.1.11.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\sqlitepclraw.core\\2.1.11\\sqlitepclraw.core.2.1.11.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\sqlitepclraw.lib.e_sqlite3\\2.1.11\\sqlitepclraw.lib.e_sqlite3.2.1.11.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\sqlitepclraw.provider.e_sqlite3\\2.1.11\\sqlitepclraw.provider.e_sqlite3.2.1.11.nupkg.sha512"
+  ],
+  "logs": []
+}

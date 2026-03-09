@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Konqvist.Admin/Konqvist.Admin.csproj" />
+    <Project Path="src/Konqvist.Client/Konqvist.Client.csproj" />
+    <Project Path="src/Konqvist.Infrastructure/Konqvist.Infrastructure.csproj" />
+    <Project Path="src/Konqvist.Server/Konqvist.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Konqvist.Infrastructure.Tests/Konqvist.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Konqvist.Server.Tests/Konqvist.Server.Tests.csproj" />
+  </Folder>
+</Solution>

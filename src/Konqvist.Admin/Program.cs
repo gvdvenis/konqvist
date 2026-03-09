@@ -1,8 +1,35 @@
+using System.Security.Claims;
 using Konqvist.Admin.Components;
+using Konqvist.Admin.Features.Auth;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddMudServices();
+
+builder.Services
+    .AddOptions<AdminCredentialsOptions>()
+    .Bind(builder.Configuration.GetSection(AdminCredentialsOptions.SectionName))
+    .Validate(
+        credentials => !string.IsNullOrWhiteSpace(credentials.Username),
+        $"{AdminCredentialsOptions.SectionName}:Username is required.")
+    .Validate(
+        credentials => !string.IsNullOrWhiteSpace(credentials.Password),
+        $"{AdminCredentialsOptions.SectionName}:Password is required.")
+    .ValidateOnStart();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/admin/login";
+        options.AccessDeniedPath = "/admin/login";
+    });
+builder.Services.AddAuthorization();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -18,9 +45,77 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    var requestPath = context.Request.Path.Value ?? string.Empty;
+    var isAdminPath = requestPath.StartsWith("/admin", StringComparison.OrdinalIgnoreCase);
+    var isLoginPath = requestPath.Equals("/admin/login", StringComparison.OrdinalIgnoreCase);
+    var isAuthenticated = context.User.Identity?.IsAuthenticated ?? false;
+
+    if (isAdminPath && !isLoginPath && !isAuthenticated)
+    {
+        await context.ChallengeAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return;
+    }
+
+    if (isLoginPath && HttpMethods.IsGet(context.Request.Method) && isAuthenticated)
+    {
+        context.Response.Redirect("/admin");
+        return;
+    }
+
+    await next();
+});
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapPost(
+    "/admin/login",
+    async Task<IResult> (
+        HttpContext httpContext,
+        [FromForm] string username,
+        [FromForm] string password,
+        [FromForm] string? returnUrl,
+        IOptions<AdminCredentialsOptions> credentialsOptions) =>
+    {
+        var credentials = credentialsOptions.Value;
+        var isValidUsername = string.Equals(username, credentials.Username, StringComparison.Ordinal);
+        var isValidPassword = string.Equals(password, credentials.Password, StringComparison.Ordinal);
+
+        if (!isValidUsername || !isValidPassword)
+        {
+            var loginPath = "/admin/login?error=1";
+            if (!string.IsNullOrWhiteSpace(returnUrl))
+            {
+                loginPath += $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
+            }
+
+            return Results.LocalRedirect(loginPath);
+        }
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, credentials.Username),
+            new Claim(ClaimTypes.Role, "Admin")
+        };
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+        return Results.LocalRedirect("/admin");
+    });
+app.MapPost(
+    "/admin/logout",
+    async Task<IResult> (HttpContext httpContext) =>
+    {
+        await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return Results.LocalRedirect("/admin/login");
+    });
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

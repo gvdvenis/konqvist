@@ -12,5 +12,45 @@
       "url": "http://localhost:5062"
     }
   ],
-  "paths": { }
+  "paths": {
+    "/admin": {
+      "get": {
+        "tags": [
+          "Konqvist.Server"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/{path}": {
+      "get": {
+        "tags": [
+          "Konqvist.Server"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Konqvist.Server"
+    }
+  ]
 }

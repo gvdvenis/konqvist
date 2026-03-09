@@ -1,0 +1,49 @@
+﻿@page "/admin/login"
+@layout Layout.AuthLayout
+
+<PageTitle>Admin Login</PageTitle>
+
+<MudPaper Elevation="2" Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-2">Admin Login</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Sign in with the credentials configured in appsettings.
+    </MudText>
+
+    @if (ShowInvalidCredentials)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">
+            Invalid username or password.
+        </MudAlert>
+    }
+
+    <form method="post" action="/admin/login">
+        <AntiforgeryToken />
+        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+        <input type="hidden" name="username" value="@_username" />
+        <input type="hidden" name="password" value="@_password" />
+        <MudTextField T="string" Label="Username" Variant="Variant.Outlined" Required="true" Margin="Margin.Dense" @bind-Value="_username" Immediate="true" />
+        <MudTextField T="string" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" Margin="Margin.Dense" Class="mt-2" @bind-Value="_password" Immediate="true" />
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4">
+            Log in
+        </MudButton>
+    </form>
+</MudPaper>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? RawReturnUrl { get; set; }
+
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+
+    private bool ShowInvalidCredentials => string.Equals(Error, "1", StringComparison.Ordinal);
+    private string ReturnUrl => IsSafeAdminPath(RawReturnUrl) ? RawReturnUrl! : "/admin";
+
+    private static bool IsSafeAdminPath(string? path) =>
+        !string.IsNullOrWhiteSpace(path) &&
+        path.StartsWith("/admin", StringComparison.OrdinalIgnoreCase) &&
+        !path.StartsWith("//", StringComparison.Ordinal);
+}

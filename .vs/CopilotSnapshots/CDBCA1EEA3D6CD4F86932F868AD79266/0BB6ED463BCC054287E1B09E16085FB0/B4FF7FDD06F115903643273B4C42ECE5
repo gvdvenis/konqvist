@@ -1,0 +1,106 @@
+﻿using Konqvist.Data.Models;
+using OpenLayers.Blazor;
+using System.Text.Json;
+using System.Xml.Linq;
+
+namespace Konqvist.Data;
+
+public class KmlToMapDataConverter
+{
+
+    /// <summary>
+    ///     Converts a KML file to MapData.
+    /// </summary>
+    /// <param name="kmlFilePath"></param>
+    /// <returns></returns>
+    public static MapData ConvertKmlToMapData(string kmlFilePath)
+    {
+        var mapData = new MapData
+        {
+            Districts = new List<DistrictData>()
+        };
+
+        try
+        {
+            var kml = XDocument.Load(kmlFilePath);
+            XNamespace ns = "http://www.opengis.net/kml/2.2";
+
+            // Parse districts
+            var placemarks = kml.Descendants(ns + "Placemark");
+            foreach (var placemark in placemarks)
+            {
+                var name = placemark.Element(ns + "name")?.Value;
+                var polygon = placemark.Element(ns + "Polygon");
+                var point = placemark.Element(ns + "Point");
+
+                if (polygon != null)
+                {
+                    var coordinates = polygon
+                        .Descendants(ns + "coordinates")
+                        .FirstOrDefault()?.Value
+                        .Trim()
+                        .Split(' ')
+                        .Select(coord => ParseCoordinate(coord))
+                        .ToList();
+
+                    if (coordinates != null)
+                    {
+                        mapData.Districts.Add(new DistrictData
+                        {
+                            Name = name ?? "Unnamed District",
+                            Coordinates = coordinates,
+                            IsClaimable = true // Default value, adjust as needed
+                        });
+                    }
+                }
+                else if (point != null)
+                {
+                    var coordinate = point
+                        .Element(ns + "coordinates")?.Value
+                        .Trim();
+
+                    if (coordinate != null)
+                    {
+                        var triggerCircleCenter = ParseCoordinate(coordinate);
+                        mapData.Districts.Add(new DistrictData
+                        {
+                            Name = name ?? "Unnamed Trigger Circle",
+                            TriggerCircleCenter = triggerCircleCenter,
+                            IsClaimable = false // Default value, adjust as needed
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle errors (e.g., log them)
+            Console.WriteLine($"Error parsing KML file: {ex.Message}");
+        }
+
+        return mapData;
+    }
+
+    private static Coordinate ParseCoordinate(string coordinateString)
+    {
+        var parts = coordinateString.Split(',');
+        return new Coordinate
+        {
+            
+            Longitude = double.Parse(parts[0]),
+            Latitude = double.Parse(parts[1]),
+            Altitude = parts.Length > 2 ? double.Parse(parts[2]) : 0
+        };
+    }
+
+    public static void SaveToJsonFile(MapData mapData, string jsonFilePath)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        string jsonString = JsonSerializer.Serialize(mapData, options);
+        File.WriteAllText(jsonFilePath, jsonString);
+    }
+}

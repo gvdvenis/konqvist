@@ -1,0 +1,32 @@
+﻿using Konqvist.Data.Models;
+using System.Text.Json;
+
+namespace Konqvist.Data;
+
+public class KmlToMapDataConverter
+{
+
+    /// <summary>
+    ///     Converts a KML file to MapData.
+    /// </summary>
+    /// <param name="kmlFilePath"></param>
+    /// <returns></returns>
+    public static MapData ConvertKmlToMapData(string kmlFilePath)
+    {
+        // Implement KML parsing logic here
+        // For now, return an empty MapData object
+
+        return new MapData();
+    }
+
+    public static void SaveToJsonFile(MapData mapData, string jsonFilePath)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        string jsonString = JsonSerializer.Serialize(mapData, options);
+        File.WriteAllText(jsonFilePath, jsonString);
+    }
+}

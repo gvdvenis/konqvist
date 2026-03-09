@@ -107,3 +107,4 @@ D:\Source\Repos\konqvist\src\Konqvist.Server\obj\Debug\net10.0\refint\Konqvist.S
 D:\Source\Repos\konqvist\src\Konqvist.Server\obj\Debug\net10.0\Konqvist.Server.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Server\obj\Debug\net10.0\Konqvist.Server.genruntimeconfig.cache
 D:\Source\Repos\konqvist\src\Konqvist.Server\obj\Debug\net10.0\ref\Konqvist.Server.dll
+D:\Source\Repos\konqvist\src\Konqvist.Server\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

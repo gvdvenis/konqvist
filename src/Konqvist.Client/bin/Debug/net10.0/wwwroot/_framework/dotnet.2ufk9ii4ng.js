@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "Konqvist.Client",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-Ba4LgDV+Bgnbzp8ScLHKoKD6g0mGMcus17V2XOjrOzw=",
+    "hash": "sha256-HzWldxYqGoP+qAlW4/ShCGgwxho8fpVWw9S+iMH/1WA=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.69poregybn.js"
@@ -1320,16 +1320,16 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "Konqvist.Client.wasm",
-        "name": "Konqvist.Client.795tcvjqeo.wasm",
-        "integrity": "sha256-29cgyD6E+P4WleV3vWefYChQMpR7lZ95JeoDKJmTP/M=",
+        "name": "Konqvist.Client.6hu39t0sum.wasm",
+        "integrity": "sha256-CvpSfLs2ZSADoMt4fmll1fcGIcK00nn5tLoIkDm0Q0g=",
         "cache": "force-cache"
       }
     ],
     "pdb": [
       {
         "virtualPath": "Konqvist.Client.pdb",
-        "name": "Konqvist.Client.xe4dct8b7x.pdb",
-        "integrity": "sha256-Z0gOgTl7kF+bL+Rk47ZczItdFd/qe44NKUjra4aTqOI=",
+        "name": "Konqvist.Client.k8iuwyqyp3.pdb",
+        "integrity": "sha256-1L/kNfxK/PdHg3hL+OKDo+pappO9BymM47mpstSawYY=",
         "cache": "force-cache"
       }
     ],

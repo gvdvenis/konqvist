@@ -220,9 +220,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framewor
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_CJK.tjcz0u77k5.dat
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_EFIGS.tptq2av103.dat
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_no_CJK.lfu7j35m59.dat
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.795tcvjqeo.wasm
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.xe4dct8b7x.pdb
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\dotnet.3pzch4x0dp.js
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\blazor.webassembly.66stpp682q.js.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Fluxor.9yjucuf12h.wasm.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Fluxor.Blazor.Web.4opwue5a6j.wasm.gz
@@ -444,9 +441,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framewor
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_CJK.tjcz0u77k5.dat.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_EFIGS.tptq2av103.dat.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\icudt_no_CJK.lfu7j35m59.dat.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.795tcvjqeo.wasm.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.xe4dct8b7x.pdb.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\dotnet.3pzch4x0dp.js.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\Konqvist.Client.staticwebassets.runtime.json
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\Konqvist.Client.staticwebassets.endpoints.json
 D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\Konqvist.Client.dll
@@ -1179,10 +1173,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\d7vnjh
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\96cpicu2ha-{0}-tjcz0u77k5-tjcz0u77k5.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\t9ev8kwprl-{0}-tptq2av103-tptq2av103.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\vhfhys05gp-{0}-lfu7j35m59-lfu7j35m59.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\n7h4sh2jvn-{0}-795tcvjqeo-795tcvjqeo.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\u3zr2s3ssd-{0}-xe4dct8b7x-xe4dct8b7x.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\6blqly0wm8-{0}-3pzch4x0dp-3pzch4x0dp.gz
-D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\aeqg8dc9st-{0}-e92t4izlud-e92t4izlud.gz
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\staticwebassets.build.json
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\staticwebassets.build.json.cache
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\staticwebassets.development.json
@@ -1193,3 +1183,13 @@ D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\Konqvist.Client.d
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\refint\Konqvist.Client.dll
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\Konqvist.Client.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\ref\Konqvist.Client.dll
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.6hu39t0sum.wasm
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.k8iuwyqyp3.pdb
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\dotnet.2ufk9ii4ng.js
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.6hu39t0sum.wasm.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\Konqvist.Client.k8iuwyqyp3.pdb.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\bin\Debug\net10.0\wwwroot\_framework\dotnet.2ufk9ii4ng.js.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\n7h4sh2jvn-{0}-6hu39t0sum-6hu39t0sum.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\u3zr2s3ssd-{0}-k8iuwyqyp3-k8iuwyqyp3.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\6blqly0wm8-{0}-2ufk9ii4ng-2ufk9ii4ng.gz
+D:\Source\Repos\konqvist\src\Konqvist.Client\obj\Debug\net10.0\compressed\aeqg8dc9st-{0}-rigygefqvm-rigygefqvm.gz

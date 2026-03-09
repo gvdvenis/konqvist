@@ -155,3 +155,4 @@ D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\refint\Konqvist.Ad
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\Konqvist.Admin.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\Konqvist.Admin.genruntimeconfig.cache
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\ref\Konqvist.Admin.dll
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

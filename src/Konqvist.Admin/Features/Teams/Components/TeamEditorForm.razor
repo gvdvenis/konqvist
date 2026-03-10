@@ -1,0 +1,143 @@
+@using Konqvist.Admin.Features.Teams
+@using MudBlazor
+@using MudBlazor.Utilities
+@using System.Linq
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-3">@(_isEditMode ? "Edit team" : "Add team")</MudText>
+    @if (_errors.Count > 0)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+            Please fix the highlighted fields before submitting.
+        </MudAlert>
+    }
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          HelperText="Use NATO phonetic names (Alpha, Bravo, Charlie, Delta...)"
+                          @bind-Value="_model.Name"
+                          Error="@HasError(nameof(TeamTemplateEditorInput.Name))"
+                          ErrorText="@GetError(nameof(TeamTemplateEditorInput.Name))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudColorPicker Label="Color"
+                            Variant="Variant.Outlined"
+                            Value="_selectedColor"
+                            ValueChanged="HandleColorChanged" />
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">Hex: @_model.Color</MudText>
+            @if (HasError(nameof(TeamTemplateEditorInput.Color)))
+            {
+                <MudText Typo="Typo.caption" Color="Color.Error">@GetError(nameof(TeamTemplateEditorInput.Color))</MudText>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Spacing="2" Class="mt-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@(_isEditMode ? Icons.Material.Filled.Save : Icons.Material.Filled.Add)"
+                   Disabled="@IsBusy"
+                   OnClick="HandleSubmitAsync">
+            @(_isEditMode ? "Save team" : "Add team")
+        </MudButton>
+        @if (_isEditMode)
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="@IsBusy" OnClick="HandleCancelAsync">
+                Cancel
+            </MudButton>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamTemplateEditorInput InitialInput { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyList<TeamTemplateListItem> ExistingTeams { get; set; } = [];
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter]
+    public int? EditingTeamId { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<TeamTemplateEditorInput, Task<bool>> OnSubmit { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Task> OnCancelEdit { get; set; } = null!;
+
+    [Inject]
+    private FluentValidation.IValidator<TeamTemplateEditorInput> Validator { get; set; } = null!;
+
+    private TeamTemplateEditorInput _model = new();
+    private MudColor _selectedColor = new("#1E88E5");
+    private Dictionary<string, string> _errors = [];
+    private bool _isEditMode;
+
+    protected override void OnParametersSet()
+    {
+        _isEditMode = IsEditMode;
+        _model = new TeamTemplateEditorInput
+        {
+            Name = InitialInput.Name,
+            Color = InitialInput.Color
+        };
+        _selectedColor = new MudColor(_model.Color);
+        _errors.Clear();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        var validationResult = await Validator.ValidateAsync(_model);
+        _errors = validationResult.Errors
+            .GroupBy(error => error.PropertyName)
+            .ToDictionary(group => group.Key, group => group.First().ErrorMessage);
+        AddDuplicateNameError();
+        if (_errors.Count > 0)
+        {
+            return;
+        }
+
+        await OnSubmit(new TeamTemplateEditorInput
+        {
+            Name = _model.Name,
+            Color = _model.Color
+        });
+    }
+
+    private Task HandleCancelAsync() => OnCancelEdit();
+
+    private Task HandleColorChanged(MudColor color)
+    {
+        _selectedColor = color;
+        _model.Color = color.ToString(MudColorOutputFormats.Hex);
+        return Task.CompletedTask;
+    }
+
+    private void AddDuplicateNameError()
+    {
+        var candidateName = _model.Name.Trim();
+        var duplicateExists = ExistingTeams.Any(team =>
+            team.Id != EditingTeamId
+            && string.Equals(team.Name, candidateName, StringComparison.OrdinalIgnoreCase));
+        if (!duplicateExists)
+        {
+            return;
+        }
+
+        _errors[nameof(TeamTemplateEditorInput.Name)] = "Team name must be unique within this template.";
+    }
+
+    private bool HasError(string propertyName) => _errors.ContainsKey(propertyName);
+
+    private string? GetError(string propertyName) => _errors.GetValueOrDefault(propertyName);
+}

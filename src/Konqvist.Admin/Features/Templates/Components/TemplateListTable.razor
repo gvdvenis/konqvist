@@ -37,15 +37,23 @@
                 <MudTd DataLabel="Capture radius">@context.DistrictCaptureRadiusMeters.ToString("0.##") m</MudTd>
                 <MudTd DataLabel="Sessions">@context.LinkedSessionCount</MudTd>
                 <MudTd DataLabel="Actions">
-                    <MudTooltip Text="@GetDeleteTooltip(context)">
+                    <MudStack Row="true" Spacing="1">
                         <MudButton Variant="Variant.Text"
-                                   Color="Color.Error"
-                                   StartIcon="@Icons.Material.Filled.Delete"
-                                   Disabled="@IsDeleteDisabled(context)"
-                                   OnClick="() => HandleDeleteAsync(context.Id)">
-                            Delete
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Groups"
+                                   Href="@($"/admin/templates/{context.Id}/teams")">
+                            Manage teams
                         </MudButton>
-                    </MudTooltip>
+                        <MudTooltip Text="@GetDeleteTooltip(context)">
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       Disabled="@IsDeleteDisabled(context)"
+                                       OnClick="() => HandleDeleteAsync(context.Id)">
+                                Delete
+                            </MudButton>
+                        </MudTooltip>
+                    </MudStack>
                 </MudTd>
             </RowTemplate>
         </MudTable>

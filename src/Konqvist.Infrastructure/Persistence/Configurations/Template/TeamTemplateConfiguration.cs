@@ -15,7 +15,8 @@ public class TeamTemplateConfiguration : IEntityTypeConfiguration<TeamTemplate>
 
         builder.Property(entity => entity.Name)
             .HasMaxLength(50)
-            .IsRequired();
+            .IsRequired()
+            .UseCollation("NOCASE");
 
         builder.Property(entity => entity.Color)
             .HasMaxLength(7)

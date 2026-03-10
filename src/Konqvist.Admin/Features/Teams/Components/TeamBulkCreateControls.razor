@@ -1,0 +1,57 @@
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-3">Bulk create teams</MudText>
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudNumericField T="int"
+                             Label="Team count"
+                             Variant="Variant.Outlined"
+                             Min="1"
+                             Max="10"
+                             Required="true"
+                             Immediate="true"
+                             HelperText="Enter a value from 1 to 10."
+                             @bind-Value="_teamCount"
+                             Error="@IsCountInvalid"
+                             ErrorText="Team count must be between 1 and 10." />
+        </MudItem>
+    </MudGrid>
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mt-3">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.AutoAwesome"
+                   Disabled="@(IsBusy || IsCountInvalid)"
+                   OnClick="HandleBulkCreateAsync">
+            Replace with bulk teams
+        </MudButton>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Generates teams in one step.
+        </MudText>
+    </MudStack>
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+        Warning: bulk create will replace all existing teams for this template.
+    </MudAlert>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<int, Task> OnBulkCreate { get; set; } = null!;
+
+    private int _teamCount = 2;
+
+    private bool IsCountInvalid => _teamCount is < 1 or > 10;
+
+    private Task HandleBulkCreateAsync()
+    {
+        if (IsCountInvalid)
+        {
+            return Task.CompletedTask;
+        }
+
+        return OnBulkCreate(_teamCount);
+    }
+}

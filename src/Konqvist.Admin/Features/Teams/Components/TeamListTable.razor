@@ -1,0 +1,68 @@
+@using Konqvist.Admin.Features.Teams
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h6">Configured teams</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@Teams.Count total</MudText>
+    </MudStack>
+
+    @if (Teams.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No teams configured yet.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="Teams" Dense="true" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Color</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Color">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudAvatar Size="Size.Small" Style="@($"background-color:{context.Color};")" />
+                        <MudText Typo="Typo.body2">@context.Color</MudText>
+                    </MudStack>
+                </MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudStack Row="true" Spacing="1">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Edit"
+                                   Disabled="@(IsBusy || EditingTeamId == context.Id)"
+                                   OnClick="() => OnEditTeam(context)">
+                            Edit
+                        </MudButton>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Delete"
+                                   Disabled="@IsBusy"
+                                   OnClick="() => OnDeleteTeam(context.Id)">
+                            Delete
+                        </MudButton>
+                    </MudStack>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<TeamTemplateListItem> Teams { get; set; } = [];
+
+    [Parameter]
+    public int? EditingTeamId { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<TeamTemplateListItem, Task> OnEditTeam { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<int, Task> OnDeleteTeam { get; set; } = null!;
+}

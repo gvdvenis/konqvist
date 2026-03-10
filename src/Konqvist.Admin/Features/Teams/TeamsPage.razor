@@ -1,10 +1,229 @@
-@page "/admin/teams"
+@page "/admin/templates/{TemplateId:int}/teams"
 @using Konqvist.Admin.Components.Layout
+@using Konqvist.Admin.Features.Teams.Components
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
 
-<MudPaper Elevation="0" Class="pa-4">
+<MudStack Class="pa-4" Spacing="3">
+    <MudButton Variant="Variant.Text"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/admin/templates">
+        Back to templates
+    </MudButton>
+
     <MudText Typo="Typo.h4">Teams</MudText>
-</MudPaper>
+
+    @if (_templateNotFound)
+    {
+        <MudAlert Severity="Severity.Warning">Template not found.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Manage teams for template <b>@_templateName</b>.
+        </MudText>
+        <TeamBulkCreateControls IsBusy="_isBusy"
+                                OnBulkCreate="HandleBulkCreateAsync" />
+        <TeamEditorForm @key="_editorKey"
+                        InitialInput="_editorInput"
+                        ExistingTeams="_teams"
+                        IsEditMode="@_editingTeamId.HasValue"
+                        EditingTeamId="_editingTeamId"
+                        IsBusy="_isBusy"
+                        OnSubmit="SaveTeamAsync"
+                        OnCancelEdit="CancelEditAsync" />
+        <TeamListTable Teams="_teams"
+                       EditingTeamId="_editingTeamId"
+                       IsBusy="_isBusy"
+                       OnEditTeam="BeginEditAsync"
+                       OnDeleteTeam="DeleteTeamAsync" />
+    }
+</MudStack>
+
+@code {
+    [Inject]
+    private TeamTemplateAdminService TeamService { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Parameter]
+    public int TemplateId { get; set; }
+
+    private IReadOnlyList<TeamTemplateListItem> _teams = [];
+    private string _templateName = string.Empty;
+    private bool _templateNotFound;
+    private bool _isBusy;
+    private int? _editingTeamId;
+    private int _editorKey;
+    private TeamTemplateEditorInput _editorInput = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadTeamsAsync();
+    }
+
+    private async Task LoadTeamsAsync() => await RunBusyAsync(LoadSnapshotAsync);
+
+    private async Task LoadSnapshotAsync()
+    {
+        var snapshot = await TeamService.GetAsync(TemplateId);
+        if (snapshot is null)
+        {
+            _teams = [];
+            _templateName = string.Empty;
+            _templateNotFound = true;
+            return;
+        }
+
+        _templateNotFound = false;
+        _templateName = snapshot.TemplateName;
+        _teams = snapshot.Teams;
+    }
+
+    private async Task<bool> SaveTeamAsync(TeamTemplateEditorInput input)
+    {
+        var isEditing = _editingTeamId.HasValue;
+        var result = SaveTeamTemplateResult.InvalidInput;
+        await RunBusyAsync(async () =>
+        {
+            result = isEditing
+                ? await TeamService.UpdateAsync(TemplateId, _editingTeamId!.Value, input)
+                : await TeamService.CreateAsync(TemplateId, input);
+            if (result == SaveTeamTemplateResult.Saved)
+            {
+                await LoadSnapshotAsync();
+                ResetEditor();
+            }
+        });
+
+        return result switch
+        {
+            SaveTeamTemplateResult.Saved => NotifySaveSuccess(isEditing),
+            SaveTeamTemplateResult.DuplicateName => Notify("Team name must be unique within this template.", Severity.Warning),
+            SaveTeamTemplateResult.InvalidInput => Notify("Please provide a valid team name and hex color.", Severity.Warning),
+            SaveTeamTemplateResult.TemplateNotFound => Notify("Template not found.", Severity.Warning),
+            SaveTeamTemplateResult.TeamNotFound => Notify("Team not found.", Severity.Warning),
+            _ => throw new InvalidOperationException($"Unexpected save result: {result}")
+        };
+    }
+
+    private async Task DeleteTeamAsync(int teamTemplateId)
+    {
+        var result = DeleteTeamTemplateResult.TeamNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await TeamService.DeleteAsync(TemplateId, teamTemplateId);
+            if (result == DeleteTeamTemplateResult.Deleted)
+            {
+                await LoadSnapshotAsync();
+                if (_editingTeamId == teamTemplateId)
+                {
+                    ResetEditor();
+                }
+            }
+        });
+
+        switch (result)
+        {
+            case DeleteTeamTemplateResult.Deleted:
+                Snackbar.Add("Team deleted.", Severity.Success);
+                break;
+            case DeleteTeamTemplateResult.TemplateNotFound:
+                Snackbar.Add("Template not found.", Severity.Warning);
+                break;
+            case DeleteTeamTemplateResult.TeamNotFound:
+                Snackbar.Add("Team not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected delete result: {result}");
+        }
+    }
+
+    private async Task HandleBulkCreateAsync(int teamCount)
+    {
+        var result = BulkReplaceTeamTemplateResult.InvalidTeamCount;
+        await RunBusyAsync(async () =>
+        {
+            result = await TeamService.ReplaceAllWithGeneratedAsync(TemplateId, teamCount);
+            if (result == BulkReplaceTeamTemplateResult.Replaced)
+            {
+                await LoadSnapshotAsync();
+                ResetEditor();
+            }
+        });
+
+        switch (result)
+        {
+            case BulkReplaceTeamTemplateResult.Replaced:
+                Snackbar.Add($"Replaced teams with {teamCount} generated team(s).", Severity.Success);
+                break;
+            case BulkReplaceTeamTemplateResult.InvalidTeamCount:
+                Snackbar.Add("Team count must be between 1 and 10.", Severity.Warning);
+                break;
+            case BulkReplaceTeamTemplateResult.TemplateNotFound:
+                Snackbar.Add("Template not found.", Severity.Warning);
+                break;
+            case BulkReplaceTeamTemplateResult.DuplicateName:
+                Snackbar.Add("Generated teams contain duplicate names. Please try again.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected bulk replace result: {result}");
+        }
+    }
+
+    private Task BeginEditAsync(TeamTemplateListItem team)
+    {
+        _editingTeamId = team.Id;
+        _editorInput = new TeamTemplateEditorInput
+        {
+            Name = team.Name,
+            Color = team.Color
+        };
+        _editorKey++;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task CancelEditAsync()
+    {
+        ResetEditor();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void ResetEditor()
+    {
+        _editingTeamId = null;
+        _editorInput = new TeamTemplateEditorInput();
+        _editorKey++;
+    }
+
+    private bool NotifySaveSuccess(bool isEditing)
+    {
+        Snackbar.Add(isEditing ? "Team updated." : "Team created.", Severity.Success);
+        return true;
+    }
+
+    private bool Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+        return false;
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        _isBusy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

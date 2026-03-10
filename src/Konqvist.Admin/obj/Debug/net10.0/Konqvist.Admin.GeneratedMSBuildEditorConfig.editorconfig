@@ -69,6 +69,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcU2Vzc2lvblxTZXNzaW9uUGFnZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Teams/Components/TeamBulkCreateControls.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVhbXNcQ29tcG9uZW50c1xUZWFtQnVsa0NyZWF0ZUNvbnRyb2xzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Teams/Components/TeamEditorForm.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVhbXNcQ29tcG9uZW50c1xUZWFtRWRpdG9yRm9ybS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Teams/Components/TeamListTable.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVhbXNcQ29tcG9uZW50c1xUZWFtTGlzdFRhYmxlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Teams/TeamsPage.razor]
 build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcVGVhbXNcVGVhbXNQYWdlLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 

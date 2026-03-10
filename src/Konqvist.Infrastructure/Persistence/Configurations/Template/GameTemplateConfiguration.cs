@@ -17,6 +17,10 @@ public class GameTemplateConfiguration : IEntityTypeConfiguration<GameTemplate>
             .HasMaxLength(100)
             .IsRequired();
 
+        builder.Property(entity => entity.GmLoginToken)
+            .HasMaxLength(20)
+            .IsRequired();
+
         builder.Property(entity => entity.TotalRounds)
             .HasDefaultValue(4)
             .IsRequired();

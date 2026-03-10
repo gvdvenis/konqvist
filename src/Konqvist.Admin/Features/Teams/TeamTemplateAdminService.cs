@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
+using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
+using Konqvist.Infrastructure.Tokens;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +12,7 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
 {
     private const int MinGeneratedTeamCount = 1;
     private const int MaxGeneratedTeamCount = 10;
+    private const int MaxTokenGenerationAttempts = 10;
     private static readonly IReadOnlyList<string> NatoTeamNames =
     [
         "Alpha",
@@ -39,6 +42,8 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             return null;
         }
 
+        await EnsureRoleTokensAsync(dbContext, templateId, cancellationToken);
+
         var teams = await dbContext.TeamTemplates
             .AsNoTracking()
             .Where(entity => entity.GameTemplateId == templateId)
@@ -46,7 +51,15 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             .Select(entity => new TeamTemplateListItem(
                 entity.Id,
                 entity.Name,
-                entity.Color))
+                entity.Color,
+                entity.Players
+                    .Where(player => player.Role == PlayerRole.Runner)
+                    .Select(player => player.LoginToken)
+                    .FirstOrDefault() ?? string.Empty,
+                entity.Players
+                    .Where(player => player.Role == PlayerRole.TeamLeader)
+                    .Select(player => player.LoginToken)
+                    .FirstOrDefault() ?? string.Empty))
             .ToListAsync(cancellationToken);
 
         return new TeamTemplateManagementSnapshot(template.Id, template.Name, teams);
@@ -74,12 +87,16 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             return SaveTeamTemplateResult.DuplicateName;
         }
 
-        dbContext.TeamTemplates.Add(new TeamTemplate
+        var teamTemplate = new TeamTemplate
         {
             GameTemplateId = templateId,
             Name = normalizedName,
             Color = normalizedColor
-        });
+        };
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        dbContext.TeamTemplates.Add(teamTemplate);
+
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -89,6 +106,14 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             return SaveTeamTemplateResult.DuplicateName;
         }
 
+        var roleTokensSaved = await CreateRolePlayersForTeamAsync(dbContext, teamTemplate, cancellationToken);
+        if (!roleTokensSaved)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return SaveTeamTemplateResult.TokenGenerationFailed;
+        }
+
+        await transaction.CommitAsync(cancellationToken);
         return SaveTeamTemplateResult.Saved;
     }
 
@@ -177,11 +202,16 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             return BulkReplaceTeamTemplateResult.TemplateNotFound;
         }
 
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
         var existingTeams = await dbContext.TeamTemplates
             .Where(entity => entity.GameTemplateId == templateId)
             .ToListAsync(cancellationToken);
         dbContext.TeamTemplates.RemoveRange(existingTeams);
-        dbContext.TeamTemplates.AddRange(GenerateTeams(templateId, teamCount));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var generatedTeams = GenerateTeams(templateId, teamCount);
+        dbContext.TeamTemplates.AddRange(generatedTeams);
 
         try
         {
@@ -196,7 +226,69 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
             return BulkReplaceTeamTemplateResult.TemplateNotFound;
         }
 
+        var roleTokensSaved = await CreateRolePlayersForTeamsAsync(dbContext, generatedTeams, cancellationToken);
+        if (!roleTokensSaved)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return BulkReplaceTeamTemplateResult.TokenGenerationFailed;
+        }
+
+        await transaction.CommitAsync(cancellationToken);
         return BulkReplaceTeamTemplateResult.Replaced;
+    }
+
+    public async Task<RegenerateTeamTokenResult> RegenerateTokenAsync(
+        int templateId,
+        int teamTemplateId,
+        PlayerRole role,
+        CancellationToken cancellationToken = default)
+    {
+        if (role is not (PlayerRole.Runner or PlayerRole.TeamLeader))
+        {
+            return RegenerateTeamTokenResult.PlayerNotFound;
+        }
+
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        if (!await TemplateExistsAsync(dbContext, templateId, cancellationToken))
+        {
+            return RegenerateTeamTokenResult.TemplateNotFound;
+        }
+
+        var teamTemplate = await dbContext.TeamTemplates
+            .Include(entity => entity.Players)
+            .FirstOrDefaultAsync(
+                entity => entity.Id == teamTemplateId && entity.GameTemplateId == templateId,
+                cancellationToken);
+        if (teamTemplate is null)
+        {
+            return RegenerateTeamTokenResult.TeamNotFound;
+        }
+
+        var playerTemplate = teamTemplate.Players.FirstOrDefault(entity => entity.Role == role);
+        if (playerTemplate is null)
+        {
+            return RegenerateTeamTokenResult.PlayerNotFound;
+        }
+
+        Func<string> tokenFactory = role == PlayerRole.Runner
+            ? () => LoginTokenGenerator.GenerateRunnerToken(teamTemplate.Name)
+            : () => LoginTokenGenerator.GenerateTeamCaptainToken(teamTemplate.Name);
+
+        for (var attempt = 0; attempt < MaxTokenGenerationAttempts; attempt++)
+        {
+            playerTemplate.LoginToken = await GenerateUniquePlayerTokenAsync(dbContext, tokenFactory, cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return RegenerateTeamTokenResult.Regenerated;
+            }
+            catch (DbUpdateException exception) when (IsDuplicateTokenViolation(exception))
+            {
+                continue;
+            }
+        }
+
+        return RegenerateTeamTokenResult.TokenGenerationFailed;
     }
 
     private static bool TryNormalizeInput(
@@ -247,12 +339,213 @@ public sealed partial class TeamTemplateAdminService(IDbContextFactory<KonqvistD
                     StringComparison.Ordinal);
     }
 
+    private static bool IsDuplicateTokenViolation(DbUpdateException exception)
+    {
+        return exception.InnerException is SqliteException sqliteException
+               && sqliteException.SqliteErrorCode == 19
+               && sqliteException.SqliteExtendedErrorCode == 2067
+               && sqliteException.Message.Contains(
+                    "UNIQUE constraint failed: PlayerTemplates.LoginToken",
+                    StringComparison.Ordinal);
+    }
+
     private static bool IsTemplateForeignKeyViolation(DbUpdateException exception)
     {
         return exception.InnerException is SqliteException sqliteException
                && sqliteException.SqliteErrorCode == 19
                && sqliteException.SqliteExtendedErrorCode == 787
                && sqliteException.Message.Contains("TeamTemplates.GameTemplateId", StringComparison.Ordinal);
+    }
+
+    private static async Task EnsureRoleTokensAsync(
+        KonqvistDbContext dbContext,
+        int templateId,
+        CancellationToken cancellationToken)
+    {
+        var teams = await dbContext.TeamTemplates
+            .Include(entity => entity.Players)
+            .Where(entity => entity.GameTemplateId == templateId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var team in teams)
+        {
+            var hasRunner = team.Players.Any(player => player.Role == PlayerRole.Runner);
+            var hasTeamLeader = team.Players.Any(player => player.Role == PlayerRole.TeamLeader);
+            if (hasRunner && hasTeamLeader)
+            {
+                continue;
+            }
+
+            var created = await CreateMissingRolePlayersForTeamAsync(
+                dbContext,
+                team,
+                createRunner: !hasRunner,
+                createTeamLeader: !hasTeamLeader,
+                cancellationToken);
+            if (!created)
+            {
+                throw new InvalidOperationException($"Could not create missing role tokens for team '{team.Name}'.");
+            }
+        }
+    }
+
+    private static Task<bool> CreateRolePlayersForTeamAsync(
+        KonqvistDbContext dbContext,
+        TeamTemplate teamTemplate,
+        CancellationToken cancellationToken)
+    {
+        return CreateMissingRolePlayersForTeamAsync(
+            dbContext,
+            teamTemplate,
+            createRunner: true,
+            createTeamLeader: true,
+            cancellationToken);
+    }
+
+    private static async Task<bool> CreateRolePlayersForTeamsAsync(
+        KonqvistDbContext dbContext,
+        IReadOnlyList<TeamTemplate> teams,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < MaxTokenGenerationAttempts; attempt++)
+        {
+            var reservedTokens = new HashSet<string>(StringComparer.Ordinal);
+            var playerTemplates = new List<PlayerTemplate>(teams.Count * 2);
+
+            foreach (var team in teams)
+            {
+                var runnerToken = await GenerateUniquePlayerTokenAsync(
+                    dbContext,
+                    () => LoginTokenGenerator.GenerateRunnerToken(team.Name),
+                    cancellationToken,
+                    reservedTokens);
+                var teamCaptainToken = await GenerateUniquePlayerTokenAsync(
+                    dbContext,
+                    () => LoginTokenGenerator.GenerateTeamCaptainToken(team.Name),
+                    cancellationToken,
+                    reservedTokens);
+
+                playerTemplates.Add(new PlayerTemplate
+                {
+                    TeamTemplateId = team.Id,
+                    Role = PlayerRole.Runner,
+                    LoginToken = runnerToken
+                });
+                playerTemplates.Add(new PlayerTemplate
+                {
+                    TeamTemplateId = team.Id,
+                    Role = PlayerRole.TeamLeader,
+                    LoginToken = teamCaptainToken
+                });
+            }
+
+            dbContext.PlayerTemplates.AddRange(playerTemplates);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            catch (DbUpdateException exception) when (IsDuplicateTokenViolation(exception))
+            {
+                foreach (var playerTemplate in playerTemplates)
+                {
+                    dbContext.Entry(playerTemplate).State = EntityState.Detached;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static async Task<bool> CreateMissingRolePlayersForTeamAsync(
+        KonqvistDbContext dbContext,
+        TeamTemplate teamTemplate,
+        bool createRunner,
+        bool createTeamLeader,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < MaxTokenGenerationAttempts; attempt++)
+        {
+            var reservedTokens = new HashSet<string>(
+                teamTemplate.Players.Select(player => player.LoginToken),
+                StringComparer.Ordinal);
+            var playerTemplates = new List<PlayerTemplate>(2);
+
+            if (createRunner)
+            {
+                var runnerToken = await GenerateUniquePlayerTokenAsync(
+                    dbContext,
+                    () => LoginTokenGenerator.GenerateRunnerToken(teamTemplate.Name),
+                    cancellationToken,
+                    reservedTokens);
+                playerTemplates.Add(new PlayerTemplate
+                {
+                    TeamTemplateId = teamTemplate.Id,
+                    Role = PlayerRole.Runner,
+                    LoginToken = runnerToken
+                });
+            }
+
+            if (createTeamLeader)
+            {
+                var captainToken = await GenerateUniquePlayerTokenAsync(
+                    dbContext,
+                    () => LoginTokenGenerator.GenerateTeamCaptainToken(teamTemplate.Name),
+                    cancellationToken,
+                    reservedTokens);
+                playerTemplates.Add(new PlayerTemplate
+                {
+                    TeamTemplateId = teamTemplate.Id,
+                    Role = PlayerRole.TeamLeader,
+                    LoginToken = captainToken
+                });
+            }
+
+            dbContext.PlayerTemplates.AddRange(playerTemplates);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            catch (DbUpdateException exception) when (IsDuplicateTokenViolation(exception))
+            {
+                foreach (var playerTemplate in playerTemplates)
+                {
+                    dbContext.Entry(playerTemplate).State = EntityState.Detached;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static async Task<string> GenerateUniquePlayerTokenAsync(
+        KonqvistDbContext dbContext,
+        Func<string> tokenFactory,
+        CancellationToken cancellationToken,
+        ISet<string>? reservedTokens = null)
+    {
+        for (var attempt = 0; attempt < MaxTokenGenerationAttempts * 2; attempt++)
+        {
+            var candidate = tokenFactory();
+            if (reservedTokens is not null && reservedTokens.Contains(candidate))
+            {
+                continue;
+            }
+
+            var exists = await dbContext.PlayerTemplates
+                .AsNoTracking()
+                .AnyAsync(entity => entity.LoginToken == candidate, cancellationToken);
+            if (exists)
+            {
+                continue;
+            }
+
+            reservedTokens?.Add(candidate);
+            return candidate;
+        }
+
+        throw new InvalidOperationException("Could not generate a unique login token.");
     }
 
     private static IReadOnlyList<TeamTemplate> GenerateTeams(int templateId, int teamCount)

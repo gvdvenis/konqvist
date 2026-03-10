@@ -3,4 +3,6 @@ namespace Konqvist.Admin.Features.Teams;
 public sealed record TeamTemplateListItem(
     int Id,
     string Name,
-    string Color);
+    string Color,
+    string RunnerToken,
+    string TeamCaptainToken);

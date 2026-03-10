@@ -13,6 +13,7 @@ internal static class TemplateSeedData
     {
         Id = DemoGameTemplateId,
         Name = "Demo Game",
+        GmLoginToken = "GM57t7",
         TotalRounds = 2,
         LocationUpdateIntervalSeconds = 30,
         MinLocationUpdateIntervalSeconds = 5,
@@ -46,36 +47,29 @@ internal static class TemplateSeedData
         {
             Id = 1,
             TeamTemplateId = AlphaTeamTemplateId,
-            LoginToken = "ALPHA_RUNNER",
+            LoginToken = "AR15ee",
             Role = PlayerRole.Runner
         },
         new PlayerTemplate
         {
             Id = 2,
             TeamTemplateId = AlphaTeamTemplateId,
-            LoginToken = "ALPHA_LEADER",
+            LoginToken = "ATC5y85",
             Role = PlayerRole.TeamLeader
         },
         new PlayerTemplate
         {
             Id = 3,
             TeamTemplateId = BravoTeamTemplateId,
-            LoginToken = "BRAVO_RUNNER",
+            LoginToken = "BR2q9L",
             Role = PlayerRole.Runner
         },
         new PlayerTemplate
         {
             Id = 4,
             TeamTemplateId = BravoTeamTemplateId,
-            LoginToken = "BRAVO_LEADER",
+            LoginToken = "BTC8k1M",
             Role = PlayerRole.TeamLeader
-        },
-        new PlayerTemplate
-        {
-            Id = 5,
-            TeamTemplateId = AlphaTeamTemplateId,
-            LoginToken = "GM_DEMO",
-            Role = PlayerRole.GameMaster
         }
     ];
 

@@ -1,4 +1,5 @@
 @page "/admin/templates"
+@using Konqvist.Admin.Components.Dialogs
 @using Konqvist.Admin.Components.Layout
 @using Konqvist.Admin.Features.Templates.Components
 @using Microsoft.AspNetCore.Authorization
@@ -8,14 +9,23 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 
-<MudStack Class="pa-4" Spacing="3">
-    <MudText Typo="Typo.h4">Templates</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Manage reusable game templates and their core gameplay settings.
+<MudStack Class="admin-page-content" Spacing="3">
+    <MudText Typo="Typo.h4">Games</MudText>
+    <MudText Typo="Typo.body2" Class="admin-muted-text">
+        Manage reusable games and their core gameplay settings.
     </MudText>
 
-    <TemplateCreateForm OnCreateTemplate="CreateTemplateAsync" IsBusy="_isBusy" />
-    <TemplateListTable Templates="_templates" OnDeleteTemplate="DeleteTemplateAsync" IsBusy="_isBusy" />
+    <TemplateCreateForm @key="_templateEditorKey"
+                        InitialInput="_templateEditorInput"
+                        IsEditMode="@_editingTemplateId.HasValue"
+                        OnSubmit="SaveTemplateAsync"
+                        OnCancelEdit="CancelEditAsync"
+                        IsBusy="_isBusy" />
+    <TemplateListTable Templates="_templates"
+                       OnEditTemplate="BeginEditAsync"
+                       OnDeleteTemplate="DeleteTemplateAsync"
+                       OnRegenerateLoginToken="RegenerateLoginTokenAsync"
+                       IsBusy="_isBusy" />
 </MudStack>
 
 @code {
@@ -25,8 +35,14 @@
     [Inject]
     private ISnackbar Snackbar { get; set; } = null!;
 
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
+
     private IReadOnlyList<GameTemplateListItem> _templates = [];
     private bool _isBusy;
+    private int? _editingTemplateId;
+    private int _templateEditorKey;
+    private CreateGameTemplateInput _templateEditorInput = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -38,37 +54,146 @@
         _templates = await TemplateService.ListAsync();
     });
 
-    private async Task<bool> CreateTemplateAsync(CreateGameTemplateInput input)
+    private async Task<bool> SaveTemplateAsync(CreateGameTemplateInput input)
     {
+        if (_editingTemplateId.HasValue)
+        {
+            var updateResult = SaveGameTemplateResult.NotFound;
+            await RunBusyAsync(async () =>
+            {
+                updateResult = await TemplateService.UpdateAsync(_editingTemplateId.Value, input);
+                if (updateResult == SaveGameTemplateResult.Saved)
+                {
+                    _templates = await TemplateService.ListAsync();
+                    ResetEditor();
+                }
+            });
+
+            if (updateResult == SaveGameTemplateResult.Saved)
+            {
+                Snackbar.Add("Game updated.", Severity.Success);
+                return true;
+            }
+
+            Snackbar.Add("Game not found.", Severity.Warning);
+            return false;
+        }
+
         var templateId = 0;
         await RunBusyAsync(async () =>
         {
             templateId = await TemplateService.CreateAsync(input);
-            Snackbar.Add($"Template created (ID {templateId}).", Severity.Success);
             _templates = await TemplateService.ListAsync();
+            ResetEditor();
         });
 
+        Snackbar.Add($"Game created (ID {templateId}).", Severity.Success);
         return true;
+    }
+
+    private Task BeginEditAsync(GameTemplateListItem template)
+    {
+        _editingTemplateId = template.Id;
+        _templateEditorInput = new CreateGameTemplateInput
+        {
+            Name = template.Name,
+            TotalRounds = template.TotalRounds,
+            LocationUpdateIntervalSeconds = template.LocationUpdateIntervalSeconds,
+            MinLocationUpdateIntervalSeconds = template.MinLocationUpdateIntervalSeconds,
+            VotingDurationSeconds = template.VotingDurationSeconds,
+            PredictionBonusPoints = template.PredictionBonusPoints,
+            VoteTimeoutPenalty = template.VoteTimeoutPenalty,
+            DistrictCaptureRadiusMeters = template.DistrictCaptureRadiusMeters
+        };
+        _templateEditorKey++;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task CancelEditAsync()
+    {
+        ResetEditor();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void ResetEditor()
+    {
+        _editingTemplateId = null;
+        _templateEditorInput = new CreateGameTemplateInput();
+        _templateEditorKey++;
     }
 
     private async Task DeleteTemplateAsync(int templateId)
     {
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Delete game",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = "Delete this game? This action cannot be undone.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
         await RunBusyAsync(async () =>
         {
             var result = await TemplateService.DeleteAsync(templateId);
             switch (result)
             {
                 case DeleteGameTemplateResult.Deleted:
-                    Snackbar.Add("Template deleted.", Severity.Success);
+                    Snackbar.Add("Game deleted.", Severity.Success);
                     break;
                 case DeleteGameTemplateResult.NotFound:
-                    Snackbar.Add("Template not found.", Severity.Warning);
+                    Snackbar.Add("Game not found.", Severity.Warning);
                     break;
                 case DeleteGameTemplateResult.HasLinkedSessions:
-                    Snackbar.Add("Template cannot be deleted because it is linked to one or more game sessions.", Severity.Warning);
+                    Snackbar.Add("Game cannot be deleted because it is linked to one or more game sessions.", Severity.Warning);
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected delete result: {result}");
+            }
+
+            _templates = await TemplateService.ListAsync();
+            if (_editingTemplateId == templateId)
+            {
+                ResetEditor();
+            }
+        });
+    }
+
+    private async Task RegenerateLoginTokenAsync(int templateId)
+    {
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Regenerate login token",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = "Regenerate this game login token? The old token will no longer be valid.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Regenerate"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var result = await TemplateService.RegenerateLoginTokenAsync(templateId);
+            switch (result)
+            {
+                case RegenerateLoginTokenResult.Regenerated:
+                    Snackbar.Add("Login token regenerated.", Severity.Success);
+                    break;
+                case RegenerateLoginTokenResult.TemplateNotFound:
+                    Snackbar.Add("Game not found.", Severity.Warning);
+                    break;
+                case RegenerateLoginTokenResult.TokenGenerationFailed:
+                    Snackbar.Add("Could not generate a unique login token. Please retry.", Severity.Warning);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected regenerate result: {result}");
             }
 
             _templates = await TemplateService.ListAsync();

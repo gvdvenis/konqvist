@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Konqvist.Admin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+74d8e6dacf2c09948dd396c24dc894c2f796440d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+16b9dafa3dd91a811668b79f655c925fe070aa33")]
 [assembly: System.Reflection.AssemblyProductAttribute("Konqvist.Admin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Konqvist.Admin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

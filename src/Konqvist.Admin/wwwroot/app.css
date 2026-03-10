@@ -58,3 +58,23 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.grid-square-action {
+    min-width: 2rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+}
+
+.admin-page-content {
+    padding: 0;
+}
+
+.admin-layout .mud-main-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.admin-muted-text {
+    color: var(--mud-palette-text-secondary);
+}

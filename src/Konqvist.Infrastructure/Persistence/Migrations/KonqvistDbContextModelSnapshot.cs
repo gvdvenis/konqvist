@@ -430,6 +430,11 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         .HasColumnType("REAL")
                         .HasDefaultValue(50.0);
 
+                    b.Property<string>("GmLoginToken")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("LocationUpdateIntervalSeconds")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -472,6 +477,7 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         {
                             Id = 1,
                             DistrictCaptureRadiusMeters = 50.0,
+                            GmLoginToken = "GM57t7",
                             LocationUpdateIntervalSeconds = 30,
                             MinLocationUpdateIntervalSeconds = 5,
                             Name = "Demo Game",
@@ -513,37 +519,30 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            LoginToken = "ALPHA_RUNNER",
+                            LoginToken = "AR15ee",
                             Role = "Runner",
                             TeamTemplateId = 1
                         },
                         new
                         {
                             Id = 2,
-                            LoginToken = "ALPHA_LEADER",
+                            LoginToken = "ATC5y85",
                             Role = "TeamLeader",
                             TeamTemplateId = 1
                         },
                         new
                         {
                             Id = 3,
-                            LoginToken = "BRAVO_RUNNER",
+                            LoginToken = "BR2q9L",
                             Role = "Runner",
                             TeamTemplateId = 2
                         },
                         new
                         {
                             Id = 4,
-                            LoginToken = "BRAVO_LEADER",
+                            LoginToken = "BTC8k1M",
                             Role = "TeamLeader",
                             TeamTemplateId = 2
-                        },
-                        new
-                        {
-                            Id = 5,
-                            LoginToken = "GM_DEMO",
-                            Role = "GameMaster",
-                            TeamTemplateId = 1
                         });
                 });
 

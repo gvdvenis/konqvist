@@ -3,6 +3,7 @@ namespace Konqvist.Admin.Features.Templates;
 public sealed record GameTemplateListItem(
     int Id,
     string Name,
+    string LoginToken,
     int TotalRounds,
     int LocationUpdateIntervalSeconds,
     int MinLocationUpdateIntervalSeconds,

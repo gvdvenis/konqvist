@@ -1,29 +1,32 @@
 @page "/admin/templates/{TemplateId:int}/teams"
+@using Konqvist.Admin.Components.Dialogs
 @using Konqvist.Admin.Components.Layout
 @using Konqvist.Admin.Features.Teams.Components
+@using Konqvist.Infrastructure.Entities.Enums
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
 
-<MudStack Class="pa-4" Spacing="3">
-    <MudButton Variant="Variant.Text"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.ArrowBack"
-               Href="/admin/templates">
-        Back to templates
-    </MudButton>
-
-    <MudText Typo="Typo.h4">Teams</MudText>
+<MudStack Class="admin-page-content" Spacing="3">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4">Teams</MudText>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Href="/admin/templates">
+            Back to games
+        </MudButton>
+    </MudStack>
 
     @if (_templateNotFound)
     {
-        <MudAlert Severity="Severity.Warning">Template not found.</MudAlert>
+        <MudAlert Severity="Severity.Warning">Game not found.</MudAlert>
     }
     else
     {
-        <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Manage teams for template <b>@_templateName</b>.
+        <MudText Typo="Typo.body2" Class="admin-muted-text">
+            Manage teams for game <b>@_templateName</b>.
         </MudText>
         <TeamBulkCreateControls IsBusy="_isBusy"
                                 OnBulkCreate="HandleBulkCreateAsync" />
@@ -39,7 +42,8 @@
                        EditingTeamId="_editingTeamId"
                        IsBusy="_isBusy"
                        OnEditTeam="BeginEditAsync"
-                       OnDeleteTeam="DeleteTeamAsync" />
+                       OnDeleteTeam="DeleteTeamAsync"
+                       OnRegenerateToken="RegenerateTokenAsync" />
     }
 </MudStack>
 
@@ -49,6 +53,9 @@
 
     [Inject]
     private ISnackbar Snackbar { get; set; } = null!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
 
     [Parameter]
     public int TemplateId { get; set; }
@@ -103,10 +110,11 @@
         return result switch
         {
             SaveTeamTemplateResult.Saved => NotifySaveSuccess(isEditing),
-            SaveTeamTemplateResult.DuplicateName => Notify("Team name must be unique within this template.", Severity.Warning),
+            SaveTeamTemplateResult.DuplicateName => Notify("Team name must be unique within this game.", Severity.Warning),
             SaveTeamTemplateResult.InvalidInput => Notify("Please provide a valid team name and hex color.", Severity.Warning),
-            SaveTeamTemplateResult.TemplateNotFound => Notify("Template not found.", Severity.Warning),
+            SaveTeamTemplateResult.TemplateNotFound => Notify("Game not found.", Severity.Warning),
             SaveTeamTemplateResult.TeamNotFound => Notify("Team not found.", Severity.Warning),
+            SaveTeamTemplateResult.TokenGenerationFailed => Notify("Could not generate unique role tokens for this team. Please retry.", Severity.Warning),
             _ => throw new InvalidOperationException($"Unexpected save result: {result}")
         };
     }
@@ -133,7 +141,7 @@
                 Snackbar.Add("Team deleted.", Severity.Success);
                 break;
             case DeleteTeamTemplateResult.TemplateNotFound:
-                Snackbar.Add("Template not found.", Severity.Warning);
+                Snackbar.Add("Game not found.", Severity.Warning);
                 break;
             case DeleteTeamTemplateResult.TeamNotFound:
                 Snackbar.Add("Team not found.", Severity.Warning);
@@ -165,13 +173,64 @@
                 Snackbar.Add("Team count must be between 1 and 10.", Severity.Warning);
                 break;
             case BulkReplaceTeamTemplateResult.TemplateNotFound:
-                Snackbar.Add("Template not found.", Severity.Warning);
+                Snackbar.Add("Game not found.", Severity.Warning);
                 break;
             case BulkReplaceTeamTemplateResult.DuplicateName:
                 Snackbar.Add("Generated teams contain duplicate names. Please try again.", Severity.Warning);
                 break;
+            case BulkReplaceTeamTemplateResult.TokenGenerationFailed:
+                Snackbar.Add("Could not generate unique role tokens for one or more teams. Please retry.", Severity.Warning);
+                break;
             default:
                 throw new InvalidOperationException($"Unexpected bulk replace result: {result}");
+        }
+    }
+
+    private async Task RegenerateTokenAsync(TeamTemplateListItem team, PlayerRole role)
+    {
+        var roleLabel = role == PlayerRole.Runner ? "Runner" : "Team Captain";
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Regenerate token",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = $"Regenerate the {roleLabel} token for team '{team.Name}'? The old token will no longer be valid.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Regenerate"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = RegenerateTeamTokenResult.TeamNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await TeamService.RegenerateTokenAsync(TemplateId, team.Id, role);
+            if (result == RegenerateTeamTokenResult.Regenerated)
+            {
+                await LoadSnapshotAsync();
+            }
+        });
+
+        switch (result)
+        {
+            case RegenerateTeamTokenResult.Regenerated:
+                Snackbar.Add($"{roleLabel} token regenerated.", Severity.Success);
+                break;
+            case RegenerateTeamTokenResult.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case RegenerateTeamTokenResult.TeamNotFound:
+                Snackbar.Add("Team not found.", Severity.Warning);
+                break;
+            case RegenerateTeamTokenResult.PlayerNotFound:
+                Snackbar.Add($"{roleLabel} token entry not found for this team.", Severity.Warning);
+                break;
+            case RegenerateTeamTokenResult.TokenGenerationFailed:
+                Snackbar.Add("Could not generate a unique token. Please retry.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected regenerate result: {result}");
         }
     }
 

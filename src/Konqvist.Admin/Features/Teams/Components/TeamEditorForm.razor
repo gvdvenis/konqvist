@@ -28,7 +28,7 @@
                             Variant="Variant.Outlined"
                             Value="_selectedColor"
                             ValueChanged="HandleColorChanged" />
-            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">Hex: @_model.Color</MudText>
+            <MudText Typo="Typo.caption" Class="admin-muted-text mt-1">Hex: @_model.Color</MudText>
             @if (HasError(nameof(TeamTemplateEditorInput.Color)))
             {
                 <MudText Typo="Typo.caption" Color="Color.Error">@GetError(nameof(TeamTemplateEditorInput.Color))</MudText>
@@ -134,7 +134,7 @@
             return;
         }
 
-        _errors[nameof(TeamTemplateEditorInput.Name)] = "Team name must be unique within this template.";
+        _errors[nameof(TeamTemplateEditorInput.Name)] = "Team name must be unique within this game.";
     }
 
     private bool HasError(string propertyName) => _errors.ContainsKey(propertyName);

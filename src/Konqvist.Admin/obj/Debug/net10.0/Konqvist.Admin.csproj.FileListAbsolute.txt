@@ -94,7 +94,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\scopedcss\projectb
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\tzxjg6is5z-{0}-rlc4y2i51z-rlc4y2i51z.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\0wz98yz2xy-{0}-9ci77co5cp-9ci77co5cp.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\o7k4cxtn0u-{0}-7h25wudq12-7h25wudq12.gz
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\rxam9e4zzb-{0}-khy4lop6wu-khy4lop6wu.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\5ntosijgfp-{0}-bqjiyaj88i-bqjiyaj88i.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\bdvmyrexoe-{0}-c2jlpeoesf-c2jlpeoesf.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\xfdpo2fw6s-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -154,8 +153,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\Konqvist.Admin.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\Konqvist.Admin.genruntimeconfig.cache
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\ref\Konqvist.Admin.dll
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\scopedcss\Components\Layout\AuthLayout.razor.rz.scp.css
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4t987fugi3-{0}-is8sur6va6-is8sur6va6.gz
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4uhcabq0qm-{0}-is8sur6va6-is8sur6va6.gz
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\appsettings.Development.json
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\appsettings.json
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\bin\Debug\net10.0\appsettings.Development.json
@@ -171,3 +168,6 @@ D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.deps.json
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.runtimeconfig.json
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.dll
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.pdb
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4t987fugi3-{0}-gh790r6es4-gh790r6es4.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4uhcabq0qm-{0}-gh790r6es4-gh790r6es4.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\rxam9e4zzb-{0}-5a1kb5zryj-5a1kb5zryj.gz

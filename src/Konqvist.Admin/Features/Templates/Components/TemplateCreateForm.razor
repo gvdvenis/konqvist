@@ -4,10 +4,10 @@
 @using System.Linq
 
 <MudPaper Elevation="1" Class="pa-4">
-    <MudText Typo="Typo.h6" Class="mb-3">Create template</MudText>
+    <MudText Typo="Typo.h6" Class="mb-3">@(_isEditMode ? "Edit game" : "Create game")</MudText>
     @if (_errors.Count > 0)
     {
-        <MudAlert Severity="@MudBlazor.Severity.Warning" Dense="true" Class="mb-3">
+        <MudAlert Severity="MudBlazor.Severity.Warning" Dense="true" Class="mb-3">
             Please fix the highlighted fields before submitting.
         </MudAlert>
     }
@@ -52,19 +52,35 @@
         </MudItem>
     </MudGrid>
 
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.Add"
-               Disabled="@IsBusy"
-               OnClick="HandleSubmitAsync"
-               Class="mt-4">
-        Create template
-    </MudButton>
+    <MudStack Row="true" Spacing="2" Class="mt-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@(_isEditMode ? Icons.Material.Filled.Save : Icons.Material.Filled.Add)"
+                   Disabled="@IsBusy"
+                   OnClick="HandleSubmitAsync">
+            @(_isEditMode ? "Save game" : "Create game")
+        </MudButton>
+        @if (_isEditMode)
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="@IsBusy" OnClick="HandleCancelAsync">
+                Cancel
+            </MudButton>
+        }
+    </MudStack>
 </MudPaper>
 
 @code {
     [Parameter, EditorRequired]
-    public Func<CreateGameTemplateInput, Task<bool>> OnCreateTemplate { get; set; } = null!;
+    public CreateGameTemplateInput InitialInput { get; set; } = null!;
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<CreateGameTemplateInput, Task<bool>> OnSubmit { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Task> OnCancelEdit { get; set; } = null!;
 
     [Parameter]
     public bool IsBusy { get; set; }
@@ -74,6 +90,24 @@
 
     private CreateGameTemplateInput _model = new();
     private Dictionary<string, string> _errors = [];
+    private bool _isEditMode;
+
+    protected override void OnParametersSet()
+    {
+        _isEditMode = IsEditMode;
+        _model = new CreateGameTemplateInput
+        {
+            Name = InitialInput.Name,
+            TotalRounds = InitialInput.TotalRounds,
+            LocationUpdateIntervalSeconds = InitialInput.LocationUpdateIntervalSeconds,
+            MinLocationUpdateIntervalSeconds = InitialInput.MinLocationUpdateIntervalSeconds,
+            VotingDurationSeconds = InitialInput.VotingDurationSeconds,
+            PredictionBonusPoints = InitialInput.PredictionBonusPoints,
+            VoteTimeoutPenalty = InitialInput.VoteTimeoutPenalty,
+            DistrictCaptureRadiusMeters = InitialInput.DistrictCaptureRadiusMeters
+        };
+        _errors.Clear();
+    }
 
     private async Task HandleSubmitAsync()
     {
@@ -81,20 +115,25 @@
         _errors = validationResult.Errors
             .GroupBy(error => error.PropertyName)
             .ToDictionary(group => group.Key, group => group.First().ErrorMessage);
-        if (!validationResult.IsValid)
+        if (_errors.Count > 0)
         {
             return;
         }
 
-        var wasCreated = await OnCreateTemplate(_model);
-        if (!wasCreated)
+        await OnSubmit(new CreateGameTemplateInput
         {
-            return;
-        }
-
-        _model = new CreateGameTemplateInput();
-        _errors.Clear();
+            Name = _model.Name,
+            TotalRounds = _model.TotalRounds,
+            LocationUpdateIntervalSeconds = _model.LocationUpdateIntervalSeconds,
+            MinLocationUpdateIntervalSeconds = _model.MinLocationUpdateIntervalSeconds,
+            VotingDurationSeconds = _model.VotingDurationSeconds,
+            PredictionBonusPoints = _model.PredictionBonusPoints,
+            VoteTimeoutPenalty = _model.VoteTimeoutPenalty,
+            DistrictCaptureRadiusMeters = _model.DistrictCaptureRadiusMeters
+        });
     }
+
+    private Task HandleCancelAsync() => OnCancelEdit();
 
     private bool HasError(string propertyName) => _errors.ContainsKey(propertyName);
 

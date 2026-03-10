@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "l0+XkCCzKLc=",
+  "dgSpecHash": "Y3o/2gtZ+Lc=",
   "success": true,
   "projectFilePath": "D:\\Source\\Repos\\konqvist\\src\\Konqvist.Admin\\Konqvist.Admin.csproj",
   "expectedPackageFiles": [
@@ -21,6 +21,7 @@
     "D:\\.devcaches\\.nuget\\mudblazor\\9.1.0\\mudblazor.9.1.0.nupkg.sha512",
     "D:\\.devcaches\\.nuget\\nettopologysuite\\2.6.0\\nettopologysuite.2.6.0.nupkg.sha512",
     "D:\\.devcaches\\.nuget\\nettopologysuite.io.spatialite\\2.0.0\\nettopologysuite.io.spatialite.2.0.0.nupkg.sha512",
+    "D:\\.devcaches\\.nuget\\sharpkml.core\\6.1.0\\sharpkml.core.6.1.0.nupkg.sha512",
     "D:\\.devcaches\\.nuget\\sqlitepclraw.bundle_e_sqlite3\\2.1.11\\sqlitepclraw.bundle_e_sqlite3.2.1.11.nupkg.sha512",
     "D:\\.devcaches\\.nuget\\sqlitepclraw.core\\2.1.11\\sqlitepclraw.core.2.1.11.nupkg.sha512",
     "D:\\.devcaches\\.nuget\\sqlitepclraw.lib.e_sqlite3\\2.1.11\\sqlitepclraw.lib.e_sqlite3.2.1.11.nupkg.sha512",

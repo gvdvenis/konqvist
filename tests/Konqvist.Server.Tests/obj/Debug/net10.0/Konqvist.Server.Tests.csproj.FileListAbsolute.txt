@@ -191,3 +191,11 @@ D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\obj\Debug\net10.0\Konqvist.
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\obj\Debug\net10.0\Konqvist.Server.Tests.genruntimeconfig.cache
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\obj\Debug\net10.0\ref\Konqvist.Server.Tests.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Server.exe
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.deps.json
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.runtimeconfig.json
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.staticwebassets.runtime.json
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.staticwebassets.endpoints.json
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.exe
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\MudBlazor.dll
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.dll
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.pdb

@@ -11,7 +11,8 @@
           "FluentValidation": "12.1.1",
           "FluentValidation.AspNetCore": "11.3.1",
           "Konqvist.Infrastructure": "1.0.0",
-          "MudBlazor": "9.1.0"
+          "MudBlazor": "9.1.0",
+          "SharpKml.Core": "6.1.0"
         },
         "runtime": {
           "Konqvist.Admin.dll": {}
@@ -283,6 +284,14 @@
           "lib/netstandard2.0/NetTopologySuite.IO.SpatiaLite.dll": {
             "assemblyVersion": "2.0.0.0",
             "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "SharpKml.Core/6.1.0": {
+        "runtime": {
+          "lib/netstandard2.0/SharpKml.Core.dll": {
+            "assemblyVersion": "6.1.0.0",
+            "fileVersion": "6.1.0.0"
           }
         }
       },
@@ -561,6 +570,13 @@
       "sha512": "sha512-nT8ep51zgrTPEtRG+Cxeoi585uFlzmCmJz+xl35ima1xWCk4KuRuLtCEswy8RQkApmeaawAAfsTsa83sgmT4xw==",
       "path": "nettopologysuite.io.spatialite/2.0.0",
       "hashPath": "nettopologysuite.io.spatialite.2.0.0.nupkg.sha512"
+    },
+    "SharpKml.Core/6.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ABDgy0Qy1kJzmNDayz3nDu7/a97ENiLRidLPDKM5VcG/isyaSDfI8aoD9vXmEkzpKKBKvxkYkH7gYqhW/e6Vgg==",
+      "path": "sharpkml.core/6.1.0",
+      "hashPath": "sharpkml.core.6.1.0.nupkg.sha512"
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.11": {
       "type": "package",

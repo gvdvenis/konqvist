@@ -1,0 +1,57 @@
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Spacing="2">
+        <MudText Typo="Typo.h6">How do you want to provide districts?</MudText>
+        <MudText Typo="Typo.body2" Class="admin-muted-text">
+            Choose a source to continue.
+        </MudText>
+        <MudGrid Spacing="2">
+            <MudItem xs="12" md="6">
+                <MudPaper Outlined="true" Class="pa-4 h-100">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h6">Upload KML</MudText>
+                        <MudText Typo="Typo.body2" Class="admin-muted-text">
+                            Upload a <b>.kml</b> or <b>.kmz</b> file from your device.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.UploadFile"
+                                   Disabled="@IsBusy"
+                                   OnClick="OnChooseUpload">
+                            Use upload
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Outlined="true" Class="pa-4 h-100">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h6">Provide map link source URL</MudText>
+                        <MudText Typo="Typo.body2" Class="admin-muted-text">
+                            Link an HTTPS KML/KMZ source and refresh districts from it.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Link"
+                                   Disabled="@IsBusy"
+                                   OnClick="OnChooseSource">
+                            Use source URL
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback OnChooseUpload { get; set; }
+
+    [Parameter]
+    public EventCallback OnChooseSource { get; set; }
+}

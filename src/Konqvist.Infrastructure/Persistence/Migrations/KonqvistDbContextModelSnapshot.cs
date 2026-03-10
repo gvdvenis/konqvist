@@ -430,6 +430,10 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         .HasColumnType("REAL")
                         .HasDefaultValue(50.0);
 
+                    b.Property<string>("DistrictImportSourceUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("GmLoginToken")
                         .IsRequired()
                         .HasMaxLength(20)

@@ -76,6 +76,15 @@
                                 <MudIcon Icon="@Icons.Material.Filled.Flag" />
                             </MudButton>
                         </MudTooltip>
+                        <MudTooltip Text="Manage districts">
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       Class="grid-square-action"
+                                       Disabled="@IsBusy"
+                                       Href="@($"/admin/templates/{context.Id}/districts")">
+                                <MudIcon Icon="@Icons.Material.Filled.Map" />
+                            </MudButton>
+                        </MudTooltip>
                         <MudTooltip Text="@GetDeleteTooltip(context)">
                             <MudButton Variant="Variant.Text"
                                        Color="Color.Error"

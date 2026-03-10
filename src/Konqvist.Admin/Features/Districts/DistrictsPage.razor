@@ -1,10 +1,448 @@
-@page "/admin/districts"
+@page "/admin/templates/{TemplateId:int}/districts"
+@using Konqvist.Admin.Components.Dialogs
 @using Konqvist.Admin.Components.Layout
+@using Konqvist.Admin.Features.Districts.Components
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
 
-<MudPaper Elevation="0" Class="pa-4">
-    <MudText Typo="Typo.h4">Districts</MudText>
-</MudPaper>
+<MudStack Class="admin-page-content" Spacing="3">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4">Districts</MudText>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Href="/admin/templates">
+            Back to games
+        </MudButton>
+    </MudStack>
+
+    @if (_templateNotFound)
+    {
+        <MudAlert Severity="Severity.Warning">Game not found.</MudAlert>
+    }
+    else
+    {
+        @if (!_snapshotLoaded)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="admin-muted-text">
+                Import districts for game <b>@_templateName</b>.
+            </MudText>
+            <MudText Typo="Typo.body2" Class="admin-muted-text">@_districtCount configured</MudText>
+
+            @if (ShowChoiceState)
+            {
+                <DistrictImportChoicePanel IsBusy="_isBusy"
+                                           OnChooseUpload="ShowUploadFlow"
+                                           OnChooseSource="ShowSourceFlow" />
+            }
+            else if (ShowUploadState)
+            {
+                <DistrictUploadPanel IsBusy="_isBusy"
+                                     MaxUploadFileSizeBytes="MaxUploadFileSizeBytes"
+                                     SelectedFile="_selectedFile"
+                                     OnFileChanged="HandleFileChanged"
+                                     OnBackToChoices="ShowChoiceFlow"
+                                     OnImport="ImportAsync" />
+            }
+            else
+            {
+                <MudStack Spacing="2">
+                    @if (IsSourceLocked)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Linked source is active. Clear the link to return to upload options.
+                        </MudAlert>
+                    }
+                    <DistrictLinkedSourcePanel IsBusy="_isBusy"
+                                               @bind-SourceUrlInput="_sourceUrlInput"
+                                               OnClearSourceUrl="ClearSourceUrlAsync"
+                                               OnRefreshFromSource="RefreshFromSourceAsync"
+                                               ShowBackToChoices="ShowSourceBackToChoices"
+                                               OnBackToChoices="HandleSourceBackToChoicesAsync"
+                                               OnEmptyInputExit="HandleSourceInputExitAsync" />
+                </MudStack>
+            }
+
+            @if (_lastImportSummary is not null)
+            {
+                <MudAlert Severity="Severity.Success">
+                    Imported <b>@_lastImportSummary.DistrictsImported</b> district(s) and matched
+                    <b>@_lastImportSummary.TriggerCirclesMatched</b> trigger circle(s).
+                    @if (_lastImportSummary.TriggerCentersDerived > 0)
+                    {
+                        <br />
+                        <span>Used polygon center fallback for @_lastImportSummary.TriggerCentersDerived district(s).</span>
+                    }
+                </MudAlert>
+            }
+        }
+    }
+</MudStack>
+
+@code {
+    private const long MaxUploadFileSizeBytes = 10 * 1024 * 1024;
+    private DistrictImportFlowState _flowState = DistrictImportFlowState.Choice;
+
+    [Inject]
+    private DistrictImportAdminService DistrictImportService { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
+
+    [Parameter]
+    public int TemplateId { get; set; }
+
+    private string _templateName = string.Empty;
+    private int _districtCount;
+    private bool _templateNotFound;
+    private bool _isBusy;
+    private IBrowserFile? _selectedFile;
+    private DistrictImportSummary? _lastImportSummary;
+    private string _sourceUrlInput = string.Empty;
+    private string? _savedSourceUrl;
+    private bool _snapshotLoaded;
+    private bool IsSourceLocked => !string.IsNullOrWhiteSpace(_savedSourceUrl);
+    private bool ShowSourceBackToChoices => !IsSourceLocked || string.IsNullOrWhiteSpace(_sourceUrlInput);
+    private bool ShowChoiceState => _flowState is DistrictImportFlowState.Choice && !IsSourceLocked;
+    private bool ShowUploadState => _flowState is DistrictImportFlowState.Upload && !IsSourceLocked;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadSnapshotAsync();
+    }
+
+    private async Task LoadSnapshotAsync() => await RunBusyAsync(async () =>
+    {
+        _snapshotLoaded = false;
+        var snapshot = await DistrictImportService.GetAsync(TemplateId);
+        if (snapshot is null)
+        {
+            _templateNotFound = true;
+            _templateName = string.Empty;
+            _districtCount = 0;
+            _selectedFile = null;
+            _lastImportSummary = null;
+            _flowState = DistrictImportFlowState.Choice;
+            _snapshotLoaded = true;
+            return;
+        }
+
+        _templateNotFound = false;
+        _templateName = snapshot.TemplateName;
+        _districtCount = snapshot.DistrictCount;
+        _savedSourceUrl = snapshot.DistrictImportSourceUrl;
+        _sourceUrlInput = snapshot.DistrictImportSourceUrl ?? string.Empty;
+        _flowState = IsSourceLocked
+            ? DistrictImportFlowState.Source
+            : DistrictImportFlowState.Choice;
+        _snapshotLoaded = true;
+    });
+
+    private Task HandleFileChanged(IBrowserFile? file)
+    {
+        return ClassifySelectedUploadAsync(file);
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_selectedFile is null)
+        {
+            Snackbar.Add("Please select a KML or KMZ file.", Severity.Warning);
+            return;
+        }
+
+        var result = ImportDistrictTemplatesResult.InvalidFileContent();
+        await RunBusyAsync(async () =>
+        {
+            await using var stream = _selectedFile.OpenReadStream(MaxUploadFileSizeBytes);
+            result = await DistrictImportService.ImportAsync(TemplateId, stream, _selectedFile.Name);
+            if (result.Status == DistrictImportStatus.Imported && result.Summary is not null)
+            {
+                _lastImportSummary = result.Summary;
+                _selectedFile = null;
+                await RefreshSnapshotAsync();
+            }
+        });
+
+        NotifyImportResult(result, "Districts imported.");
+    }
+
+    private async Task ClearSourceUrlAsync()
+    {
+        var result = UpdateDistrictImportSourceUrlResult.TemplateNotFound();
+        await RunBusyAsync(async () =>
+        {
+            result = await DistrictImportService.ClearSourceUrlAsync(TemplateId);
+            if (result.Status == DistrictImportSourceUrlStatus.Cleared)
+            {
+                await RefreshSnapshotAsync();
+            }
+        });
+
+        switch (result.Status)
+        {
+            case DistrictImportSourceUrlStatus.Cleared:
+                _flowState = DistrictImportFlowState.Choice;
+                Snackbar.Add("Linked source cleared.", Severity.Success);
+                break;
+            case DistrictImportSourceUrlStatus.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected district source status: {result.Status}");
+        }
+    }
+
+    private async Task RefreshFromSourceAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_sourceUrlInput))
+        {
+            Snackbar.Add("Please enter a source URL.", Severity.Warning);
+            return;
+        }
+
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Import districts from linked source",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = "Import districts from the linked source? This replaces all existing districts in this game.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Import districts"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = ImportDistrictTemplatesResult.TemplateNotFound();
+        await RunBusyAsync(async () =>
+        {
+            result = await DistrictImportService.RefreshFromSourceAsync(TemplateId, _sourceUrlInput);
+            if (result.Status == DistrictImportStatus.Imported && result.Summary is not null)
+            {
+                _lastImportSummary = result.Summary;
+                await RefreshSnapshotAsync();
+            }
+        });
+
+        NotifyImportResult(result, "Districts imported from linked source.");
+    }
+
+    private async Task HandleSourceInputExitAsync()
+    {
+        if (_isBusy || !string.IsNullOrWhiteSpace(_sourceUrlInput))
+        {
+            return;
+        }
+
+        if (IsSourceLocked)
+        {
+            await ClearSourceUrlAsync();
+            return;
+        }
+
+        _flowState = DistrictImportFlowState.Choice;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshSnapshotAsync()
+    {
+        var wasSourceLocked = IsSourceLocked;
+        var snapshot = await DistrictImportService.GetAsync(TemplateId);
+        if (snapshot is null)
+        {
+            _templateNotFound = true;
+            _templateName = string.Empty;
+            _districtCount = 0;
+            _savedSourceUrl = null;
+            _sourceUrlInput = string.Empty;
+            _flowState = DistrictImportFlowState.Choice;
+            return;
+        }
+
+        _templateNotFound = false;
+        _templateName = snapshot.TemplateName;
+        _districtCount = snapshot.DistrictCount;
+        _savedSourceUrl = snapshot.DistrictImportSourceUrl;
+        _sourceUrlInput = snapshot.DistrictImportSourceUrl ?? string.Empty;
+        if (IsSourceLocked)
+        {
+            _flowState = DistrictImportFlowState.Source;
+        }
+        else if (wasSourceLocked)
+        {
+            _flowState = DistrictImportFlowState.Choice;
+        }
+    }
+
+    private void ShowUploadFlow()
+    {
+        if (IsSourceLocked)
+        {
+            return;
+        }
+
+        _flowState = DistrictImportFlowState.Upload;
+    }
+
+    private void ShowSourceFlow()
+    {
+        _flowState = DistrictImportFlowState.Source;
+    }
+
+    private void ShowChoiceFlow()
+    {
+        if (IsSourceLocked)
+        {
+            return;
+        }
+
+        _flowState = DistrictImportFlowState.Choice;
+    }
+
+    private async Task HandleSourceBackToChoicesAsync()
+    {
+        if (IsSourceLocked)
+        {
+            if (!string.IsNullOrWhiteSpace(_sourceUrlInput))
+            {
+                return;
+            }
+
+            await ClearSourceUrlAsync();
+            return;
+        }
+
+        _flowState = DistrictImportFlowState.Choice;
+    }
+
+    private async Task ClassifySelectedUploadAsync(IBrowserFile? file)
+    {
+        _selectedFile = file;
+        if (file is null)
+        {
+            return;
+        }
+
+        var classification = DistrictUploadClassificationResult.InvalidFileContent();
+        await RunBusyAsync(async () =>
+        {
+            try
+            {
+                await using var stream = file.OpenReadStream(MaxUploadFileSizeBytes);
+                classification = await DistrictImportService.ClassifyUploadAsync(stream, file.Name);
+            }
+            catch (IOException exception)
+            {
+                classification = DistrictUploadClassificationResult.InvalidFileContent(exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                classification = DistrictUploadClassificationResult.InvalidFileContent(exception.Message);
+            }
+        });
+
+        switch (classification.Status)
+        {
+            case DistrictUploadClassificationStatus.DirectData:
+                _flowState = DistrictImportFlowState.Upload;
+                break;
+            case DistrictUploadClassificationStatus.NetworkLink:
+                _selectedFile = null;
+                _sourceUrlInput = classification.SourceUrl ?? string.Empty;
+                _flowState = DistrictImportFlowState.Source;
+                Snackbar.Add("Detected linked source in upload. Review the URL and refresh to import.", Severity.Info);
+                break;
+            case DistrictUploadClassificationStatus.InvalidFileType:
+            case DistrictUploadClassificationStatus.InvalidFileContent:
+                _selectedFile = null;
+                NotifyUploadClassificationResult(classification);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected district upload classification status: {classification.Status}");
+        }
+    }
+
+    private void NotifyImportResult(ImportDistrictTemplatesResult result, string successMessage)
+    {
+        switch (result.Status)
+        {
+            case DistrictImportStatus.Imported:
+                Snackbar.Add(successMessage, Severity.Success);
+                break;
+            case DistrictImportStatus.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case DistrictImportStatus.InvalidFileType:
+                Snackbar.Add("Only .kml and .kmz files are supported.", Severity.Warning);
+                break;
+            case DistrictImportStatus.NoDistrictPolygonsFound:
+                Snackbar.Add("The file did not contain polygon placemarks.", Severity.Warning);
+                break;
+            case DistrictImportStatus.InvalidFileContent:
+                Snackbar.Add(result.ErrorMessage ?? "The file could not be parsed.", Severity.Warning);
+                break;
+            case DistrictImportStatus.SourceUrlNotConfigured:
+                Snackbar.Add("No linked source URL is configured.", Severity.Warning);
+                break;
+            case DistrictImportStatus.InvalidSourceUrl:
+                Snackbar.Add(result.ErrorMessage ?? "Source URL must be an absolute HTTPS URL.", Severity.Warning);
+                break;
+            case DistrictImportStatus.SourceDownloadFailed:
+                Snackbar.Add(result.ErrorMessage ?? "Could not download linked source content.", Severity.Warning);
+                break;
+            case DistrictImportStatus.SourceContentEmpty:
+                Snackbar.Add(result.ErrorMessage ?? "Linked source returned empty content.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected district import status: {result.Status}");
+        }
+    }
+
+    private void NotifyUploadClassificationResult(DistrictUploadClassificationResult result)
+    {
+        switch (result.Status)
+        {
+            case DistrictUploadClassificationStatus.InvalidFileType:
+                Snackbar.Add("Only .kml and .kmz files are supported.", Severity.Warning);
+                break;
+            case DistrictUploadClassificationStatus.InvalidFileContent:
+                Snackbar.Add(result.ErrorMessage ?? "The selected file could not be parsed.", Severity.Warning);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        _isBusy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private enum DistrictImportFlowState
+    {
+        Choice,
+        Upload,
+        Source
+    }
+}

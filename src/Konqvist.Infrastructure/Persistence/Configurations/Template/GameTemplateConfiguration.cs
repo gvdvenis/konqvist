@@ -21,6 +21,10 @@ public class GameTemplateConfiguration : IEntityTypeConfiguration<GameTemplate>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(entity => entity.DistrictImportSourceUrl)
+            .HasMaxLength(2048)
+            .IsRequired(false);
+
         builder.Property(entity => entity.TotalRounds)
             .HasDefaultValue(4)
             .IsRequired();

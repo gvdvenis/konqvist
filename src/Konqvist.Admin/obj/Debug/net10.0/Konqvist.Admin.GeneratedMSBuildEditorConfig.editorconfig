@@ -61,6 +61,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Districts/Components/DistrictImportChoicePanel.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcRGlzdHJpY3RzXENvbXBvbmVudHNcRGlzdHJpY3RJbXBvcnRDaG9pY2VQYW5lbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Districts/Components/DistrictLinkedSourcePanel.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcRGlzdHJpY3RzXENvbXBvbmVudHNcRGlzdHJpY3RMaW5rZWRTb3VyY2VQYW5lbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Districts/Components/DistrictUploadPanel.razor]
+build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcRGlzdHJpY3RzXENvbXBvbmVudHNcRGlzdHJpY3RVcGxvYWRQYW5lbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Source/Repos/konqvist/src/Konqvist.Admin/Features/Districts/DistrictsPage.razor]
 build_metadata.AdditionalFiles.TargetPath = RmVhdHVyZXNcRGlzdHJpY3RzXERpc3RyaWN0c1BhZ2UucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 

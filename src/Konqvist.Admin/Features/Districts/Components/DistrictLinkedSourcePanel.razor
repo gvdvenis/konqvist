@@ -1,0 +1,90 @@
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Spacing="2">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">Linked source</MudText>
+            @if (ShowBackToChoices)
+            {
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Disabled="@IsBusy"
+                           OnClick="OnBackToChoices">
+                    Back to choices
+                </MudButton>
+            }
+        </MudStack>
+        <MudText Typo="Typo.body2" Class="admin-muted-text">
+            Enter an HTTPS KML/KMZ URL, then import districts from that source.
+        </MudText>
+        <MudTextField T="string"
+                      Label="Source URL"
+                      Placeholder="https://example.com/districts.kml"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Immediate="true"
+                      Disabled="@IsBusy"
+                      OnBlur="HandleSourceUrlBlur"
+                      Value="@SourceUrlInput"
+                      ValueChanged="HandleSourceUrlChanged" />
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.LinkOff"
+                   Disabled="@(IsBusy || string.IsNullOrWhiteSpace(SourceUrlInput))"
+                   OnClick="OnClearSourceUrl">
+            Clear link
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.CloudDownload"
+                   FullWidth="true"
+                   Disabled="@(IsBusy || string.IsNullOrWhiteSpace(SourceUrlInput))"
+                   OnClick="OnRefreshFromSource">
+            Import districts from linked source
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public string SourceUrlInput { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> SourceUrlInputChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnClearSourceUrl { get; set; }
+
+    [Parameter]
+    public EventCallback OnRefreshFromSource { get; set; }
+
+    [Parameter]
+    public bool ShowBackToChoices { get; set; }
+
+    [Parameter]
+    public EventCallback OnBackToChoices { get; set; }
+
+    [Parameter]
+    public EventCallback OnEmptyInputExit { get; set; }
+
+    private async Task HandleSourceUrlChanged(string? value)
+    {
+        SourceUrlInput = value ?? string.Empty;
+        await SourceUrlInputChanged.InvokeAsync(SourceUrlInput);
+    }
+
+    private async Task HandleSourceUrlBlur(FocusEventArgs _)
+    {
+        if (!string.IsNullOrWhiteSpace(SourceUrlInput))
+        {
+            return;
+        }
+
+        await OnEmptyInputExit.InvokeAsync();
+    }
+}

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Konqvist.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+16b9dafa3dd91a811668b79f655c925fe070aa33")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c6b8a180e2141bdf5fd0e26897621780af04377")]
 [assembly: System.Reflection.AssemblyProductAttribute("Konqvist.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Konqvist.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

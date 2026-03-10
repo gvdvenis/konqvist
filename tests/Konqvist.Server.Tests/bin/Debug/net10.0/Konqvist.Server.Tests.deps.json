@@ -8,6 +8,8 @@
     ".NETCoreApp,Version=v10.0": {
       "Konqvist.Server.Tests/1.0.0": {
         "dependencies": {
+          "Konqvist.Admin": "1.0.0",
+          "Konqvist.Infrastructure": "1.0.0",
           "Konqvist.Server": "1.0.0",
           "Microsoft.NET.Test.Sdk": "17.14.1",
           "xunit": "2.9.3"
@@ -660,6 +662,14 @@
           }
         }
       },
+      "MudBlazor/9.1.0": {
+        "runtime": {
+          "lib/net10.0/MudBlazor.dll": {
+            "assemblyVersion": "9.1.0.0",
+            "fileVersion": "9.1.0.0"
+          }
+        }
+      },
       "NetTopologySuite/2.6.0": {
         "runtime": {
           "lib/netstandard2.1/NetTopologySuite.dll": {
@@ -1002,6 +1012,21 @@
           }
         }
       },
+      "Konqvist.Admin/1.0.0": {
+        "dependencies": {
+          "FluentValidation": "12.1.1",
+          "FluentValidation.AspNetCore": "11.3.1",
+          "Konqvist.Infrastructure": "1.0.0",
+          "MudBlazor": "9.1.0",
+          "SharpKml.Core": "6.1.0"
+        },
+        "runtime": {
+          "Konqvist.Admin.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "Konqvist.Infrastructure/1.0.0": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3",
@@ -1239,6 +1264,13 @@
       "path": "mod_spatialite/4.3.0.1",
       "hashPath": "mod_spatialite.4.3.0.1.nupkg.sha512"
     },
+    "MudBlazor/9.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-iy+kj3IWQsVh2r+xO9Yc8lUNuZWFy/zSGY+DV8uessNJrOrvmKef3+bDPEU0a+WmhP1xWU3bOThyiTlEhcco5A==",
+      "path": "mudblazor/9.1.0",
+      "hashPath": "mudblazor.9.1.0.nupkg.sha512"
+    },
     "NetTopologySuite/2.6.0": {
       "type": "package",
       "serviceable": true,
@@ -1399,6 +1431,11 @@
       "sha512": "sha512-yMb6vMESlSrE3Wfj7V6cjQ3S4TXdXpRqYeNEI3zsX31uTsGMJjEw6oD5F5u1cHnMptjhEECnmZSsPxB6ChZHDQ==",
       "path": "xunit.extensibility.execution/2.9.3",
       "hashPath": "xunit.extensibility.execution.2.9.3.nupkg.sha512"
+    },
+    "Konqvist.Admin/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "Konqvist.Infrastructure/1.0.0": {
       "type": "project",

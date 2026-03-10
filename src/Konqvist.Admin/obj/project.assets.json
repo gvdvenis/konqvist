@@ -353,6 +353,19 @@
           }
         }
       },
+      "SharpKml.Core/6.1.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/SharpKml.Core.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/SharpKml.Core.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "SQLitePCLRaw.bundle_e_sqlite3/2.1.11": {
         "type": "package",
         "dependencies": {
@@ -832,6 +845,23 @@
         "nettopologysuite.io.spatialite.nuspec"
       ]
     },
+    "SharpKml.Core/6.1.0": {
+      "sha512": "ABDgy0Qy1kJzmNDayz3nDu7/a97ENiLRidLPDKM5VcG/isyaSDfI8aoD9vXmEkzpKKBKvxkYkH7gYqhW/e6Vgg==",
+      "type": "package",
+      "path": "sharpkml.core/6.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net462/SharpKml.Core.dll",
+        "lib/net462/SharpKml.Core.xml",
+        "lib/netstandard1.2/SharpKml.Core.dll",
+        "lib/netstandard1.2/SharpKml.Core.xml",
+        "lib/netstandard2.0/SharpKml.Core.dll",
+        "lib/netstandard2.0/SharpKml.Core.xml",
+        "sharpkml.core.6.1.0.nupkg.sha512",
+        "sharpkml.core.nuspec"
+      ]
+    },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.11": {
       "sha512": "DC4nA7yWnf4UZdgJDF+9Mus4/cb0Y3Sfgi3gDnAoKNAIBwzkskNAbNbyu+u4atT0ruVlZNJfwZmwiEwE5oz9LQ==",
       "type": "package",
@@ -938,7 +968,8 @@
       "FluentValidation.AspNetCore >= *",
       "Konqvist.Infrastructure >= 1.0.0",
       "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.2",
-      "MudBlazor >= *"
+      "MudBlazor >= *",
+      "SharpKml.Core >= *"
     ]
   },
   "packageFolders": {
@@ -1016,6 +1047,10 @@
             "autoReferenced": true
           },
           "MudBlazor": {
+            "target": "Package",
+            "version": "[*, )"
+          },
+          "SharpKml.Core": {
             "target": "Package",
             "version": "[*, )"
           }

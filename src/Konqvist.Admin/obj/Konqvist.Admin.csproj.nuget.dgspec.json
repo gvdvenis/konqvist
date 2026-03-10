@@ -75,6 +75,10 @@
             "MudBlazor": {
               "target": "Package",
               "version": "[*, )"
+            },
+            "SharpKml.Core": {
+              "target": "Package",
+              "version": "[*, )"
             }
           },
           "imports": [

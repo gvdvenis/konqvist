@@ -1,0 +1,793 @@
+using System.IO.Compression;
+using System.Net;
+using System.Net.Http;
+using Konqvist.Admin.Features.Districts;
+using Konqvist.Infrastructure.Entities.Template;
+using Microsoft.EntityFrameworkCore;
+
+namespace Konqvist.Server.Tests;
+
+public sealed class DistrictImportAdminServiceTests
+{
+    [Fact]
+    public async Task ImportAsync_KmlReplacesExistingDistrictsAndAppliesDefaults()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        await SeedExistingDistrictAsync(harness, templateId);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Imported District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Trigger", "0.5,0.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(1, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(0, result.Summary.TriggerCentersDerived);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .OrderBy(entity => entity.Name)
+            .ToListAsync();
+        var district = Assert.Single(districts);
+        Assert.Equal("Imported District", district.Name);
+        Assert.Equal(0, district.Gold);
+        Assert.Equal(0, district.Voters);
+        Assert.Equal(0, district.Likes);
+        Assert.Equal(0, district.Oil);
+        Assert.Equal(50d, district.TriggerRadiusMeters);
+        Assert.Equal(0.5d, district.TriggerLat, 6);
+        Assert.Equal(0.5d, district.TriggerLng, 6);
+        Assert.Contains("\"type\":\"Polygon\"", district.GeoJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportAsync_KmzImportsDistricts()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("A Trigger", "0.4,0.4,0"));
+        var kmzBytes = BuildKmz(kml);
+
+        var result = await ImportKmzAsync(service, templateId, "districts.kmz", kmzBytes);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(1, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+    }
+
+    [Fact]
+    public async Task ImportAsync_KmlImportsDistrictsFromAsyncOnlyReadStream()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("A Trigger", "0.4,0.4,0"));
+        var kmlBytes = System.Text.Encoding.UTF8.GetBytes(kml);
+        await using var stream = new AsyncOnlyReadStream(new MemoryStream(kmlBytes));
+
+        var result = await service.ImportAsync(templateId, stream, "districts.kml");
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(1, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+    }
+
+    [Fact]
+    public async Task ImportAsync_KmzImportsDistrictsFromAsyncOnlyReadStream()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("A Trigger", "0.4,0.4,0"));
+        var kmzBytes = BuildKmz(kml);
+        await using var stream = new AsyncOnlyReadStream(new MemoryStream(kmzBytes));
+
+        var result = await service.ImportAsync(templateId, stream, "districts.kmz");
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(1, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+    }
+
+    [Fact]
+    public async Task ImportAsync_UsesFirstPointAndCenterFallback()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PolygonPlacemark("District B", "2,0,0 2,1,0 3,1,0 3,0,0 2,0,0"),
+            PointPlacemark("A Trigger First", "0.2,0.2,0"),
+            PointPlacemark("A Trigger Second", "0.8,0.8,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(2, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(1, result.Summary.TriggerCentersDerived);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .OrderBy(entity => entity.Name)
+            .ToListAsync();
+        Assert.Equal(2, districts.Count);
+
+        var districtA = districts.Single(entity => entity.Name == "District A");
+        Assert.Equal(0.2d, districtA.TriggerLat, 6);
+        Assert.Equal(0.2d, districtA.TriggerLng, 6);
+
+        var districtB = districts.Single(entity => entity.Name == "District B");
+        Assert.Equal(0.5d, districtB.TriggerLat, 6);
+        Assert.Equal(2.5d, districtB.TriggerLng, 6);
+    }
+
+    [Fact]
+    public async Task ImportAsync_PrefersSmallestAreaPolygonWhenPointOverlapsMultiple()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Big District", "0,0,0 0,4,0 4,4,0 4,0,0 0,0,0"),
+            PolygonPlacemark("Small District", "1,1,0 1,2,0 2,2,0 2,1,0 1,1,0"),
+            PointPlacemark("Overlap Trigger", "1.5,1.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(2, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(1, result.Summary.TriggerCentersDerived);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .ToListAsync();
+        var smallDistrict = districts.Single(entity => entity.Name == "Small District");
+        Assert.Equal(1.5d, smallDistrict.TriggerLat, 6);
+        Assert.Equal(1.5d, smallDistrict.TriggerLng, 6);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ReturnsInvalidFileTypeForUnsupportedExtension()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+        await using var stream = new MemoryStream([1, 2, 3]);
+
+        var result = await service.ImportAsync(templateId, stream, "districts.txt");
+
+        Assert.Equal(DistrictImportStatus.InvalidFileType, result.Status);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ReturnsTemplateNotFoundWhenTemplateMissing()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var service = CreateService(harness.DbFactory);
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"));
+
+        var result = await ImportKmlAsync(service, int.MaxValue, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.TemplateNotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNetworkLinkIsPresent_ImportsFromLinkedSourceAndPersistsSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/districts.kml";
+        var linkedKml = BuildKml(
+            PolygonPlacemark("Linked District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Linked Trigger", "0.3,0.3,0"));
+        var requestedUrls = new List<string>();
+        var service = CreateService(
+            harness.DbFactory,
+            (request, _) =>
+            {
+                requestedUrls.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(linkedKml)
+                };
+                return response;
+            });
+
+        var uploadedKml = BuildKml(NetworkLink(sourceUrl));
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", uploadedKml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.Single(requestedUrls);
+        Assert.Equal(sourceUrl, requestedUrls[0]);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+
+        var district = await dbContext.DistrictTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.GameTemplateId == templateId);
+        Assert.Equal("Linked District", district.Name);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNetworkLinkIsPresentInKmz_ImportsFromLinkedSourceAndPersistsSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/districts.kml";
+        var linkedKml = BuildKml(
+            PolygonPlacemark("Linked District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Linked Trigger", "0.3,0.3,0"));
+        var requestedUrls = new List<string>();
+        var service = CreateService(
+            harness.DbFactory,
+            (request, _) =>
+            {
+                requestedUrls.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(linkedKml)
+                };
+            });
+
+        var uploadedKml = BuildKml(NetworkLink(sourceUrl));
+        var uploadedKmz = BuildKmz(uploadedKml);
+        var result = await ImportKmzAsync(service, templateId, "districts.kmz", uploadedKmz);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.Single(requestedUrls);
+        Assert.Equal(sourceUrl, requestedUrls[0]);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+
+        var district = await dbContext.DistrictTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.GameTemplateId == templateId);
+        Assert.Equal("Linked District", district.Name);
+    }
+
+    [Fact]
+    public async Task ClassifyUploadAsync_WhenUploadContainsDirectData_ReturnsDirectData()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var service = CreateService(harness.DbFactory);
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("A Trigger", "0.4,0.4,0"));
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(kml));
+
+        var result = await service.ClassifyUploadAsync(stream, "districts.kml");
+
+        Assert.Equal(DistrictUploadClassificationStatus.DirectData, result.Status);
+        Assert.Null(result.SourceUrl);
+    }
+
+    [Fact]
+    public async Task ClassifyUploadAsync_WhenUploadContainsNetworkLink_ReturnsNetworkLinkWithSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var service = CreateService(harness.DbFactory);
+        const string sourceUrl = "https://cdn.example.com/districts.kml";
+        var kml = BuildKml(NetworkLink(sourceUrl));
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(kml));
+
+        var result = await service.ClassifyUploadAsync(stream, "districts.kml");
+
+        Assert.Equal(DistrictUploadClassificationStatus.NetworkLink, result.Status);
+        Assert.Equal(sourceUrl, result.SourceUrl);
+    }
+
+    [Fact]
+    public async Task ClassifyUploadAsync_WhenKmzContainsNetworkLink_ReturnsNetworkLinkWithSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var service = CreateService(harness.DbFactory);
+        const string sourceUrl = "https://cdn.example.com/districts.kml";
+        var kml = BuildKml(NetworkLink(sourceUrl));
+        var kmzBytes = BuildKmz(kml);
+        await using var stream = new MemoryStream(kmzBytes);
+
+        var result = await service.ClassifyUploadAsync(stream, "districts.kmz");
+
+        Assert.Equal(DistrictUploadClassificationStatus.NetworkLink, result.Status);
+        Assert.Equal(sourceUrl, result.SourceUrl);
+    }
+
+    [Fact]
+    public async Task ClassifyUploadAsync_WhenNetworkLinkIsNotHttps_StillReturnsNetworkLinkForPrefill()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var service = CreateService(harness.DbFactory);
+        const string sourceUrl = "http://example.com/districts.kml";
+        var kml = BuildKml(NetworkLink(sourceUrl));
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(kml));
+
+        var result = await service.ClassifyUploadAsync(stream, "districts.kml");
+
+        Assert.Equal(DistrictUploadClassificationStatus.NetworkLink, result.Status);
+        Assert.Equal(sourceUrl, result.SourceUrl);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNetworkLinkIsNotHttps_ReturnsInvalidSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+        var uploadedKml = BuildKml(NetworkLink("http://example.com/districts.kml"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", uploadedKml);
+
+        Assert.Equal(DistrictImportStatus.InvalidSourceUrl, result.Status);
+        Assert.Equal("Source URL must be an absolute HTTPS URL.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNetworkLinkDownloadFails_ReturnsSourceDownloadFailed()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(
+            harness.DbFactory,
+            (_, _) => new HttpResponseMessage(HttpStatusCode.BadGateway));
+        var uploadedKml = BuildKml(NetworkLink("https://cdn.example.com/districts.kml"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", uploadedKml);
+
+        Assert.Equal(DistrictImportStatus.SourceDownloadFailed, result.Status);
+        Assert.Contains("502", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNetworkLinkDownloadIsEmpty_ReturnsSourceContentEmpty()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(
+            harness.DbFactory,
+            (_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent([])
+            });
+        var uploadedKml = BuildKml(NetworkLink("https://cdn.example.com/districts.kml"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", uploadedKml);
+
+        Assert.Equal(DistrictImportStatus.SourceContentEmpty, result.Status);
+    }
+
+    [Fact]
+    public async Task SourceUrlManagement_SaveRefreshAndClearSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/source.kml";
+        var linkedKml = BuildKml(
+            PolygonPlacemark("Refresh District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"));
+        var service = CreateService(
+            harness.DbFactory,
+            (_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(linkedKml)
+            });
+
+        var saveResult = await service.SaveSourceUrlAsync(templateId, sourceUrl);
+        Assert.Equal(DistrictImportSourceUrlStatus.Updated, saveResult.Status);
+        Assert.Equal(sourceUrl, saveResult.SourceUrl);
+
+        var refreshResult = await service.RefreshFromSourceAsync(templateId);
+        Assert.Equal(DistrictImportStatus.Imported, refreshResult.Status);
+
+        var clearResult = await service.ClearSourceUrlAsync(templateId);
+        Assert.Equal(DistrictImportSourceUrlStatus.Cleared, clearResult.Status);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Null(template.DistrictImportSourceUrl);
+    }
+
+    [Fact]
+    public async Task SaveSourceUrlAsync_WhenSourceUrlIsNotHttps_ReturnsInvalidSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var result = await service.SaveSourceUrlAsync(templateId, "http://example.com/districts.kml");
+
+        Assert.Equal(DistrictImportSourceUrlStatus.InvalidSourceUrl, result.Status);
+        Assert.Equal("Source URL must be an absolute HTTPS URL.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task RefreshFromSourceAsync_ReplacesExistingDistrictsAndKeepsStoredSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        await SeedExistingDistrictAsync(harness, templateId);
+        const string sourceUrl = "https://cdn.example.com/source.kml";
+        var linkedKml = BuildKml(
+            PolygonPlacemark("Refreshed District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Refreshed Trigger", "0.2,0.2,0"));
+        var service = CreateService(
+            harness.DbFactory,
+            (_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(linkedKml)
+            });
+
+        var saveResult = await service.SaveSourceUrlAsync(templateId, sourceUrl);
+        Assert.Equal(DistrictImportSourceUrlStatus.Updated, saveResult.Status);
+
+        var refreshResult = await service.RefreshFromSourceAsync(templateId);
+
+        Assert.Equal(DistrictImportStatus.Imported, refreshResult.Status);
+        Assert.NotNull(refreshResult.Summary);
+        Assert.Equal(1, refreshResult.Summary.DistrictsImported);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .ToListAsync();
+        var district = Assert.Single(districts);
+        Assert.Equal("Refreshed District", district.Name);
+    }
+
+    [Fact]
+    public async Task RefreshFromSourceAsync_WithProvidedSourceUrl_ImportsAndPersistsSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/implicit-source.kml";
+        var linkedKml = BuildKml(
+            PolygonPlacemark("Implicit Source District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"));
+        var service = CreateService(
+            harness.DbFactory,
+            (_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(linkedKml)
+            });
+
+        var refreshResult = await service.RefreshFromSourceAsync(templateId, sourceUrl);
+
+        Assert.Equal(DistrictImportStatus.Imported, refreshResult.Status);
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+    }
+
+    [Fact]
+    public async Task RefreshFromSourceAsync_WhenNestedNetworkLinkIsResolved_PersistsProvidedSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/outer-source.kml";
+        const string nestedSourceUrl = "https://cdn.example.com/nested-source.kml";
+        var requestedUrls = new List<string>();
+        var outerKml = BuildKml(NetworkLink(nestedSourceUrl));
+        var nestedKml = BuildKml(
+            PolygonPlacemark("Nested District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Nested Trigger", "0.4,0.4,0"));
+        var service = CreateService(
+            harness.DbFactory,
+            (request, _) =>
+            {
+                var requestUrl = request.RequestUri?.AbsoluteUri ?? string.Empty;
+                requestedUrls.Add(requestUrl);
+                return requestUrl switch
+                {
+                    sourceUrl => new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(outerKml)
+                    },
+                    nestedSourceUrl => new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(nestedKml)
+                    },
+                    _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+                };
+            });
+
+        var refreshResult = await service.RefreshFromSourceAsync(templateId, sourceUrl);
+
+        Assert.Equal(DistrictImportStatus.Imported, refreshResult.Status);
+        Assert.Equal([sourceUrl, nestedSourceUrl], requestedUrls);
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenDirectDataImportedAfterSourceSaved_KeepsSavedSourceUrl()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        const string sourceUrl = "https://cdn.example.com/saved-source.kml";
+        var service = CreateService(harness.DbFactory);
+
+        var saveResult = await service.SaveSourceUrlAsync(templateId, sourceUrl);
+        Assert.Equal(DistrictImportSourceUrlStatus.Updated, saveResult.Status);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Direct District", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("Direct Trigger", "0.5,0.5,0"));
+        var importResult = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, importResult.Status);
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Equal(sourceUrl, template.DistrictImportSourceUrl);
+    }
+
+    [Fact]
+    public async Task RefreshFromSourceAsync_WithoutSavedSourceUrl_ReturnsSourceUrlNotConfigured()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var result = await service.RefreshFromSourceAsync(templateId);
+
+        Assert.Equal(DistrictImportStatus.SourceUrlNotConfigured, result.Status);
+    }
+
+    private static DistrictImportAdminService CreateService(
+        TestDbContextFactory dbFactory,
+        Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>? responder = null)
+    {
+        var httpClient = responder is null
+            ? new HttpClient(new UnexpectedHttpMessageHandler())
+            : new HttpClient(new DelegateHttpMessageHandler(responder));
+        return new DistrictImportAdminService(dbFactory, httpClient);
+    }
+
+    private static async Task SeedExistingDistrictAsync(RoundConfigurationTestHarness harness, int templateId)
+    {
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        dbContext.DistrictTemplates.Add(new DistrictTemplate
+        {
+            GameTemplateId = templateId,
+            Name = "Old District",
+            GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[]}",
+            TriggerLat = 0d,
+            TriggerLng = 0d,
+            TriggerRadiusMeters = 50d,
+            Gold = 9,
+            Voters = 9,
+            Likes = 9,
+            Oil = 9
+        });
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task<ImportDistrictTemplatesResult> ImportKmlAsync(
+        DistrictImportAdminService service,
+        int templateId,
+        string fileName,
+        string kml)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(kml);
+        await using var stream = new MemoryStream(bytes);
+        return await service.ImportAsync(templateId, stream, fileName);
+    }
+
+    private static async Task<ImportDistrictTemplatesResult> ImportKmzAsync(
+        DistrictImportAdminService service,
+        int templateId,
+        string fileName,
+        byte[] kmzBytes)
+    {
+        await using var stream = new MemoryStream(kmzBytes);
+        return await service.ImportAsync(templateId, stream, fileName);
+    }
+
+    private static byte[] BuildKmz(string kml)
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            var entry = archive.CreateEntry("doc.kml");
+            using var writer = new StreamWriter(entry.Open());
+            writer.Write(kml);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static string BuildKml(params string[] placemarks)
+    {
+        return
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <kml xmlns="http://www.opengis.net/kml/2.2">
+              <Document>
+            """
+            + string.Join(Environment.NewLine, placemarks)
+            +
+            """
+              </Document>
+            </kml>
+            """;
+    }
+
+    private static string PolygonPlacemark(string name, string coordinates)
+    {
+        return
+            $"""
+             <Placemark>
+               <name>{name}</name>
+               <Polygon>
+                 <outerBoundaryIs>
+                   <LinearRing>
+                     <coordinates>{coordinates}</coordinates>
+                   </LinearRing>
+                 </outerBoundaryIs>
+               </Polygon>
+             </Placemark>
+             """;
+    }
+
+    private static string PointPlacemark(string name, string coordinate)
+    {
+        return
+            $@"<Placemark>
+  <name>{name}</name>
+  <Point>
+    <coordinates>{coordinate}</coordinates>
+  </Point>
+</Placemark>";
+    }
+
+    private static string NetworkLink(string href)
+    {
+        return
+            $"""
+             <NetworkLink>
+               <Link>
+                 <href>{href}</href>
+               </Link>
+             </NetworkLink>
+             """;
+    }
+
+    private sealed class DelegateHttpMessageHandler(
+        Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> responder) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(responder(request, cancellationToken));
+        }
+    }
+
+    private sealed class UnexpectedHttpMessageHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            throw new Xunit.Sdk.XunitException("HTTP should not be called for this test.");
+        }
+    }
+
+    private sealed class AsyncOnlyReadStream(Stream innerStream) : Stream
+    {
+        public override bool CanRead => innerStream.CanRead;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException("Synchronous reads are not supported.");
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            throw new NotSupportedException("Synchronous reads are not supported.");
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return innerStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return innerStream.ReadAsync(buffer, cancellationToken);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                innerStream.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            return innerStream.DisposeAsync();
+        }
+    }
+}

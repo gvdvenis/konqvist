@@ -23,16 +23,6 @@
                           ErrorText="@GetError(nameof(CreateGameTemplateInput.Name))" />
         </MudItem>
         <MudItem xs="12" md="6">
-            <MudNumericField T="int"
-                             Label="Total rounds"
-                             Variant="Variant.Outlined"
-                             Min="1"
-                             Required="true"
-                             @bind-Value="_model.TotalRounds"
-                             Error="@HasError(nameof(CreateGameTemplateInput.TotalRounds))"
-                             ErrorText="@GetError(nameof(CreateGameTemplateInput.TotalRounds))" />
-        </MudItem>
-        <MudItem xs="12" md="6">
             <MudNumericField T="int" Label="Location update interval (seconds)" Variant="Variant.Outlined" Min="1" Required="true" @bind-Value="_model.LocationUpdateIntervalSeconds" Error="@HasError(nameof(CreateGameTemplateInput.LocationUpdateIntervalSeconds))" ErrorText="@GetError(nameof(CreateGameTemplateInput.LocationUpdateIntervalSeconds))" />
         </MudItem>
         <MudItem xs="12" md="6">
@@ -98,7 +88,6 @@
         _model = new CreateGameTemplateInput
         {
             Name = InitialInput.Name,
-            TotalRounds = InitialInput.TotalRounds,
             LocationUpdateIntervalSeconds = InitialInput.LocationUpdateIntervalSeconds,
             MinLocationUpdateIntervalSeconds = InitialInput.MinLocationUpdateIntervalSeconds,
             VotingDurationSeconds = InitialInput.VotingDurationSeconds,
@@ -123,7 +112,6 @@
         await OnSubmit(new CreateGameTemplateInput
         {
             Name = _model.Name,
-            TotalRounds = _model.TotalRounds,
             LocationUpdateIntervalSeconds = _model.LocationUpdateIntervalSeconds,
             MinLocationUpdateIntervalSeconds = _model.MinLocationUpdateIntervalSeconds,
             VotingDurationSeconds = _model.VotingDurationSeconds,

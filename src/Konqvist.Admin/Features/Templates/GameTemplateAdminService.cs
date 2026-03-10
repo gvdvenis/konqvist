@@ -1,3 +1,4 @@
+using Konqvist.Admin.Features.Rounds;
 using Konqvist.Infrastructure.Entities.Session;
 using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ public sealed class GameTemplateAdminService(IDbContextFactory<KonqvistDbContext
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         await EnsureGmTokensAsync(dbContext, cancellationToken);
+        await EnsureTemplateRoundsAsync(dbContext, cancellationToken);
 
         return await dbContext.GameTemplates
             .AsNoTracking()
@@ -42,7 +44,7 @@ public sealed class GameTemplateAdminService(IDbContextFactory<KonqvistDbContext
         {
             Name = input.Name.Trim(),
             GmLoginToken = await GenerateUniqueGmTokenAsync(dbContext, cancellationToken),
-            TotalRounds = input.TotalRounds,
+            TotalRounds = 0,
             LocationUpdateIntervalSeconds = input.LocationUpdateIntervalSeconds,
             MinLocationUpdateIntervalSeconds = input.MinLocationUpdateIntervalSeconds,
             VotingDurationSeconds = input.VotingDurationSeconds,
@@ -50,6 +52,7 @@ public sealed class GameTemplateAdminService(IDbContextFactory<KonqvistDbContext
             VoteTimeoutPenalty = input.VoteTimeoutPenalty,
             DistrictCaptureRadiusMeters = input.DistrictCaptureRadiusMeters
         };
+        InitializeDefaultRounds(template);
 
         dbContext.GameTemplates.Add(template);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -65,20 +68,22 @@ public sealed class GameTemplateAdminService(IDbContextFactory<KonqvistDbContext
         ArgumentNullException.ThrowIfNull(input);
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var template = await dbContext.GameTemplates.FirstOrDefaultAsync(entity => entity.Id == templateId, cancellationToken);
+        var template = await dbContext.GameTemplates
+            .Include(entity => entity.Rounds)
+            .FirstOrDefaultAsync(entity => entity.Id == templateId, cancellationToken);
         if (template is null)
         {
             return SaveGameTemplateResult.NotFound;
         }
 
         template.Name = input.Name.Trim();
-        template.TotalRounds = input.TotalRounds;
         template.LocationUpdateIntervalSeconds = input.LocationUpdateIntervalSeconds;
         template.MinLocationUpdateIntervalSeconds = input.MinLocationUpdateIntervalSeconds;
         template.VotingDurationSeconds = input.VotingDurationSeconds;
         template.PredictionBonusPoints = input.PredictionBonusPoints;
         template.VoteTimeoutPenalty = input.VoteTimeoutPenalty;
         template.DistrictCaptureRadiusMeters = input.DistrictCaptureRadiusMeters;
+        EnsureTemplateRounds(template);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return SaveGameTemplateResult.Saved;
@@ -151,6 +156,76 @@ public sealed class GameTemplateAdminService(IDbContextFactory<KonqvistDbContext
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureTemplateRoundsAsync(
+        KonqvistDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var templates = await dbContext.GameTemplates
+            .Include(entity => entity.Rounds)
+            .ToListAsync(cancellationToken);
+
+        var hasChanges = false;
+        foreach (var template in templates)
+        {
+            hasChanges |= EnsureTemplateRounds(template);
+        }
+
+        if (!hasChanges)
+        {
+            return;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool EnsureTemplateRounds(GameTemplate template)
+    {
+        var hasChanges = false;
+        if (template.Rounds.Count == 0)
+        {
+            var initialRoundCount = template.TotalRounds > 0
+                ? template.TotalRounds
+                : RoundTemplateDefaults.DefaultRoundCount;
+            for (var roundNumber = 1; roundNumber <= initialRoundCount; roundNumber++)
+            {
+                template.Rounds.Add(RoundTemplateDefaults.Create(roundNumber));
+            }
+
+            hasChanges = true;
+        }
+
+        var orderedRounds = template.Rounds.OrderBy(entity => entity.RoundNumber).ToList();
+        for (var index = 0; index < orderedRounds.Count; index++)
+        {
+            var expectedRoundNumber = index + 1;
+            if (orderedRounds[index].RoundNumber == expectedRoundNumber)
+            {
+                continue;
+            }
+
+            orderedRounds[index].RoundNumber = expectedRoundNumber;
+            hasChanges = true;
+        }
+
+        if (template.TotalRounds == template.Rounds.Count)
+        {
+            return hasChanges;
+        }
+
+        template.TotalRounds = template.Rounds.Count;
+        return true;
+    }
+
+    private static void InitializeDefaultRounds(GameTemplate template)
+    {
+        for (var roundNumber = 1; roundNumber <= RoundTemplateDefaults.DefaultRoundCount; roundNumber++)
+        {
+            template.Rounds.Add(RoundTemplateDefaults.Create(roundNumber));
+        }
+
+        template.TotalRounds = template.Rounds.Count;
     }
 
     private static async Task<string> GenerateUniqueGmTokenAsync(

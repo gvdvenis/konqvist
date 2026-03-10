@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Konqvist.Infrastructure.Tokens;
 
 namespace Konqvist.Infrastructure.Tests;

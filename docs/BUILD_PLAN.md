@@ -96,7 +96,8 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 
 **2.1 — GameTemplate CRUD**
 - Admin page at `/admin/templates`: list all templates, create new, delete
-- Create form: Name, TotalRounds (default 4), LocationUpdateIntervalSeconds (default 30), MinLocationUpdateIntervalSeconds (default 5), VotingDurationSeconds (default 30), PredictionBonusPoints (default 150), VoteTimeoutPenalty, DistrictCaptureRadiusMeters (default 50)
+- Create form: Name, LocationUpdateIntervalSeconds (default 30), MinLocationUpdateIntervalSeconds (default 5), VotingDurationSeconds (default 30), PredictionBonusPoints (default 150), VoteTimeoutPenalty, DistrictCaptureRadiusMeters (default 50)
+- `TotalRounds` is derived from configured `RoundTemplates` (new games start with 4 auto-generated rounds)
 - All settings stored in `GameTemplate` DB entity — no `appsettings.json` game config
 
 **2.2 — Team management**
@@ -111,7 +112,8 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 - Display tokens as copyable text; provide a "Regenerate" button per token
 
 **2.4 — Round configuration**
-- Sub-page at `/admin/templates/{id}/rounds`: list rounds (auto-created when TotalRounds is set), edit each
+- Sub-page at `/admin/templates/{id}/rounds`: list rounds, add/remove rounds, edit each
+- `TotalRounds` is derived from the number of configured rounds
 - Per-round fields: RoundNumber (read-only), RoiResource (dropdown: Gold/Voters/Likes/Oil), Stake (text input up to 500 chars)
 
 **2.5 — KML/KMZ district import**

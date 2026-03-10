@@ -1,10 +1,317 @@
-@page "/admin/rounds"
+@page "/admin/templates/{TemplateId:int}/rounds"
+@using Konqvist.Admin.Components.Dialogs
 @using Konqvist.Admin.Components.Layout
+@using Konqvist.Infrastructure.Entities.Enums
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
 
-<MudPaper Elevation="0" Class="pa-4">
-    <MudText Typo="Typo.h4">Rounds</MudText>
-</MudPaper>
+<MudStack Class="admin-page-content" Spacing="3">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4">Rounds</MudText>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Href="/admin/templates">
+            Back to games
+        </MudButton>
+    </MudStack>
+
+    @if (_templateNotFound)
+    {
+        <MudAlert Severity="Severity.Warning">Game not found.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="admin-muted-text">
+            Configure rounds for game <b>@_templateName</b>.
+        </MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Class="admin-muted-text">@_rounds.Count configured</MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@_isBusy"
+                       OnClick="AddRoundAsync">
+                Add round
+            </MudButton>
+        </MudStack>
+        @if (_rounds.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No rounds configured yet.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="_rounds" Dense="true" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Round</MudTh>
+                    <MudTh>ROI resource</MudTh>
+                    <MudTh>Stake</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Round">
+                        <MudTextField T="int" Value="@context.RoundNumber" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd DataLabel="ROI resource">
+                        <MudSelect T="ResourceType"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   @bind-Value="GetEditor(context.Id).RoiResource">
+                            @foreach (var resourceType in ResourceTypes)
+                            {
+                                <MudSelectItem T="ResourceType" Value="@resourceType">@resourceType</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Stake">
+                        <MudTextField T="string"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Lines="2"
+                                      Counter="500"
+                                      MaxLength="500"
+                                      @bind-Value="GetEditor(context.Id).Stake"
+                                      Error="@HasError(context.Id, nameof(RoundTemplateEditorInput.Stake))"
+                                      ErrorText="@GetError(context.Id, nameof(RoundTemplateEditorInput.Stake))" />
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudStack Row="true" Spacing="1" Justify="Justify.FlexEnd">
+                            <MudTooltip Text="Save round">
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Class="grid-square-action"
+                                           Disabled="@_isBusy"
+                                           OnClick="() => SaveRoundAsync(context.Id)">
+                                    <MudIcon Icon="@Icons.Material.Filled.Save" />
+                                </MudButton>
+                            </MudTooltip>
+                            <MudTooltip Text="Delete round">
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Error"
+                                           Class="grid-square-action"
+                                           Disabled="@(_isBusy || _rounds.Count <= 1)"
+                                           OnClick="() => DeleteRoundAsync(context.Id)">
+                                    <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                                </MudButton>
+                            </MudTooltip>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    }
+</MudStack>
+
+@code {
+    [Inject]
+    private RoundTemplateAdminService RoundService { get; set; } = null!;
+
+    [Inject]
+    private FluentValidation.IValidator<RoundTemplateEditorInput> Validator { get; set; } = null!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Parameter]
+    public int TemplateId { get; set; }
+
+    private static readonly IReadOnlyList<ResourceType> ResourceTypes = Enum.GetValues<ResourceType>();
+    private IReadOnlyList<RoundTemplateListItem> _rounds = [];
+    private Dictionary<int, RoundTemplateEditorInput> _editors = [];
+    private Dictionary<int, Dictionary<string, string>> _errorsByRoundId = [];
+    private string _templateName = string.Empty;
+    private bool _templateNotFound;
+    private bool _isBusy;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadRoundsAsync();
+    }
+
+    private async Task LoadRoundsAsync() => await RunBusyAsync(LoadSnapshotAsync);
+
+    private async Task LoadSnapshotAsync()
+    {
+        var snapshot = await RoundService.GetAsync(TemplateId);
+        if (snapshot is null)
+        {
+            _templateNotFound = true;
+            _templateName = string.Empty;
+            _rounds = [];
+            _editors = [];
+            _errorsByRoundId = [];
+            return;
+        }
+
+        _templateNotFound = false;
+        _templateName = snapshot.TemplateName;
+        _rounds = snapshot.Rounds;
+        _editors = snapshot.Rounds.ToDictionary(
+            round => round.Id,
+            round => new RoundTemplateEditorInput
+            {
+                RoiResource = round.RoiResource,
+                Stake = round.Stake
+            });
+        _errorsByRoundId = [];
+    }
+
+    private async Task AddRoundAsync()
+    {
+        var result = AddRoundTemplateResult.TemplateNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await RoundService.AddRoundAsync(TemplateId);
+            if (result == AddRoundTemplateResult.Added)
+            {
+                await LoadSnapshotAsync();
+            }
+        });
+
+        switch (result)
+        {
+            case AddRoundTemplateResult.Added:
+                Snackbar.Add("Round added.", Severity.Success);
+                break;
+            case AddRoundTemplateResult.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected add round result: {result}");
+        }
+    }
+
+    private async Task SaveRoundAsync(int roundTemplateId)
+    {
+        var editor = GetEditor(roundTemplateId);
+        var validationResult = await Validator.ValidateAsync(editor);
+        if (!validationResult.IsValid)
+        {
+            _errorsByRoundId[roundTemplateId] = validationResult.Errors
+                .GroupBy(error => error.PropertyName)
+                .ToDictionary(group => group.Key, group => group.First().ErrorMessage);
+            Snackbar.Add("Please fix validation errors before saving.", Severity.Warning);
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _errorsByRoundId.Remove(roundTemplateId);
+
+        var result = SaveRoundTemplateResult.RoundNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await RoundService.UpdateAsync(TemplateId, roundTemplateId, editor);
+            if (result == SaveRoundTemplateResult.Saved)
+            {
+                await LoadSnapshotAsync();
+            }
+        });
+
+        switch (result)
+        {
+            case SaveRoundTemplateResult.Saved:
+                Snackbar.Add("Round updated.", Severity.Success);
+                break;
+            case SaveRoundTemplateResult.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case SaveRoundTemplateResult.RoundNotFound:
+                Snackbar.Add("Round not found.", Severity.Warning);
+                break;
+            case SaveRoundTemplateResult.InvalidInput:
+                Snackbar.Add("Stake is required and must be 500 characters or fewer.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected save round result: {result}");
+        }
+    }
+
+    private async Task DeleteRoundAsync(int roundTemplateId)
+    {
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Delete round",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = "Delete this round? Round numbers will be re-indexed.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = DeleteRoundTemplateResult.RoundNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await RoundService.DeleteAsync(TemplateId, roundTemplateId);
+            if (result == DeleteRoundTemplateResult.Deleted)
+            {
+                await LoadSnapshotAsync();
+            }
+        });
+
+        switch (result)
+        {
+            case DeleteRoundTemplateResult.Deleted:
+                Snackbar.Add("Round deleted.", Severity.Success);
+                break;
+            case DeleteRoundTemplateResult.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case DeleteRoundTemplateResult.RoundNotFound:
+                Snackbar.Add("Round not found.", Severity.Warning);
+                break;
+            case DeleteRoundTemplateResult.LastRoundRequired:
+                Snackbar.Add("A game must keep at least one round.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected delete round result: {result}");
+        }
+    }
+
+    private RoundTemplateEditorInput GetEditor(int roundTemplateId)
+    {
+        if (_editors.TryGetValue(roundTemplateId, out var editor))
+        {
+            return editor;
+        }
+
+        editor = new RoundTemplateEditorInput();
+        _editors[roundTemplateId] = editor;
+        return editor;
+    }
+
+    private bool HasError(int roundTemplateId, string propertyName)
+    {
+        return _errorsByRoundId.TryGetValue(roundTemplateId, out var errors)
+               && errors.ContainsKey(propertyName);
+    }
+
+    private string? GetError(int roundTemplateId, string propertyName)
+    {
+        return _errorsByRoundId.TryGetValue(roundTemplateId, out var errors)
+            ? errors.GetValueOrDefault(propertyName)
+            : null;
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        _isBusy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

@@ -126,14 +126,14 @@ Tokens follow the pattern `{prefix}{randomness}`:
 
 ### 4.1 Configuration
 
-- A game consists of a **configurable number of rounds**, defined in the **GameTemplate** at setup time (default: 4)
+- A game consists of a **configurable set of round templates**; the number of rounds is derived from configured `RoundTemplate` records (new templates start with 4)
 - Only **one GameSession** can be active at a time
 - A game is based on a reusable **GameTemplate** — define once, play many times
 - All gameplay-relevant settings are stored in the `GameTemplate` and loaded into a `GameSettings` value object at game initialization. There is **no separate `appsettings.json` configuration** for game rules — all values live in the database template, ensuring each game instance is fully self-contained and reproducible.
 
 | Setting | Description | Default | Scope |
 |---|---|---|---|
-| `TotalRounds` | Number of rounds per game | 4 | GameTemplate (DB) |
+| `TotalRounds` | Derived number of configured rounds per game | 4 | GameTemplate (DB) |
 | `MinLocationUpdateIntervalSeconds` | Minimum interval between GPS updates sent from client | 5 | GameTemplate (DB) |
 | `LocationUpdateIntervalSeconds` | Interval for broadcasting opponent locations | 30 | GameTemplate (DB) |
 | `VotingDurationSeconds` | Duration of the voting window per round | 30 | GameTemplate (DB) |
@@ -708,7 +708,7 @@ The data model is split into two layers: a **static Template layer** (reusable b
 |---|---|---|
 | `Id` | int | Primary key |
 | `Name` | string | Display name (e.g. "Zutphen Edition") |
-| `TotalRounds` | int | Number of rounds (default: 4) |
+| `TotalRounds` | int | Derived round count from `RoundTemplate` records (default initialized to 4) |
 | `LocationUpdateIntervalSeconds` | int | Interval for opponent location broadcasts |
 | `MinLocationUpdateIntervalSeconds` | int | Minimum client GPS update interval (default: 5) |
 | `VotingDurationSeconds` | int | Duration of voting window per round |
@@ -1234,7 +1234,7 @@ All enums are persisted as strings in the database.
 |---|---|---|
 | `Id` | int | PK, auto-increment |
 | `Name` | string(100) | Required |
-| `TotalRounds` | int | Required, default: 4 |
+| `TotalRounds` | int | Required, derived from `RoundTemplate` count (default initialized to 4) |
 | `LocationUpdateIntervalSeconds` | int | Required, default: 30 |
 | `MinLocationUpdateIntervalSeconds` | int | Required, default: 5 |
 | `VotingDurationSeconds` | int | Required, default: 30 |

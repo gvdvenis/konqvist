@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FluentValidation;
 using Konqvist.Admin.Components;
 using Konqvist.Admin.Features.Auth;
+using Konqvist.Admin.Features.Rounds;
 using Konqvist.Admin.Features.Teams;
 using Konqvist.Admin.Features.Templates;
 using Konqvist.Infrastructure.Persistence;
@@ -20,8 +21,10 @@ builder.Services.AddMudServices();
 builder.Services.AddDbContextFactory<KonqvistDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddScoped<GameTemplateAdminService>();
+builder.Services.AddScoped<RoundTemplateAdminService>();
 builder.Services.AddScoped<TeamTemplateAdminService>();
 builder.Services.AddScoped<IValidator<CreateGameTemplateInput>, CreateGameTemplateInputValidator>();
+builder.Services.AddScoped<IValidator<RoundTemplateEditorInput>, RoundTemplateEditorInputValidator>();
 builder.Services.AddScoped<IValidator<TeamTemplateEditorInput>, TeamTemplateEditorInputValidator>();
 
 builder.Services

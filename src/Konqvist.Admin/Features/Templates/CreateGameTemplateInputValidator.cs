@@ -11,10 +11,6 @@ public sealed class CreateGameTemplateInputValidator : AbstractValidator<CreateG
             .WithMessage("Name is required.")
             .MaximumLength(100);
 
-        RuleFor(model => model.TotalRounds)
-            .GreaterThan(0)
-            .WithMessage("Total rounds must be greater than 0.");
-
         RuleFor(model => model.LocationUpdateIntervalSeconds)
             .GreaterThan(0)
             .WithMessage("Location update interval must be greater than 0.");

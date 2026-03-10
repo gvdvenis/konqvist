@@ -3,7 +3,6 @@ namespace Konqvist.Admin.Features.Templates;
 public sealed class CreateGameTemplateInput
 {
     public string Name { get; set; } = string.Empty;
-    public int TotalRounds { get; set; } = 4;
     public int LocationUpdateIntervalSeconds { get; set; } = 30;
     public int MinLocationUpdateIntervalSeconds { get; set; } = 5;
     public int VotingDurationSeconds { get; set; } = 30;

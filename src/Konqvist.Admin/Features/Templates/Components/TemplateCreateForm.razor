@@ -1,0 +1,102 @@
+@using FluentValidation
+@using Konqvist.Admin.Features.Templates
+@using MudBlazor
+@using System.Linq
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-3">Create template</MudText>
+    @if (_errors.Count > 0)
+    {
+        <MudAlert Severity="@MudBlazor.Severity.Warning" Dense="true" Class="mb-3">
+            Please fix the highlighted fields before submitting.
+        </MudAlert>
+    }
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          @bind-Value="_model.Name"
+                          Error="@HasError(nameof(CreateGameTemplateInput.Name))"
+                          ErrorText="@GetError(nameof(CreateGameTemplateInput.Name))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int"
+                             Label="Total rounds"
+                             Variant="Variant.Outlined"
+                             Min="1"
+                             Required="true"
+                             @bind-Value="_model.TotalRounds"
+                             Error="@HasError(nameof(CreateGameTemplateInput.TotalRounds))"
+                             ErrorText="@GetError(nameof(CreateGameTemplateInput.TotalRounds))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int" Label="Location update interval (seconds)" Variant="Variant.Outlined" Min="1" Required="true" @bind-Value="_model.LocationUpdateIntervalSeconds" Error="@HasError(nameof(CreateGameTemplateInput.LocationUpdateIntervalSeconds))" ErrorText="@GetError(nameof(CreateGameTemplateInput.LocationUpdateIntervalSeconds))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int" Label="Minimum location update interval (seconds)" Variant="Variant.Outlined" Min="1" Required="true" @bind-Value="_model.MinLocationUpdateIntervalSeconds" Error="@HasError(nameof(CreateGameTemplateInput.MinLocationUpdateIntervalSeconds))" ErrorText="@GetError(nameof(CreateGameTemplateInput.MinLocationUpdateIntervalSeconds))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int" Label="Voting duration (seconds)" Variant="Variant.Outlined" Min="1" Required="true" @bind-Value="_model.VotingDurationSeconds" Error="@HasError(nameof(CreateGameTemplateInput.VotingDurationSeconds))" ErrorText="@GetError(nameof(CreateGameTemplateInput.VotingDurationSeconds))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int" Label="Prediction bonus points" Variant="Variant.Outlined" Min="0" Required="true" @bind-Value="_model.PredictionBonusPoints" Error="@HasError(nameof(CreateGameTemplateInput.PredictionBonusPoints))" ErrorText="@GetError(nameof(CreateGameTemplateInput.PredictionBonusPoints))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="int" Label="Vote timeout penalty" Variant="Variant.Outlined" Min="0" Required="true" @bind-Value="_model.VoteTimeoutPenalty" Error="@HasError(nameof(CreateGameTemplateInput.VoteTimeoutPenalty))" ErrorText="@GetError(nameof(CreateGameTemplateInput.VoteTimeoutPenalty))" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudNumericField T="double" Label="District capture radius (meters)" Variant="Variant.Outlined" Min="0.1" Required="true" @bind-Value="_model.DistrictCaptureRadiusMeters" Error="@HasError(nameof(CreateGameTemplateInput.DistrictCaptureRadiusMeters))" ErrorText="@GetError(nameof(CreateGameTemplateInput.DistrictCaptureRadiusMeters))" />
+        </MudItem>
+    </MudGrid>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Disabled="@IsBusy"
+               OnClick="HandleSubmitAsync"
+               Class="mt-4">
+        Create template
+    </MudButton>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public Func<CreateGameTemplateInput, Task<bool>> OnCreateTemplate { get; set; } = null!;
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Inject]
+    private IValidator<CreateGameTemplateInput> Validator { get; set; } = null!;
+
+    private CreateGameTemplateInput _model = new();
+    private Dictionary<string, string> _errors = [];
+
+    private async Task HandleSubmitAsync()
+    {
+        var validationResult = await Validator.ValidateAsync(_model);
+        _errors = validationResult.Errors
+            .GroupBy(error => error.PropertyName)
+            .ToDictionary(group => group.Key, group => group.First().ErrorMessage);
+        if (!validationResult.IsValid)
+        {
+            return;
+        }
+
+        var wasCreated = await OnCreateTemplate(_model);
+        if (!wasCreated)
+        {
+            return;
+        }
+
+        _model = new CreateGameTemplateInput();
+        _errors.Clear();
+    }
+
+    private bool HasError(string propertyName) => _errors.ContainsKey(propertyName);
+
+    private string? GetError(string propertyName) => _errors.GetValueOrDefault(propertyName);
+}

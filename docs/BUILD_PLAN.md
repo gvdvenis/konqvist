@@ -76,13 +76,13 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 - Each placeholder page renders its own name so routing is verifiable
 
 ### Done means
-- [ ] `dotnet build` succeeds with no warnings on all four projects
-- [ ] `dotnet run` on `Konqvist.Server` starts without errors
-- [ ] SQLite database is created on first run with all tables and correct schema
-- [ ] Navigating to `/admin/login` shows login form
-- [ ] Logging in with credentials from `appsettings.json` redirects to `/admin` with sidebar visible
-- [ ] All five sidebar links navigate to their respective placeholder pages
-- [ ] Unauthenticated access to `/admin` redirects to `/admin/login`
+- [x] `dotnet build` succeeds with no warnings on all four projects
+- [x] `dotnet run` on `Konqvist.Server` starts without errors
+- [x] SQLite database is created on first run with all tables and correct schema
+- [x] Navigating to `/admin/login` shows login form
+- [x] Logging in with credentials from `appsettings.json` redirects to `/admin` with sidebar visible
+- [x] All five sidebar links navigate to their respective placeholder pages
+- [x] Unauthenticated access to `/admin` redirects to `/admin/login`
 
 ---
 

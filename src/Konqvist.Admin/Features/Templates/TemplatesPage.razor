@@ -1,10 +1,92 @@
 @page "/admin/templates"
 @using Konqvist.Admin.Components.Layout
+@using Konqvist.Admin.Features.Templates.Components
 @using Microsoft.AspNetCore.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
+@rendermode InteractiveServer
 
-<MudPaper Elevation="0" Class="pa-4">
+<MudStack Class="pa-4" Spacing="3">
     <MudText Typo="Typo.h4">Templates</MudText>
-</MudPaper>
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        Manage reusable game templates and their core gameplay settings.
+    </MudText>
+
+    <TemplateCreateForm OnCreateTemplate="CreateTemplateAsync" IsBusy="_isBusy" />
+    <TemplateListTable Templates="_templates" OnDeleteTemplate="DeleteTemplateAsync" IsBusy="_isBusy" />
+</MudStack>
+
+@code {
+    [Inject]
+    private GameTemplateAdminService TemplateService { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private IReadOnlyList<GameTemplateListItem> _templates = [];
+    private bool _isBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplatesAsync();
+    }
+
+    private Task LoadTemplatesAsync() => RunBusyAsync(async () =>
+    {
+        _templates = await TemplateService.ListAsync();
+    });
+
+    private async Task<bool> CreateTemplateAsync(CreateGameTemplateInput input)
+    {
+        var templateId = 0;
+        await RunBusyAsync(async () =>
+        {
+            templateId = await TemplateService.CreateAsync(input);
+            Snackbar.Add($"Template created (ID {templateId}).", Severity.Success);
+            _templates = await TemplateService.ListAsync();
+        });
+
+        return true;
+    }
+
+    private async Task DeleteTemplateAsync(int templateId)
+    {
+        await RunBusyAsync(async () =>
+        {
+            var result = await TemplateService.DeleteAsync(templateId);
+            switch (result)
+            {
+                case DeleteGameTemplateResult.Deleted:
+                    Snackbar.Add("Template deleted.", Severity.Success);
+                    break;
+                case DeleteGameTemplateResult.NotFound:
+                    Snackbar.Add("Template not found.", Severity.Warning);
+                    break;
+                case DeleteGameTemplateResult.HasLinkedSessions:
+                    Snackbar.Add("Template cannot be deleted because it is linked to one or more game sessions.", Severity.Warning);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected delete result: {result}");
+            }
+
+            _templates = await TemplateService.ListAsync();
+        });
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        _isBusy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

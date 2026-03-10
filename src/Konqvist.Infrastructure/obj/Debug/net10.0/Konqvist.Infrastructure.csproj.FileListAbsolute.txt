@@ -14,3 +14,7 @@ D:\Source\Repos\konqvist\src\Konqvist.Infrastructure\obj\Debug\net10.0\refint\Ko
 D:\Source\Repos\konqvist\src\Konqvist.Infrastructure\obj\Debug\net10.0\Konqvist.Infrastructure.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Infrastructure\obj\Debug\net10.0\Konqvist.Infrastructure.genruntimeconfig.cache
 D:\Source\Repos\konqvist\src\Konqvist.Infrastructure\obj\Debug\net10.0\ref\Konqvist.Infrastructure.dll
+D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Infrastructure.deps.json
+D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Infrastructure.runtimeconfig.json
+D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Infrastructure.dll
+D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Infrastructure.pdb

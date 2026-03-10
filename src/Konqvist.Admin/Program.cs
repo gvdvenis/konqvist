@@ -1,15 +1,25 @@
 using System.Security.Claims;
+using FluentValidation;
 using Konqvist.Admin.Components;
 using Konqvist.Admin.Features.Auth;
+using Konqvist.Admin.Features.Templates;
+using Konqvist.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
 
 builder.Services.AddMudServices();
+builder.Services.AddDbContextFactory<KonqvistDbContext>(options =>
+    options.UseSqlite(connectionString));
+builder.Services.AddScoped<GameTemplateAdminService>();
+builder.Services.AddScoped<IValidator<CreateGameTemplateInput>, CreateGameTemplateInputValidator>();
 
 builder.Services
     .AddOptions<AdminCredentialsOptions>()
@@ -34,6 +44,13 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<KonqvistDbContext>>();
+    await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+    await dbContext.Database.MigrateAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

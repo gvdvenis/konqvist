@@ -1,0 +1,73 @@
+@using Konqvist.Admin.Features.Templates
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h6">Existing templates</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@Templates.Count total</MudText>
+    </MudStack>
+
+    @if (Templates.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No templates created yet.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="Templates" Dense="true" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Rounds</MudTh>
+                <MudTh>Location update</MudTh>
+                <MudTh>Min location update</MudTh>
+                <MudTh>Voting</MudTh>
+                <MudTh>Prediction bonus</MudTh>
+                <MudTh>Timeout penalty</MudTh>
+                <MudTh>Capture radius</MudTh>
+                <MudTh>Sessions</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Rounds">@context.TotalRounds</MudTd>
+                <MudTd DataLabel="Location update">@context.LocationUpdateIntervalSeconds s</MudTd>
+                <MudTd DataLabel="Min location update">@context.MinLocationUpdateIntervalSeconds s</MudTd>
+                <MudTd DataLabel="Voting">@context.VotingDurationSeconds s</MudTd>
+                <MudTd DataLabel="Prediction bonus">@context.PredictionBonusPoints</MudTd>
+                <MudTd DataLabel="Timeout penalty">@context.VoteTimeoutPenalty</MudTd>
+                <MudTd DataLabel="Capture radius">@context.DistrictCaptureRadiusMeters.ToString("0.##") m</MudTd>
+                <MudTd DataLabel="Sessions">@context.LinkedSessionCount</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudTooltip Text="@GetDeleteTooltip(context)">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Delete"
+                                   Disabled="@IsDeleteDisabled(context)"
+                                   OnClick="() => HandleDeleteAsync(context.Id)">
+                            Delete
+                        </MudButton>
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<GameTemplateListItem> Templates { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public Func<int, Task> OnDeleteTemplate { get; set; } = null!;
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    private Task HandleDeleteAsync(int templateId) => OnDeleteTemplate(templateId);
+
+    private bool IsDeleteDisabled(GameTemplateListItem template) => IsBusy || template.HasLinkedSessions;
+
+    private static string GetDeleteTooltip(GameTemplateListItem template) =>
+        template.HasLinkedSessions
+            ? "Delete is unavailable because this template is linked to one or more game sessions."
+            : "Delete template";
+}

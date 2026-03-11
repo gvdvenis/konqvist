@@ -28,19 +28,24 @@ public sealed class DistrictImportAdminServiceTests
         Assert.Equal(1, result.Summary.DistrictsImported);
         Assert.Equal(1, result.Summary.TriggerCirclesMatched);
         Assert.Equal(0, result.Summary.TriggerCentersDerived);
+        Assert.Equal(DistrictMapOutlineStatus.GeneratedFallback, result.Summary.MapOutlineStatus);
 
         await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
         var districts = await dbContext.DistrictTemplates
             .Where(entity => entity.GameTemplateId == templateId)
             .OrderBy(entity => entity.Name)
             .ToListAsync();
         var district = Assert.Single(districts);
+        Assert.NotNull(template.MapOutlineGeoJson);
         Assert.Equal("Imported District", district.Name);
         Assert.Equal(0, district.Gold);
         Assert.Equal(0, district.Voters);
         Assert.Equal(0, district.Likes);
         Assert.Equal(0, district.Oil);
-        Assert.Equal(50d, district.TriggerRadiusMeters);
+        Assert.Equal(15d, district.TriggerRadiusMeters);
         Assert.Equal(0.5d, district.TriggerLat, 6);
         Assert.Equal(0.5d, district.TriggerLng, 6);
         Assert.Contains("\"type\":\"Polygon\"", district.GeoJson, StringComparison.Ordinal);
@@ -64,6 +69,7 @@ public sealed class DistrictImportAdminServiceTests
         Assert.NotNull(result.Summary);
         Assert.Equal(1, result.Summary.DistrictsImported);
         Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(DistrictMapOutlineStatus.GeneratedFallback, result.Summary.MapOutlineStatus);
     }
 
     [Fact]
@@ -85,6 +91,7 @@ public sealed class DistrictImportAdminServiceTests
         Assert.NotNull(result.Summary);
         Assert.Equal(1, result.Summary.DistrictsImported);
         Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(DistrictMapOutlineStatus.GeneratedFallback, result.Summary.MapOutlineStatus);
     }
 
     [Fact]
@@ -155,15 +162,16 @@ public sealed class DistrictImportAdminServiceTests
         var kml = BuildKml(
             PolygonPlacemark("Big District", "0,0,0 0,4,0 4,4,0 4,0,0 0,0,0"),
             PolygonPlacemark("Small District", "1,1,0 1,2,0 2,2,0 2,1,0 1,1,0"),
-            PointPlacemark("Overlap Trigger", "1.5,1.5,0"));
+            PointPlacemark("Overlap Trigger", "1.5,1.5,0"),
+            PointPlacemark("Big Trigger", "3.5,3.5,0"));
 
         var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
 
         Assert.Equal(DistrictImportStatus.Imported, result.Status);
         Assert.NotNull(result.Summary);
         Assert.Equal(2, result.Summary.DistrictsImported);
-        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
-        Assert.Equal(1, result.Summary.TriggerCentersDerived);
+        Assert.Equal(2, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(0, result.Summary.TriggerCentersDerived);
 
         await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
         var districts = await dbContext.DistrictTemplates
@@ -172,6 +180,129 @@ public sealed class DistrictImportAdminServiceTests
         var smallDistrict = districts.Single(entity => entity.Name == "Small District");
         Assert.Equal(1.5d, smallDistrict.TriggerLat, 6);
         Assert.Equal(1.5d, smallDistrict.TriggerLng, 6);
+    }
+
+    [Fact]
+    public async Task ImportAsync_TwoPolygonsWithMapWithoutTrigger_StoresMapOutline()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Map Outline", "-1,-1,0 -1,3,0 3,3,0 3,-1,0 -1,-1,0"),
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PointPlacemark("A Trigger", "0.5,0.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(1, result.Summary.DistrictsImported);
+        Assert.Equal(1, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(0, result.Summary.TriggerCentersDerived);
+        Assert.Equal(DistrictMapOutlineStatus.Imported, result.Summary.MapOutlineStatus);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.NotNull(template.MapOutlineGeoJson);
+
+        var districtCount = await dbContext.DistrictTemplates
+            .CountAsync(entity => entity.GameTemplateId == templateId);
+        Assert.Equal(1, districtCount);
+    }
+
+    [Fact]
+    public async Task ImportAsync_LargestPolygonContainingAllTriggers_IsStoredAsMapOutline()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Map Outline", "-1,-1,0 -1,5,0 5,5,0 5,-1,0 -1,-1,0"),
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PolygonPlacemark("District B", "2,0,0 2,1,0 3,1,0 3,0,0 2,0,0"),
+            PointPlacemark("A Trigger", "0.5,0.5,0"),
+            PointPlacemark("B Trigger", "2.5,0.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(2, result.Summary.DistrictsImported);
+        Assert.Equal(2, result.Summary.TriggerCirclesMatched);
+        Assert.Equal(0, result.Summary.TriggerCentersDerived);
+        Assert.Equal(DistrictMapOutlineStatus.Imported, result.Summary.MapOutlineStatus);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.NotNull(template.MapOutlineGeoJson);
+        Assert.Contains("\"type\":\"Polygon\"", template.MapOutlineGeoJson, StringComparison.Ordinal);
+
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .OrderBy(entity => entity.Name)
+            .Select(entity => entity.Name)
+            .ToListAsync();
+        Assert.Equal(["District A", "District B"], districts);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenLargestPolygonDoesNotContainAllTriggers_DoesNotStoreMapOutline()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("Large District", "0,0,0 0,4,0 4,4,0 4,0,0 0,0,0"),
+            PolygonPlacemark("Far District", "10,10,0 10,11,0 11,11,0 11,10,0 10,10,0"),
+            PointPlacemark("Far Trigger", "10.5,10.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(2, result.Summary.DistrictsImported);
+        Assert.Equal(DistrictMapOutlineStatus.NotAvailable, result.Summary.MapOutlineStatus);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.Null(template.MapOutlineGeoJson);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenNoExplicitMapOutline_GeneratesFallbackFromUnionBoundary()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var kml = BuildKml(
+            PolygonPlacemark("District A", "0,0,0 0,1,0 1,1,0 1,0,0 0,0,0"),
+            PolygonPlacemark("District B", "1,0,0 1,1,0 2,1,0 2,0,0 1,0,0"),
+            PointPlacemark("A Trigger", "0.5,0.5,0"),
+            PointPlacemark("B Trigger", "1.5,0.5,0"));
+
+        var result = await ImportKmlAsync(service, templateId, "districts.kml", kml);
+
+        Assert.Equal(DistrictImportStatus.Imported, result.Status);
+        Assert.NotNull(result.Summary);
+        Assert.Equal(DistrictMapOutlineStatus.GeneratedFallback, result.Summary.MapOutlineStatus);
+
+        await using var dbContext = await harness.DbFactory.CreateDbContextAsync();
+        var template = await dbContext.GameTemplates
+            .AsNoTracking()
+            .SingleAsync(entity => entity.Id == templateId);
+        Assert.NotNull(template.MapOutlineGeoJson);
+        Assert.Contains("\"type\":\"Polygon\"", template.MapOutlineGeoJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -578,6 +709,81 @@ public sealed class DistrictImportAdminServiceTests
         var result = await service.RefreshFromSourceAsync(templateId);
 
         Assert.Equal(DistrictImportStatus.SourceUrlNotConfigured, result.Status);
+    }
+
+    [Fact]
+    public async Task GetDistrictPreviewAsync_ReturnsOrderedDistrictsWithConfiguredFields()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        await using (var dbContext = await harness.DbFactory.CreateDbContextAsync())
+        {
+            dbContext.DistrictTemplates.AddRange(
+                new DistrictTemplate
+                {
+                    GameTemplateId = templateId,
+                    Name = "Beta",
+                    GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[3,2],[3,3],[4,3],[4,2],[3,2]]]}",
+                    TriggerLat = 2.5d,
+                    TriggerLng = 3.5d,
+                    TriggerRadiusMeters = 55d,
+                    Gold = 6,
+                    Voters = 7,
+                    Likes = 8,
+                    Oil = 9
+                },
+                new DistrictTemplate
+                {
+                    GameTemplateId = templateId,
+                    Name = "Alpha",
+                    GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}",
+                    TriggerLat = 0.4d,
+                    TriggerLng = 0.3d,
+                    TriggerRadiusMeters = 45d,
+                    Gold = 1,
+                    Voters = 2,
+                    Likes = 3,
+                    Oil = 4
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var service = CreateService(harness.DbFactory);
+
+        var preview = await service.GetDistrictPreviewAsync(templateId);
+
+        Assert.Collection(
+            preview,
+            first =>
+            {
+                Assert.Equal("Alpha", first.Name);
+                Assert.Equal(1, first.Gold);
+                Assert.Equal(2, first.Voters);
+                Assert.Equal(3, first.Likes);
+                Assert.Equal(4, first.Oil);
+                Assert.Equal(45d, first.TriggerRadiusMeters);
+            },
+            second =>
+            {
+                Assert.Equal("Beta", second.Name);
+                Assert.Equal(6, second.Gold);
+                Assert.Equal(7, second.Voters);
+                Assert.Equal(8, second.Likes);
+                Assert.Equal(9, second.Oil);
+                Assert.Equal(55d, second.TriggerRadiusMeters);
+            });
+    }
+
+    [Fact]
+    public async Task GetDistrictPreviewAsync_WhenNoDistrictsConfigured_ReturnsEmptyList()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var preview = await service.GetDistrictPreviewAsync(templateId);
+
+        Assert.Empty(preview);
     }
 
     private static DistrictImportAdminService CreateService(

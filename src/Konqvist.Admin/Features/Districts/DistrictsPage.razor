@@ -82,12 +82,37 @@
                     }
                 </MudAlert>
             }
+
+            @if (HasDistrictPreview)
+            {
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="4">
+                        @if (TryGetMapOutlineListItemText(out var mapOutlineListItemText))
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                                @mapOutlineListItemText
+                            </MudAlert>
+                        }
+                        <DistrictListPreviewPanel Districts="_districtPreviewItems"
+                                                  SelectedDistrictId="_selectedDistrictId"
+                                                  OnDistrictSelected="HandleDistrictSelectedAsync" />
+                    </MudItem>
+                    <MudItem xs="12" md="8">
+                        <DistrictMapPreviewPanel Districts="_districtPreviewItems"
+                                                 MapOutlineGeoJson="@_mapOutlineGeoJson"
+                                                 SelectedDistrictId="_selectedDistrictId"
+                                                 OnDistrictSelected="HandleDistrictSelectedAsync" />
+                    </MudItem>
+                </MudGrid>
+            }
         }
     }
 </MudStack>
 
 @code {
     private const long MaxUploadFileSizeBytes = 10 * 1024 * 1024;
+    private const string ImportedMapOutlineListItemText = "Map outline exists (imported)";
+    private const string GeneratedMapOutlineListItemText = "Map outline exists (generated)";
     private DistrictImportFlowState _flowState = DistrictImportFlowState.Choice;
 
     [Inject]
@@ -107,11 +132,15 @@
     private bool _templateNotFound;
     private bool _isBusy;
     private IBrowserFile? _selectedFile;
+    private IReadOnlyList<DistrictPreviewItem> _districtPreviewItems = [];
+    private string? _mapOutlineGeoJson;
+    private int? _selectedDistrictId;
     private DistrictImportSummary? _lastImportSummary;
     private string _sourceUrlInput = string.Empty;
     private string? _savedSourceUrl;
     private bool _snapshotLoaded;
     private bool IsSourceLocked => !string.IsNullOrWhiteSpace(_savedSourceUrl);
+    private bool HasDistrictPreview => _districtPreviewItems.Count > 0 || !string.IsNullOrWhiteSpace(_mapOutlineGeoJson);
     private bool ShowSourceBackToChoices => !IsSourceLocked || string.IsNullOrWhiteSpace(_sourceUrlInput);
     private bool ShowChoiceState => _flowState is DistrictImportFlowState.Choice && !IsSourceLocked;
     private bool ShowUploadState => _flowState is DistrictImportFlowState.Upload && !IsSourceLocked;
@@ -132,6 +161,9 @@
             _districtCount = 0;
             _selectedFile = null;
             _lastImportSummary = null;
+            _districtPreviewItems = [];
+            _mapOutlineGeoJson = null;
+            _selectedDistrictId = null;
             _flowState = DistrictImportFlowState.Choice;
             _snapshotLoaded = true;
             return;
@@ -141,10 +173,12 @@
         _templateName = snapshot.TemplateName;
         _districtCount = snapshot.DistrictCount;
         _savedSourceUrl = snapshot.DistrictImportSourceUrl;
+        _mapOutlineGeoJson = snapshot.MapOutlineGeoJson;
         _sourceUrlInput = snapshot.DistrictImportSourceUrl ?? string.Empty;
         _flowState = IsSourceLocked
             ? DistrictImportFlowState.Source
             : DistrictImportFlowState.Choice;
+        await LoadDistrictPreviewAsync();
         _snapshotLoaded = true;
     });
 
@@ -266,6 +300,9 @@
             _districtCount = 0;
             _savedSourceUrl = null;
             _sourceUrlInput = string.Empty;
+            _districtPreviewItems = [];
+            _mapOutlineGeoJson = null;
+            _selectedDistrictId = null;
             _flowState = DistrictImportFlowState.Choice;
             return;
         }
@@ -274,6 +311,7 @@
         _templateName = snapshot.TemplateName;
         _districtCount = snapshot.DistrictCount;
         _savedSourceUrl = snapshot.DistrictImportSourceUrl;
+        _mapOutlineGeoJson = snapshot.MapOutlineGeoJson;
         _sourceUrlInput = snapshot.DistrictImportSourceUrl ?? string.Empty;
         if (IsSourceLocked)
         {
@@ -283,6 +321,8 @@
         {
             _flowState = DistrictImportFlowState.Choice;
         }
+
+        await LoadDistrictPreviewAsync();
     }
 
     private void ShowUploadFlow()
@@ -437,6 +477,46 @@
             _isBusy = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private async Task LoadDistrictPreviewAsync()
+    {
+        _districtPreviewItems = await DistrictImportService.GetDistrictPreviewAsync(TemplateId);
+        if (_districtPreviewItems.Count == 0)
+        {
+            _selectedDistrictId = null;
+            return;
+        }
+
+        if (_selectedDistrictId is null || _districtPreviewItems.All(item => item.Id != _selectedDistrictId.Value))
+        {
+            _selectedDistrictId = null;
+        }
+    }
+
+    private Task HandleDistrictSelectedAsync(int districtId)
+    {
+        _selectedDistrictId = districtId;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private bool TryGetMapOutlineListItemText(out string listItemText)
+    {
+        listItemText = string.Empty;
+        if (_lastImportSummary is null)
+        {
+            return false;
+        }
+
+        listItemText = _lastImportSummary.MapOutlineStatus switch
+        {
+            DistrictMapOutlineStatus.Imported => ImportedMapOutlineListItemText,
+            DistrictMapOutlineStatus.GeneratedFallback => GeneratedMapOutlineListItemText,
+            DistrictMapOutlineStatus.NotAvailable => string.Empty,
+            _ => throw new InvalidOperationException($"Unexpected map outline status: {_lastImportSummary.MapOutlineStatus}")
+        };
+
+        return !string.IsNullOrWhiteSpace(listItemText);
     }
 
     private enum DistrictImportFlowState

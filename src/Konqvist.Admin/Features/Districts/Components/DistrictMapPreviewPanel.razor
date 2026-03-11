@@ -1,0 +1,571 @@
+@using System.Text.Json
+@using Konqvist.Admin.Features.Districts
+@using OpenLayers.Blazor
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Spacing="2">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">Map preview</MudText>
+            <MudText Typo="Typo.body2" Class="admin-muted-text">@Districts.Count district(s)</MudText>
+        </MudStack>
+
+        @if (_mapShapes.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No map geometry to preview.</MudAlert>
+        }
+        else
+        {
+            <OpenStreetMap Style="height: 630px;" Zoom="@_mapZoom" Center="@_mapCenter"
+                           OnShapeClick="HandleShapeClick">
+                <Features>
+                    @foreach (var shape in _mapShapes.Where(shape => !shape.IsMapOutline))
+                    {
+                        <Polygon @key="shape.DistrictId"
+                                 Id="@BuildFeatureId("district", shape.DistrictId!.Value)"
+                                 Points="@shape.PolygonCoordinates"
+                                 Stroke="@GetPolygonStroke(shape)"
+                                 StrokeThickness="2"
+                                 Fill="@GetPolygonFill(shape)" />
+                        <Circle @key="@($"t{shape.DistrictId}")"
+                                Id="@BuildFeatureId("trigger", shape.DistrictId!.Value)"
+                                Center="@shape.TriggerCenter"
+                                Radius="@shape.TriggerRadiusMeters"
+                                Styles="@GetTriggerStyles()" />
+                    }
+                    @foreach (var mapOutlineShape in _mapShapes
+                        .Where(shape => shape.IsMapOutline)
+                        .Select((shape, index) => new { Shape = shape, Index = index }))
+                    {
+                        <Polygon @key="mapOutlineShape.Index"
+                                 Id="@BuildMapOutlineFeatureId(mapOutlineShape.Index)"
+                                 Points="@mapOutlineShape.Shape.PolygonCoordinates"
+                                 Styles="@GetMapOutlineStyles()" />
+                    }
+                </Features>
+            </OpenStreetMap>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    private static readonly Coordinate DefaultCenter = new(0, 0);
+    private const int DefaultZoom = 12;
+    private const int MinZoom = 3;
+    private const int MaxZoom = 18;
+    private const double MapWidthPixels = 960d;
+    private const double MapHeightPixels = 630d;
+    private const double FitPaddingRatio = 0.85d;
+
+    private List<DistrictMapShape> _mapShapes = [];
+    private Coordinate _mapCenter = DefaultCenter;
+    private int _mapZoom = DefaultZoom;
+
+    [Parameter]
+    public IReadOnlyList<DistrictPreviewItem> Districts { get; set; } = [];
+
+    [Parameter]
+    public string? MapOutlineGeoJson { get; set; }
+
+    [Parameter]
+    public int? SelectedDistrictId { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnDistrictSelected { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _mapShapes = CreateMapShapes();
+        _mapZoom = DefaultZoom;
+
+        if (_mapShapes.Count == 0)
+        {
+            _mapCenter = DefaultCenter;
+            return;
+        }
+
+        var districtShapes = _mapShapes
+            .Where(shape => !shape.IsMapOutline)
+            .ToList();
+        var mapOutlineShapes = _mapShapes
+            .Where(shape => shape.IsMapOutline)
+            .ToList();
+        if (districtShapes.Count == 0)
+        {
+            if (!TryApplyZoomCenter(mapOutlineShapes))
+            {
+                _mapCenter = DefaultCenter;
+            }
+
+            return;
+        }
+
+        if (TryApplySelectedDistrictZoomCenter(districtShapes))
+        {
+            return;
+        }
+
+        if (TryApplyZoomCenter(mapOutlineShapes))
+        {
+            return;
+        }
+
+        ApplyDistrictAverageCenter(districtShapes);
+    }
+
+    private List<DistrictMapShape> CreateMapShapes()
+    {
+        var mapShapes = new List<DistrictMapShape>();
+        AddMapOutlineShapes(mapShapes);
+        AddDistrictShapes(mapShapes);
+        return mapShapes;
+    }
+
+    private void AddMapOutlineShapes(List<DistrictMapShape> mapShapes)
+    {
+        if (string.IsNullOrWhiteSpace(MapOutlineGeoJson)
+            || !TryCreatePolygonCoordinateSets(MapOutlineGeoJson, out var mapOutlineCoordinateSets))
+        {
+            return;
+        }
+
+        mapShapes.AddRange(mapOutlineCoordinateSets.Select(mapOutlineCoordinates => new DistrictMapShape(
+            null,
+            mapOutlineCoordinates,
+            DefaultCenter,
+            1d,
+            true)));
+    }
+
+    private void AddDistrictShapes(List<DistrictMapShape> mapShapes)
+    {
+        foreach (var district in Districts)
+        {
+            if (!TryCreatePolygonCoordinates(district.GeoJson, out var polygonCoordinates))
+            {
+                continue;
+            }
+
+            mapShapes.Add(new DistrictMapShape(
+                district.Id,
+                polygonCoordinates,
+                new Coordinate(district.TriggerLng, district.TriggerLat),
+                Math.Max(1d, district.TriggerRadiusMeters ?? 1d),
+                false));
+        }
+    }
+
+    private bool TryApplySelectedDistrictZoomCenter(IReadOnlyList<DistrictMapShape> districtShapes)
+    {
+        var selectedShape = SelectedDistrictId is int selectedDistrictId
+            ? districtShapes.FirstOrDefault(shape => shape.DistrictId == selectedDistrictId)
+            : null;
+        return selectedShape is not null && TryApplyZoomCenter(selectedShape);
+    }
+
+    private bool TryApplyZoomCenter(DistrictMapShape shape)
+    {
+        return TryApplyZoomCenter(shape.PolygonCoordinates);
+    }
+
+    private bool TryApplyZoomCenter(IReadOnlyList<DistrictMapShape> shapes)
+    {
+        var coordinates = shapes
+            .SelectMany(shape => shape.PolygonCoordinates)
+            .ToList();
+        return TryApplyZoomCenter(coordinates);
+    }
+
+    private bool TryApplyZoomCenter(IList<Coordinate> coordinates)
+    {
+        if (!TryCreateBounds(coordinates, out var bounds))
+        {
+            return false;
+        }
+
+        ApplyZoomCenter(bounds);
+        return true;
+    }
+
+    private void ApplyZoomCenter(DistrictBounds bounds)
+    {
+        _mapCenter = new Coordinate(bounds.CenterLng, bounds.CenterLat);
+        _mapZoom = CalculateZoomForBounds(bounds);
+    }
+
+    private void ApplyDistrictAverageCenter(IReadOnlyList<DistrictMapShape> districtShapes)
+    {
+        _mapCenter = new Coordinate(
+            districtShapes.Average(shape => shape.TriggerCenter.X),
+            districtShapes.Average(shape => shape.TriggerCenter.Y));
+    }
+
+    private async Task HandleShapeClick(Shape shape)
+    {
+        if (!TryParseDistrictId(shape.Id, out var districtId))
+        {
+            return;
+        }
+
+        await OnDistrictSelected.InvokeAsync(districtId);
+    }
+
+    private string GetPolygonFill(DistrictMapShape shape)
+    {
+        if (shape.IsMapOutline)
+        {
+            return "rgba(255, 255, 255, 0)";
+        }
+
+        return shape.DistrictId == SelectedDistrictId
+            ? "rgba(25, 118, 210, 0.42)"
+            : "rgba(120, 120, 120, 0.24)";
+    }
+
+    private string GetPolygonStroke(DistrictMapShape shape)
+    {
+        if (shape.IsMapOutline)
+        {
+            return "rgba(211, 47, 47, 1)";
+        }
+
+        return shape.DistrictId == SelectedDistrictId
+            ? "rgba(25, 118, 210, 1)"
+            : "rgba(90, 90, 90, 0.9)";
+    }
+
+    private static List<StyleOptions> GetTriggerStyles()
+    {
+        return
+        [
+            new StyleOptions
+            {
+                Fill = new StyleOptions.FillOptions { Color = "rgba(0, 0, 0, 0)" },
+                Stroke = new StyleOptions.StrokeOptions
+                {
+                    Color = "rgba(211, 47, 47, 1)",
+                    Width = 2d
+                }
+            }
+        ];
+    }
+
+    private static List<StyleOptions> GetMapOutlineStyles()
+    {
+        return
+        [
+            new StyleOptions
+            {
+                Fill = new StyleOptions.FillOptions { Color = "rgba(255, 255, 255, 0)" },
+                Stroke = new StyleOptions.StrokeOptions
+                {
+                    Color = "rgba(211, 47, 47, 1)",
+                    Width = 4d,
+                    LineDash = [12, 8]
+                },
+                ZIndex = 1000
+            }
+        ];
+    }
+
+    private static int CalculateZoomForBounds(DistrictBounds bounds)
+    {
+        var longitudeDelta = Math.Max(bounds.MaxLng - bounds.MinLng, 0.000001d);
+        var latitudeDelta = Math.Max(bounds.MaxLat - bounds.MinLat, 0.000001d);
+        var zoomForWidth = Math.Log(MapWidthPixels * FitPaddingRatio * 360d / (longitudeDelta * 256d), 2);
+        var zoomForHeight = Math.Log(MapHeightPixels * FitPaddingRatio * 360d / (latitudeDelta * 256d), 2);
+        var zoom = (int)Math.Floor(Math.Min(zoomForWidth, zoomForHeight));
+        return Math.Clamp(zoom, MinZoom, MaxZoom);
+    }
+
+    private static bool TryCreateBounds(IList<Coordinate> coordinates, out DistrictBounds bounds)
+    {
+        bounds = default;
+        if (coordinates.Count == 0)
+        {
+            return false;
+        }
+
+        var minLng = coordinates.Min(coordinate => coordinate.X);
+        var maxLng = coordinates.Max(coordinate => coordinate.X);
+        var minLat = coordinates.Min(coordinate => coordinate.Y);
+        var maxLat = coordinates.Max(coordinate => coordinate.Y);
+        bounds = new DistrictBounds(
+            minLng,
+            maxLng,
+            minLat,
+            maxLat,
+            (minLng + maxLng) / 2d,
+            (minLat + maxLat) / 2d);
+        return true;
+    }
+
+    private static string BuildFeatureId(string prefix, int districtId) => $"{prefix}:{districtId}";
+
+    private static string BuildMapOutlineFeatureId(int outlineIndex) => $"map:outline:{outlineIndex}";
+
+    private static bool TryParseDistrictId(string? featureId, out int districtId)
+    {
+        districtId = 0;
+        if (string.IsNullOrWhiteSpace(featureId))
+        {
+            return false;
+        }
+
+        var separatorIndex = featureId.IndexOf(':');
+        if (separatorIndex < 0 || separatorIndex + 1 >= featureId.Length)
+        {
+            return false;
+        }
+
+        var prefix = featureId[..separatorIndex];
+        if (!string.Equals(prefix, "district", StringComparison.Ordinal)
+            && !string.Equals(prefix, "trigger", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return int.TryParse(featureId[(separatorIndex + 1)..], out districtId);
+    }
+
+    private static bool TryCreatePolygonCoordinateSets(
+        string geoJson,
+        out List<List<Coordinate>> polygonCoordinateSets)
+    {
+        polygonCoordinateSets = [];
+        if (TryCreatePolygonCoordinatesFromTypedPolygon(geoJson, out var polygonCoordinates))
+        {
+            polygonCoordinateSets.Add(polygonCoordinates);
+            return true;
+        }
+
+        return TryCreatePolygonCoordinateSetsFromDocument(geoJson, out polygonCoordinateSets);
+    }
+
+    private static bool TryCreatePolygonCoordinates(
+        string geoJson,
+        out List<Coordinate> polygonCoordinates)
+    {
+        polygonCoordinates = [];
+        if (TryCreatePolygonCoordinatesFromTypedPolygon(geoJson, out polygonCoordinates))
+        {
+            return true;
+        }
+
+        if (!TryCreatePolygonCoordinateSetsFromDocument(geoJson, out var polygonCoordinateSets)
+            || polygonCoordinateSets.Count == 0)
+        {
+            return false;
+        }
+
+        polygonCoordinates = polygonCoordinateSets[0];
+        return true;
+    }
+
+    private static bool TryCreatePolygonCoordinatesFromTypedPolygon(
+        string geoJson,
+        out List<Coordinate> polygonCoordinates)
+    {
+        polygonCoordinates = [];
+        try
+        {
+            var polygon = JsonSerializer.Deserialize(
+                geoJson,
+                DistrictGeoJsonSerializerContext.Default.GeoJsonPolygon);
+            if (polygon is null || polygon.Coordinates.Length == 0)
+            {
+                return false;
+            }
+
+            var outerRing = polygon.Coordinates[0];
+            if (outerRing.Length < 3)
+            {
+                return false;
+            }
+
+            var coordinates = outerRing
+                .Where(position => position.Length >= 2)
+                .Select(position => new Coordinate(position[0], position[1]))
+                .ToList();
+            if (coordinates.Count < 3)
+            {
+                return false;
+            }
+
+            var firstCoordinate = coordinates[0];
+            var lastCoordinate = coordinates[^1];
+            if (firstCoordinate.X != lastCoordinate.X || firstCoordinate.Y != lastCoordinate.Y)
+            {
+                coordinates.Add(firstCoordinate);
+            }
+
+            polygonCoordinates = coordinates;
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryCreatePolygonCoordinateSetsFromDocument(
+        string geoJson,
+        out List<List<Coordinate>> polygonCoordinateSets)
+    {
+        polygonCoordinateSets = [];
+        try
+        {
+            using var document = JsonDocument.Parse(geoJson);
+            if (document.RootElement.ValueKind is JsonValueKind.String)
+            {
+                var nestedJson = document.RootElement.GetString();
+                return !string.IsNullOrWhiteSpace(nestedJson)
+                    && TryCreatePolygonCoordinateSetsFromDocument(nestedJson, out polygonCoordinateSets);
+            }
+
+            if (!TryGetPolygonOuterRings(document.RootElement, out var outerRings))
+            {
+                return false;
+            }
+
+            foreach (var outerRing in outerRings)
+            {
+                if (TryCreateCoordinatesFromOuterRing(outerRing, out var polygonCoordinates))
+                {
+                    polygonCoordinateSets.Add(polygonCoordinates);
+                }
+            }
+
+            return polygonCoordinateSets.Count > 0;
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryCreateCoordinatesFromOuterRing(
+        JsonElement outerRing,
+        out List<Coordinate> polygonCoordinates)
+    {
+        polygonCoordinates = outerRing
+            .EnumerateArray()
+            .Select(position => position.ValueKind is JsonValueKind.Array ? position.EnumerateArray().ToArray() : [])
+            .Where(position => position.Length >= 2)
+            .Select(position => new Coordinate(position[0].GetDouble(), position[1].GetDouble()))
+            .ToList();
+        if (polygonCoordinates.Count < 3)
+        {
+            return false;
+        }
+
+        var firstCoordinate = polygonCoordinates[0];
+        var lastCoordinate = polygonCoordinates[^1];
+        if (firstCoordinate.X != lastCoordinate.X || firstCoordinate.Y != lastCoordinate.Y)
+        {
+            polygonCoordinates.Add(firstCoordinate);
+        }
+
+        return true;
+    }
+
+    private static bool TryGetPolygonOuterRings(JsonElement element, out List<JsonElement> outerRings)
+    {
+        outerRings = [];
+        if (element.ValueKind is not JsonValueKind.Object
+            || !element.TryGetProperty("type", out var typeElement)
+            || typeElement.ValueKind is not JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var type = typeElement.GetString();
+        if (string.Equals(type, "Polygon", StringComparison.OrdinalIgnoreCase)
+            && element.TryGetProperty("coordinates", out var polygonCoordinates)
+            && polygonCoordinates.ValueKind is JsonValueKind.Array
+            && polygonCoordinates.GetArrayLength() > 0)
+        {
+            var outerRing = polygonCoordinates[0];
+            if (outerRing.ValueKind is JsonValueKind.Array)
+            {
+                outerRings.Add(outerRing);
+            }
+
+            return outerRings.Count > 0;
+        }
+
+        if (string.Equals(type, "MultiPolygon", StringComparison.OrdinalIgnoreCase)
+            && element.TryGetProperty("coordinates", out var multiPolygonCoordinates)
+            && multiPolygonCoordinates.ValueKind is JsonValueKind.Array
+            && multiPolygonCoordinates.GetArrayLength() > 0)
+        {
+            foreach (var multiPolygonCoordinatesEntry in multiPolygonCoordinates.EnumerateArray())
+            {
+                if (multiPolygonCoordinatesEntry.ValueKind is JsonValueKind.Array
+                    && multiPolygonCoordinatesEntry.GetArrayLength() > 0)
+                {
+                    var outerRing = multiPolygonCoordinatesEntry[0];
+                    if (outerRing.ValueKind is JsonValueKind.Array)
+                    {
+                        outerRings.Add(outerRing);
+                    }
+                }
+            }
+
+            return outerRings.Count > 0;
+        }
+
+        if (string.Equals(type, "Feature", StringComparison.OrdinalIgnoreCase)
+            && element.TryGetProperty("geometry", out var geometryElement))
+        {
+            return TryGetPolygonOuterRings(geometryElement, out outerRings);
+        }
+
+        if (string.Equals(type, "FeatureCollection", StringComparison.OrdinalIgnoreCase)
+            && element.TryGetProperty("features", out var featuresElement)
+            && featuresElement.ValueKind is JsonValueKind.Array)
+        {
+            foreach (var featureElement in featuresElement.EnumerateArray())
+            {
+                if (TryGetPolygonOuterRings(featureElement, out var featureOuterRings))
+                {
+                    outerRings.AddRange(featureOuterRings);
+                }
+            }
+
+            return outerRings.Count > 0;
+        }
+
+        if (string.Equals(type, "GeometryCollection", StringComparison.OrdinalIgnoreCase)
+            && element.TryGetProperty("geometries", out var geometriesElement)
+            && geometriesElement.ValueKind is JsonValueKind.Array)
+        {
+            foreach (var geometry in geometriesElement.EnumerateArray())
+            {
+                if (TryGetPolygonOuterRings(geometry, out var geometryOuterRings))
+                {
+                    outerRings.AddRange(geometryOuterRings);
+                }
+            }
+
+            return outerRings.Count > 0;
+        }
+
+        return false;
+    }
+
+    private sealed record DistrictMapShape(
+        int? DistrictId,
+        IList<Coordinate> PolygonCoordinates,
+        Coordinate TriggerCenter,
+        double TriggerRadiusMeters,
+        bool IsMapOutline);
+
+    private readonly record struct DistrictBounds(
+        double MinLng,
+        double MaxLng,
+        double MinLat,
+        double MaxLat,
+        double CenterLng,
+        double CenterLat);
+}

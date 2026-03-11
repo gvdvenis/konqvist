@@ -8,6 +8,7 @@ public class GameTemplate
     public string Name { get; set; } = string.Empty;
     public string GmLoginToken { get; set; } = string.Empty;
     public string? DistrictImportSourceUrl { get; set; }
+    public string? MapOutlineGeoJson { get; set; }
     public int TotalRounds { get; set; }
     public int LocationUpdateIntervalSeconds { get; set; }
     public int MinLocationUpdateIntervalSeconds { get; set; }

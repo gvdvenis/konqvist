@@ -20,7 +20,7 @@ internal static class TemplateSeedData
         VotingDurationSeconds = 30,
         PredictionBonusPoints = 150,
         VoteTimeoutPenalty = 50,
-        DistrictCaptureRadiusMeters = 50d
+        DistrictCaptureRadiusMeters = 15d
     };
 
     public static readonly TeamTemplate[] TeamTemplates =

@@ -428,7 +428,7 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                     b.Property<double>("DistrictCaptureRadiusMeters")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("REAL")
-                        .HasDefaultValue(50.0);
+                        .HasDefaultValue(15.0);
 
                     b.Property<string>("DistrictImportSourceUrl")
                         .HasMaxLength(2048)
@@ -443,6 +443,9 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(30);
+
+                    b.Property<string>("MapOutlineGeoJson")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("MinLocationUpdateIntervalSeconds")
                         .ValueGeneratedOnAdd()
@@ -480,7 +483,7 @@ namespace Konqvist.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            DistrictCaptureRadiusMeters = 50.0,
+                            DistrictCaptureRadiusMeters = 15.0,
                             GmLoginToken = "GM57t7",
                             LocationUpdateIntervalSeconds = 30,
                             MinLocationUpdateIntervalSeconds = 5,

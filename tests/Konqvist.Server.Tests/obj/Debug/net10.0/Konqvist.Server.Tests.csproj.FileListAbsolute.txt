@@ -25,16 +25,7 @@ D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Sqlite.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Caching.Abstractions.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Caching.Memory.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Configuration.Abstractions.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.DependencyInjection.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.DependencyModel.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Logging.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Logging.Abstractions.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Options.dll
-D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.Extensions.Primitives.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.OpenApi.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.TestPlatform.CoreUtilities.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Microsoft.TestPlatform.PlatformAbstractions.dll
@@ -199,3 +190,4 @@ D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\MudBlazor.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.dll
 D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\Konqvist.Admin.pdb
+D:\Source\Repos\konqvist\tests\Konqvist.Server.Tests\bin\Debug\net10.0\OpenLayers.Blazor.dll

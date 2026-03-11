@@ -8,5 +8,5 @@ public sealed class CreateGameTemplateInput
     public int VotingDurationSeconds { get; set; } = 30;
     public int PredictionBonusPoints { get; set; } = 150;
     public int VoteTimeoutPenalty { get; set; } = 50;
-    public double DistrictCaptureRadiusMeters { get; set; } = 50d;
+    public double DistrictCaptureRadiusMeters { get; set; } = 15d;
 }

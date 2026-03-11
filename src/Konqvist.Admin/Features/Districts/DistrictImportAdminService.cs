@@ -5,8 +5,10 @@ using Konqvist.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Operation.Union;
 using SharpKml.Dom;
 using SharpKml.Engine;
+using NtsGeometry = NetTopologySuite.Geometries.Geometry;
 using NtsLinearRing = NetTopologySuite.Geometries.LinearRing;
 using NtsPoint = NetTopologySuite.Geometries.Point;
 using NtsPolygon = NetTopologySuite.Geometries.Polygon;
@@ -37,8 +39,32 @@ public sealed class DistrictImportAdminService(
                 entity.Id,
                 entity.Name,
                 entity.Districts.Count,
-                entity.DistrictImportSourceUrl))
+                entity.DistrictImportSourceUrl,
+                entity.MapOutlineGeoJson))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DistrictPreviewItem>> GetDistrictPreviewAsync(
+        int templateId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        return await dbContext.DistrictTemplates
+            .AsNoTracking()
+            .Where(entity => entity.GameTemplateId == templateId)
+            .OrderBy(entity => entity.Name)
+            .Select(entity => new DistrictPreviewItem(
+                entity.Id,
+                entity.Name,
+                entity.Gold,
+                entity.Voters,
+                entity.Likes,
+                entity.Oil,
+                entity.TriggerLat,
+                entity.TriggerLng,
+                entity.TriggerRadiusMeters,
+                entity.GeoJson))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<UpdateDistrictImportSourceUrlResult> SaveSourceUrlAsync(
@@ -332,16 +358,43 @@ public sealed class DistrictImportAdminService(
         }
 
         var matchedTriggers = MatchTriggerPoints(parsedData.Polygons, parsedData.Points);
+        var mapOutlinePolygonIndex = TryGetMapOutlinePolygonIndex(parsedData.Polygons, parsedData.Points, matchedTriggers);
+        var mapOutlineStatus = DistrictMapOutlineStatus.NotAvailable;
+        string? mapOutlineGeoJson;
+        if (mapOutlinePolygonIndex is int outlineIndex)
+        {
+            mapOutlineGeoJson = parsedData.Polygons[outlineIndex].GeoJson;
+            mapOutlineStatus = DistrictMapOutlineStatus.Imported;
+        }
+        else if (TryBuildFallbackMapOutlineGeoJson(parsedData.Polygons, out var generatedMapOutlineGeoJson))
+        {
+            mapOutlineGeoJson = generatedMapOutlineGeoJson;
+            mapOutlineStatus = DistrictMapOutlineStatus.GeneratedFallback;
+        }
+        else
+        {
+            mapOutlineGeoJson = null;
+        }
         var triggerCentersDerived = 0;
+        var triggerCirclesMatched = 0;
         var districtsToInsert = new List<DistrictTemplate>(parsedData.Polygons.Count);
 
         for (var index = 0; index < parsedData.Polygons.Count; index++)
         {
+            if (mapOutlinePolygonIndex is int mapIndex && index == mapIndex)
+            {
+                continue;
+            }
+
             var polygon = parsedData.Polygons[index];
             if (!matchedTriggers.TryGetValue(index, out var triggerCoordinate))
             {
                 triggerCoordinate = ComputePolygonCenter(polygon.Geometry);
                 triggerCentersDerived++;
+            }
+            else
+            {
+                triggerCirclesMatched++;
             }
 
             districtsToInsert.Add(new DistrictTemplate
@@ -366,14 +419,16 @@ public sealed class DistrictImportAdminService(
         {
             template.DistrictImportSourceUrl = sourceUrlToPersist;
         }
+        template.MapOutlineGeoJson = mapOutlineGeoJson;
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         return ImportDistrictTemplatesResult.Imported(new DistrictImportSummary(
             DistrictsImported: districtsToInsert.Count,
-            TriggerCirclesMatched: matchedTriggers.Count,
-            TriggerCentersDerived: triggerCentersDerived));
+            TriggerCirclesMatched: triggerCirclesMatched,
+            TriggerCentersDerived: triggerCentersDerived,
+            MapOutlineStatus: mapOutlineStatus));
     }
 
     private async Task<DownloadSourceContentResult> DownloadSourceContentAsync(
@@ -734,6 +789,59 @@ public sealed class DistrictImportAdminService(
         return !linearRing.IsEmpty && linearRing.IsValid;
     }
 
+    private static int? TryGetMapOutlinePolygonIndex(
+        IReadOnlyList<ParsedPolygon> polygons,
+        IReadOnlyList<NtsPoint> points,
+        IReadOnlyDictionary<int, Coordinate> matchedTriggers)
+    {
+        if (polygons.Count < 2)
+        {
+            return null;
+        }
+
+        var areaRankedPolygons = polygons
+            .Select((polygon, index) => (polygon, index))
+            .OrderByDescending(item => item.polygon.Geometry.Area)
+            .ThenBy(item => item.index)
+            .ToList();
+        var mapCandidate = areaRankedPolygons[0];
+        if (areaRankedPolygons.Count > 1)
+        {
+            var secondLargestArea = areaRankedPolygons[1].polygon.Geometry.Area;
+            if (mapCandidate.polygon.Geometry.Area <= secondLargestArea)
+            {
+                return null;
+            }
+        }
+
+        var allTriggersWithinCandidate = points.All(point => mapCandidate.polygon.Geometry.Covers(point));
+        if (!allTriggersWithinCandidate)
+        {
+            return null;
+        }
+
+        if (matchedTriggers.ContainsKey(mapCandidate.index))
+        {
+            return null;
+        }
+
+        var requiredMatchedTriggers = polygons.Count - 1;
+        if (matchedTriggers.Count != requiredMatchedTriggers)
+        {
+            return null;
+        }
+
+        var allNonCandidatePolygonsMatched = Enumerable.Range(0, polygons.Count)
+            .Where(index => index != mapCandidate.index)
+            .All(index => matchedTriggers.ContainsKey(index));
+        if (!allNonCandidatePolygonsMatched)
+        {
+            return null;
+        }
+
+        return mapCandidate.index;
+    }
+
     private static Dictionary<int, Coordinate> MatchTriggerPoints(
         IReadOnlyList<ParsedPolygon> polygons,
         IReadOnlyList<NtsPoint> points)
@@ -763,6 +871,32 @@ public sealed class DistrictImportAdminService(
         }
 
         return matchedTriggers;
+    }
+
+    private static bool TryBuildFallbackMapOutlineGeoJson(
+        IReadOnlyList<ParsedPolygon> polygons,
+        out string mapOutlineGeoJson)
+    {
+        mapOutlineGeoJson = string.Empty;
+        if (polygons.Count == 0)
+        {
+            return false;
+        }
+
+        var unionGeometry = UnaryUnionOp.Union(polygons.Select(polygon => (NtsGeometry)polygon.Geometry).ToArray());
+        var outlinePolygon = unionGeometry switch
+        {
+            NtsPolygon polygon => polygon,
+            MultiPolygon multiPolygon when multiPolygon.NumGeometries == 1 => (NtsPolygon)multiPolygon.GetGeometryN(0),
+            _ => null
+        };
+        if (outlinePolygon is null || outlinePolygon.IsEmpty || !outlinePolygon.IsValid)
+        {
+            return false;
+        }
+
+        mapOutlineGeoJson = BuildGeoJsonPolygon(outlinePolygon);
+        return true;
     }
 
     private static Coordinate ComputePolygonCenter(NtsPolygon polygon)

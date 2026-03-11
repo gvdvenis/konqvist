@@ -139,8 +139,6 @@ D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\ldkq3le
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\gmhenhglnm-{0}-63fj8s7r0e-63fj8s7r0e.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\fz89nmbka7-{0}-0j3bgjxly4-0j3bgjxly4.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\pif01wrbay-{0}-abdmv1u4y3-abdmv1u4y3.gz
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\nv5x6v318u-{0}-2i0r6wwb69-2i0r6wwb69.gz
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\f4pasfhuqt-{0}-iz83ucvm53-iz83ucvm53.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\staticwebassets.build.json
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\staticwebassets.build.json.cache
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\staticwebassets.development.json
@@ -170,5 +168,12 @@ D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.dll
 D:\Source\Repos\konqvist\.tmp\adminbuild\Debug\net10.0\Konqvist.Admin.pdb
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4t987fugi3-{0}-gh790r6es4-gh790r6es4.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\4uhcabq0qm-{0}-gh790r6es4-gh790r6es4.gz
-D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\rxam9e4zzb-{0}-5a1kb5zryj-5a1kb5zryj.gz
 D:\Source\Repos\konqvist\src\Konqvist.Admin\bin\Debug\net10.0\SharpKml.Core.dll
+D:\Source\Repos\konqvist\src\Konqvist.Admin\bin\Debug\net10.0\OpenLayers.Blazor.dll
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\l6aod9obqe-{0}-yz05b9kus2-yz05b9kus2.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\0zx6l9fnfj-{0}-ms9cwrkdev-ms9cwrkdev.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\vykrga6dc8-{0}-1b5ums0r40-1b5ums0r40.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\rxam9e4zzb-{0}-iyp7zzbkn6-iyp7zzbkn6.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\nv5x6v318u-{0}-mgww215af1-mgww215af1.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\compressed\f4pasfhuqt-{0}-dy8h75y8gn-dy8h75y8gn.gz
+D:\Source\Repos\konqvist\src\Konqvist.Admin\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

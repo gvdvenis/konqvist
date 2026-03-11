@@ -1,0 +1,74 @@
+@using Konqvist.Admin.Features.Districts
+@using MudBlazor
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h6">District list</MudText>
+        <MudText Typo="Typo.body2" Class="admin-muted-text">@Districts.Count total</MudText>
+    </MudStack>
+
+    @if (Districts.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No districts available yet.</MudAlert>
+    }
+    else
+    {
+        <MudTable T="DistrictPreviewItem"
+                  Items="Districts"
+                  Dense="true"
+                  Hover="true"
+                  Striped="true"
+                  Class="district-preview-table"
+                  RowClassFunc="GetRowClass"
+                  OnRowClick="HandleRowClick">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Voters</MudTh>
+                <MudTh>Likes</MudTh>
+                <MudTh>Oil</MudTh>
+                <MudTh>Trigger radius (m)</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Voters">@context.Voters</MudTd>
+                <MudTd DataLabel="Likes">@context.Likes</MudTd>
+                <MudTd DataLabel="Oil">@context.Oil</MudTd>
+                <MudTd DataLabel="Trigger radius (m)">@FormatTriggerRadius(context.TriggerRadiusMeters)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<DistrictPreviewItem> Districts { get; set; } = [];
+
+    [Parameter]
+    public int? SelectedDistrictId { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnDistrictSelected { get; set; }
+
+    private string GetRowClass(DistrictPreviewItem district, int _)
+    {
+        return district.Id == SelectedDistrictId
+            ? "district-preview-row-selected"
+            : string.Empty;
+    }
+
+    private Task HandleRowClick(TableRowClickEventArgs<DistrictPreviewItem> args)
+    {
+        return args.Item is null
+            ? Task.CompletedTask
+            : OnDistrictSelected.InvokeAsync(args.Item.Id);
+    }
+
+    private static string FormatTriggerRadius(double? radiusMeters)
+    {
+        return radiusMeters.HasValue
+            ? $"{radiusMeters.Value:F0}"
+            : "N/A";
+    }
+}

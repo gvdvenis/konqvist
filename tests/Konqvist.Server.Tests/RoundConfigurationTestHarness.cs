@@ -79,7 +79,7 @@ internal sealed class RoundConfigurationTestHarness
             VotingDurationSeconds = 30,
             PredictionBonusPoints = 150,
             VoteTimeoutPenalty = 50,
-            DistrictCaptureRadiusMeters = 50d
+            DistrictCaptureRadiusMeters = 15d
         };
     }
 }

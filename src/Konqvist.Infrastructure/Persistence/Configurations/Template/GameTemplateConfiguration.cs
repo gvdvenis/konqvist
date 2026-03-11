@@ -25,6 +25,9 @@ public class GameTemplateConfiguration : IEntityTypeConfiguration<GameTemplate>
             .HasMaxLength(2048)
             .IsRequired(false);
 
+        builder.Property(entity => entity.MapOutlineGeoJson)
+            .IsRequired(false);
+
         builder.Property(entity => entity.TotalRounds)
             .HasDefaultValue(4)
             .IsRequired();
@@ -49,7 +52,7 @@ public class GameTemplateConfiguration : IEntityTypeConfiguration<GameTemplate>
             .IsRequired();
 
         builder.Property(entity => entity.DistrictCaptureRadiusMeters)
-            .HasDefaultValue(50d)
+            .HasDefaultValue(15d)
             .IsRequired();
 
         builder.HasData(TemplateSeedData.DemoGameTemplate);

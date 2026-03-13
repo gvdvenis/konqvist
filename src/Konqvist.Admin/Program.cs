@@ -4,6 +4,7 @@ using Konqvist.Admin.Components;
 using Konqvist.Admin.Features.Auth;
 using Konqvist.Admin.Features.Districts;
 using Konqvist.Admin.Features.Rounds;
+using Konqvist.Admin.Features.Session;
 using Konqvist.Admin.Features.Teams;
 using Konqvist.Admin.Features.Templates;
 using Konqvist.Infrastructure.Persistence;
@@ -24,6 +25,7 @@ builder.Services.AddDbContextFactory<KonqvistDbContext>(options =>
 builder.Services.AddScoped<GameTemplateAdminService>();
 builder.Services.AddScoped<RoundTemplateAdminService>();
 builder.Services.AddScoped<TeamTemplateAdminService>();
+builder.Services.AddScoped<SessionAdminService>();
 builder.Services.AddHttpClient<DistrictImportAdminService>();
 builder.Services.AddScoped<IValidator<CreateGameTemplateInput>, CreateGameTemplateInputValidator>();
 builder.Services.AddScoped<IValidator<RoundTemplateEditorInput>, RoundTemplateEditorInputValidator>();

@@ -141,13 +141,13 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 - "Reset" button (only if Finished): deletes all session-layer records, session returns to Pending state
 
 ### Done means
-- [ ] A complete GameTemplate can be created with name, all settings, teams, players, and rounds via the admin UI
-- [ ] All generated tokens are visible and copyable
-- [ ] A KML/KMZ file with polygons and points imports successfully; districts appear in the list and on the map preview
-- [ ] Selecting a district in the list highlights it on the map and vice versa
-- [ ] Resource randomization fills all districts within the specified range
-- [ ] A GameSession can be created from a template, started, and reset via the admin session page
-- [ ] All validation errors (duplicate team name, missing stake, etc.) surface as UI messages
+- [x] A complete GameTemplate can be created with name, all settings, teams, players, and rounds via the admin UI
+- [x] All generated tokens are visible and copyable
+- [x] A KML/KMZ file with polygons and points imports successfully; districts appear in the list and on the map preview
+- [x] Selecting a district in the list highlights it on the map and vice versa
+- [x] Resource randomization fills all districts within the specified range
+- [x] A GameSession can be created from a template, started, and reset via the admin session page
+- [x] All validation errors (duplicate team name, missing stake, etc.) surface as UI messages
 
 ---
 

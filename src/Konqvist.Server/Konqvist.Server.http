@@ -1,6 +1,38 @@
 @Konqvist.Server_HostAddress = http://localhost:5062
 
-GET {{Konqvist.Server_HostAddress}}/weatherforecast/
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+# POST /api/auth/login — Bravo Runner (expect 200 + auth cookie)
+POST {{Konqvist.Server_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "token": "BRV6X4" }
+
+###
+
+# POST /api/auth/login — Bravo Runner again (expect 409 runner slot in use)
+POST {{Konqvist.Server_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "token": "BRV6X4" }
+
+###
+
+# GET /api/auth/me — requires auth cookie from login above (expect 200 + identity)
+GET {{Konqvist.Server_HostAddress}}/api/auth/me
 Accept: application/json
+
+###
+
+# POST /api/auth/logout — clears auth cookie (expect 204)
+POST {{Konqvist.Server_HostAddress}}/api/auth/logout
+
+###
+
+# ── Other seed tokens ─────────────────────────────────────────────────────────
+# Alpha Team Leader : ATCsC1a
+# Bravo Runner      : BRV6X4
+# Bravo Team Leader : BTC53Sk
+# GM                : GMzKVG  (used on /api/auth/login against GameTemplate.GmLoginToken)
 
 ###

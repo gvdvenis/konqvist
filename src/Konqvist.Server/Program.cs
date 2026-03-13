@@ -1,5 +1,7 @@
 using Konqvist.Infrastructure.Persistence;
+using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.Admin;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -28,6 +30,29 @@ try
     builder.Services
         .AddOptions<AdminAppOptions>()
         .Bind(builder.Configuration.GetSection(AdminAppOptions.SectionName));
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.TypeInfoResolverChain.Insert(0, AuthJsonSerializerContext.Default);
+    });
+    builder.Services.AddAuthentication(AuthConstants.AuthenticationScheme)
+        .AddCookie(AuthConstants.AuthenticationScheme, options =>
+        {
+            options.Cookie.Name = AuthConstants.CookieName;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
+    builder.Services.AddAuthorization();
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
@@ -62,6 +87,10 @@ try
 
     app.UseHttpsRedirection();
     app.UseSerilogRequestLogging();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapAuthEndpoints();
 
     app.Run();
 }
@@ -73,3 +102,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program;

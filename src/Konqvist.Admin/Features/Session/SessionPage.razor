@@ -1,10 +1,238 @@
 @page "/admin/session"
+@using Konqvist.Admin.Components.Dialogs
 @using Konqvist.Admin.Components.Layout
+@using Konqvist.Infrastructure.Entities.Enums
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
 
-<MudPaper Elevation="0" Class="pa-4">
+<MudStack Class="admin-page-content" Spacing="3">
     <MudText Typo="Typo.h4">Session</MudText>
-</MudPaper>
+    <MudText Typo="Typo.body2" Class="admin-muted-text">
+        Create, start, and reset the current game session.
+    </MudText>
+
+    <MudPaper Class="pa-4">
+        <MudStack Spacing="2">
+            <MudSelect T="int?"
+                       Label="Game template"
+                       Variant="Variant.Outlined"
+                       Value="_selectedTemplateId"
+                       ValueChanged="OnTemplateChanged"
+                       Disabled="@_isBusy">
+                @foreach (var template in _templates)
+                {
+                    <MudSelectItem T="int?" Value="@template.Id">@template.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@(_isBusy || _selectedTemplateId is null || _hasActiveSession)"
+                       OnClick="CreateSessionAsync">
+                Create session
+            </MudButton>
+            @if (_hasActiveSession)
+            {
+                <MudAlert Severity="Severity.Info">Creating a new session is blocked while a Pending or Running session exists.</MudAlert>
+            }
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Class="pa-4">
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h6">Current session</MudText>
+            @if (_currentStatus is null)
+            {
+                <MudAlert Severity="Severity.Info">No session yet.</MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.body1"><b>Template:</b> @_currentTemplateName</MudText>
+                <MudText Typo="Typo.body1"><b>Status:</b> @_currentStatus</MudText>
+                @if (_startedAt is not null)
+                {
+                    <MudText Typo="Typo.body2"><b>Started:</b> @_startedAt.Value.ToLocalTime()</MudText>
+                }
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               Disabled="@(_isBusy || _currentStatus != GameStatus.Pending)"
+                               OnClick="StartSessionAsync">
+                        Start
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Warning"
+                               Disabled="@(_isBusy || _currentStatus != GameStatus.Finished)"
+                               OnClick="ResetSessionAsync">
+                        Reset
+                    </MudButton>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</MudStack>
+
+@code {
+    [Inject]
+    private SessionAdminService SessionService { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
+
+    private IReadOnlyList<SessionTemplateOption> _templates = [];
+    private int? _selectedTemplateId;
+    private int? _currentSessionId;
+    private string? _currentTemplateName;
+    private GameStatus? _currentStatus;
+    private DateTime? _startedAt;
+    private bool _isBusy;
+
+    private bool _hasActiveSession => _currentStatus is GameStatus.Pending or GameStatus.Running;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSnapshotAsync();
+    }
+
+    private async Task LoadSnapshotAsync()
+    {
+        var snapshot = await SessionService.GetAsync();
+        _templates = snapshot.Templates;
+        _currentSessionId = snapshot.CurrentSessionId;
+        _currentTemplateName = snapshot.CurrentTemplateName;
+        _currentStatus = snapshot.CurrentStatus;
+        _startedAt = snapshot.StartedAt;
+
+        _selectedTemplateId = snapshot.CurrentTemplateId is not null && _templates.Any(entity => entity.Id == snapshot.CurrentTemplateId.Value)
+            ? snapshot.CurrentTemplateId
+            : _templates.FirstOrDefault()?.Id;
+    }
+
+    private Task OnTemplateChanged(int? templateId)
+    {
+        _selectedTemplateId = templateId;
+        return Task.CompletedTask;
+    }
+
+    private async Task CreateSessionAsync()
+    {
+        if (_selectedTemplateId is null)
+        {
+            return;
+        }
+
+        var result = CreateGameSessionResult.TemplateNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await SessionService.CreateAsync(_selectedTemplateId.Value);
+            await LoadSnapshotAsync();
+        });
+
+        switch (result)
+        {
+            case CreateGameSessionResult.Created:
+                Snackbar.Add("Session created in Pending state.", Severity.Success);
+                break;
+            case CreateGameSessionResult.ActiveSessionExists:
+                Snackbar.Add("A Pending or Running session already exists.", Severity.Warning);
+                break;
+            case CreateGameSessionResult.TemplateNotFound:
+                Snackbar.Add("Game template not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected create result: {result}");
+        }
+    }
+
+    private async Task StartSessionAsync()
+    {
+        if (_currentSessionId is null)
+        {
+            return;
+        }
+
+        var result = StartGameSessionResult.SessionNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await SessionService.StartAsync(_currentSessionId.Value);
+            await LoadSnapshotAsync();
+        });
+
+        switch (result)
+        {
+            case StartGameSessionResult.Started:
+                Snackbar.Add("Session started.", Severity.Success);
+                break;
+            case StartGameSessionResult.InvalidStatus:
+                Snackbar.Add("Only Pending sessions can be started.", Severity.Warning);
+                break;
+            case StartGameSessionResult.SessionNotFound:
+                Snackbar.Add("Session not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected start result: {result}");
+        }
+    }
+
+    private async Task ResetSessionAsync()
+    {
+        if (_currentSessionId is null)
+        {
+            return;
+        }
+
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Reset session",
+            new DialogParameters
+            {
+                [nameof(ConfirmationDialog.Message)] = "Reset this finished session? This deletes all session-layer data and recreates a Pending session.",
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Reset"
+            });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = ResetGameSessionResult.SessionNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await SessionService.ResetAsync(_currentSessionId.Value);
+            await LoadSnapshotAsync();
+        });
+
+        switch (result)
+        {
+            case ResetGameSessionResult.Reset:
+                Snackbar.Add("Session reset to Pending.", Severity.Success);
+                break;
+            case ResetGameSessionResult.InvalidStatus:
+                Snackbar.Add("Only Finished sessions can be reset.", Severity.Warning);
+                break;
+            case ResetGameSessionResult.SessionNotFound:
+                Snackbar.Add("Session not found.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected reset result: {result}");
+        }
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        _isBusy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

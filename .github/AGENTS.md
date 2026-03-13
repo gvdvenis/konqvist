@@ -19,6 +19,13 @@ following a structured build plan.
 - Primary constructors where appropriate (.NET 10)
 - No regions
 
+## Solution design best practices (.NET 10)
+- Keep classes small and focused; prefer one responsibility per class
+- Keep feature code inside its vertical slice folder; avoid cross-slice coupling
+- Prefer composition over inheritance for shared behavior
+- Centralize shared abstractions only when reused by multiple slices
+- Keep repository root engineering baselines present and maintained: `.gitignore`, `.gitattributes`, `.editorconfig`
+
 ## Testing
 - Unit test project: tests/Konqvist.Server.Tests
 - Run tests with: dotnet test

@@ -1,5 +1,29 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+# Build output
+**/bin/
+**/obj/
 
-/.vs
+# Visual Studio / Rider / VS Code
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+.vscode/
+
+# Test output
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Logs and diagnostics
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# OS files
+Thumbs.db
+Desktop.ini

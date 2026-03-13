@@ -66,6 +66,14 @@ h1:focus {
     padding: 0;
 }
 
+.district-randomize-action {
+    min-width: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-top: 0.21rem;
+    padding: 0;
+}
+
 .admin-page-content {
     padding: 0;
 }

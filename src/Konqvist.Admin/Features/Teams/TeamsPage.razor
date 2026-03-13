@@ -28,16 +28,42 @@
         <MudText Typo="Typo.body2" Class="admin-muted-text">
             Manage teams for game <b>@_templateName</b>.
         </MudText>
-        <TeamBulkCreateControls IsBusy="_isBusy"
-                                OnBulkCreate="HandleBulkCreateAsync" />
-        <TeamEditorForm @key="_editorKey"
-                        InitialInput="_editorInput"
-                        ExistingTeams="_teams"
-                        IsEditMode="@_editingTeamId.HasValue"
-                        EditingTeamId="_editingTeamId"
-                        IsBusy="_isBusy"
-                        OnSubmit="SaveTeamAsync"
-                        OnCancelEdit="CancelEditAsync" />
+        @if (_formMode is TeamFormMode.None)
+        {
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Disabled="@_isBusy"
+                           OnClick="ShowAddTeamFormAsync">
+                    Add team
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Warning"
+                           StartIcon="@Icons.Material.Filled.AutoAwesome"
+                           Disabled="@_isBusy"
+                           OnClick="ShowBulkCreateFormAsync">
+                    Bulk create teams
+                </MudButton>
+            </MudStack>
+        }
+        else if (_formMode is TeamFormMode.BulkCreate)
+        {
+            <TeamBulkCreateControls IsBusy="_isBusy"
+                                    OnBulkCreate="HandleBulkCreateAsync"
+                                    OnClose="CloseTeamFormsAsync" />
+        }
+        else
+        {
+            <TeamEditorForm @key="_editorKey"
+                            InitialInput="_editorInput"
+                            ExistingTeams="_teams"
+                            IsEditMode="@_editingTeamId.HasValue"
+                            EditingTeamId="_editingTeamId"
+                            IsBusy="_isBusy"
+                            OnSubmit="SaveTeamAsync"
+                            OnCancelEdit="CancelEditAsync" />
+        }
         <TeamListTable Teams="_teams"
                        EditingTeamId="_editingTeamId"
                        IsBusy="_isBusy"
@@ -67,6 +93,7 @@
     private int? _editingTeamId;
     private int _editorKey;
     private TeamTemplateEditorInput _editorInput = new();
+    private TeamFormMode _formMode = TeamFormMode.None;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -237,6 +264,7 @@
     private Task BeginEditAsync(TeamTemplateListItem team)
     {
         _editingTeamId = team.Id;
+        _formMode = TeamFormMode.AddEdit;
         _editorInput = new TeamTemplateEditorInput
         {
             Name = team.Name,
@@ -252,9 +280,32 @@
         return InvokeAsync(StateHasChanged);
     }
 
+    private Task ShowAddTeamFormAsync()
+    {
+        _editingTeamId = null;
+        _formMode = TeamFormMode.AddEdit;
+        _editorInput = new TeamTemplateEditorInput();
+        _editorKey++;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task ShowBulkCreateFormAsync()
+    {
+        _editingTeamId = null;
+        _formMode = TeamFormMode.BulkCreate;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task CloseTeamFormsAsync()
+    {
+        ResetEditor();
+        return InvokeAsync(StateHasChanged);
+    }
+
     private void ResetEditor()
     {
         _editingTeamId = null;
+        _formMode = TeamFormMode.None;
         _editorInput = new TeamTemplateEditorInput();
         _editorKey++;
     }
@@ -284,5 +335,12 @@
             _isBusy = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private enum TeamFormMode
+    {
+        None = 0,
+        AddEdit = 1,
+        BulkCreate = 2
     }
 }

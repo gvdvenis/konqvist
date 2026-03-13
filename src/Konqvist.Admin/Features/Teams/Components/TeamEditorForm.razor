@@ -44,12 +44,9 @@
                    OnClick="HandleSubmitAsync">
             @(_isEditMode ? "Save team" : "Add team")
         </MudButton>
-        @if (_isEditMode)
-        {
-            <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="@IsBusy" OnClick="HandleCancelAsync">
-                Cancel
-            </MudButton>
-        }
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="@IsBusy" OnClick="HandleCancelAsync">
+            @(_isEditMode ? "Cancel" : "Close")
+        </MudButton>
     </MudStack>
 </MudPaper>
 

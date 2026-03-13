@@ -1,7 +1,11 @@
 @using MudBlazor
 
 <MudPaper Elevation="1" Class="pa-4">
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="my-3">
+        Warning: bulk create will replace all existing teams for this game.
+    </MudAlert>
     <MudText Typo="Typo.h6" Class="mb-3">Bulk create teams</MudText>
+
     <MudGrid>
         <MudItem xs="12" md="4">
             <MudNumericField T="int"
@@ -25,13 +29,14 @@
                    OnClick="HandleBulkCreateAsync">
             Replace with bulk teams
         </MudButton>
-        <MudText Typo="Typo.caption" Class="admin-muted-text">
-            Generates teams in one step.
-        </MudText>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Secondary"
+                   Disabled="@IsBusy"
+                   OnClick="HandleCloseAsync">
+            Close
+        </MudButton>
     </MudStack>
-    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
-        Warning: bulk create will replace all existing teams for this game.
-    </MudAlert>
+
 </MudPaper>
 
 @code {
@@ -40,6 +45,9 @@
 
     [Parameter, EditorRequired]
     public Func<int, Task> OnBulkCreate { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Task> OnClose { get; set; } = null!;
 
     private int _teamCount = 2;
 
@@ -54,4 +62,6 @@
 
         return OnBulkCreate(_teamCount);
     }
+
+    private Task HandleCloseAsync() => OnClose();
 }

@@ -67,6 +67,87 @@ public sealed class DistrictImportAdminService(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<SaveDistrictResourcesResult> UpdateDistrictResourcesAsync(
+        int templateId,
+        int districtId,
+        DistrictResourceEditorInput input,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        if (!IsValidResourceInput(input))
+        {
+            return SaveDistrictResourcesResult.InvalidInput;
+        }
+
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var templateExists = await dbContext.GameTemplates
+            .AsNoTracking()
+            .AnyAsync(entity => entity.Id == templateId, cancellationToken);
+        if (!templateExists)
+        {
+            return SaveDistrictResourcesResult.TemplateNotFound;
+        }
+
+        var district = await dbContext.DistrictTemplates
+            .FirstOrDefaultAsync(
+                entity => entity.GameTemplateId == templateId && entity.Id == districtId,
+                cancellationToken);
+        if (district is null)
+        {
+            return SaveDistrictResourcesResult.DistrictNotFound;
+        }
+
+        district.Gold = input.Gold;
+        district.Voters = input.Voters;
+        district.Likes = input.Likes;
+        district.Oil = input.Oil;
+        district.TriggerRadiusMeters = input.TriggerRadiusMeters;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return SaveDistrictResourcesResult.Saved;
+    }
+
+    public async Task<RandomizeDistrictResourcesResult> RandomizeDistrictResourcesAsync(
+        int templateId,
+        int minValue,
+        int maxValue,
+        CancellationToken cancellationToken = default)
+    {
+        if (minValue < 0 || maxValue < 0 || minValue > maxValue)
+        {
+            return RandomizeDistrictResourcesResult.InvalidRange();
+        }
+
+        var minTen = RoundUpToNearestTen(minValue);
+        var maxTen = RoundDownToNearestTen(maxValue);
+        if (minTen > maxTen)
+        {
+            return RandomizeDistrictResourcesResult.InvalidRange();
+        }
+
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var templateExists = await dbContext.GameTemplates
+            .AsNoTracking()
+            .AnyAsync(entity => entity.Id == templateId, cancellationToken);
+        if (!templateExists)
+        {
+            return RandomizeDistrictResourcesResult.TemplateNotFound();
+        }
+
+        var districts = await dbContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .ToListAsync(cancellationToken);
+        foreach (var district in districts)
+        {
+            district.Gold = NextTenInclusive(minTen, maxTen);
+            district.Voters = NextTenInclusive(minTen, maxTen);
+            district.Likes = NextTenInclusive(minTen, maxTen);
+            district.Oil = NextTenInclusive(minTen, maxTen);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return RandomizeDistrictResourcesResult.Randomized(districts.Count);
+    }
+
     public async Task<UpdateDistrictImportSourceUrlResult> SaveSourceUrlAsync(
         int templateId,
         string sourceUrl,
@@ -254,6 +335,43 @@ public sealed class DistrictImportAdminService(
         }
 
         return await ImportParsedDataAsync(templateId, parsedData, sourceUrlToPersist: null, cancellationToken);
+    }
+
+    private static bool IsValidResourceInput(DistrictResourceEditorInput input)
+    {
+        return input.Gold >= 0
+               && input.Voters >= 0
+               && input.Likes >= 0
+               && input.Oil >= 0
+               && double.IsFinite(input.TriggerRadiusMeters)
+               && input.TriggerRadiusMeters > 0;
+    }
+
+    private static int NextTenInclusive(int minValue, int maxValue)
+    {
+        var steps = ((long)maxValue - minValue) / 10L + 1L;
+        if (steps <= 1)
+        {
+            return minValue;
+        }
+
+        var randomStep = Random.Shared.NextInt64(steps);
+        return checked(minValue + (int)(randomStep * 10L));
+    }
+
+    private static int RoundUpToNearestTen(int value)
+    {
+        if (value % 10 == 0)
+        {
+            return value;
+        }
+
+        return checked(value + (10 - (value % 10)));
+    }
+
+    private static int RoundDownToNearestTen(int value)
+    {
+        return value - (value % 10);
     }
 
     private async Task<ImportDistrictTemplatesResult> ImportFromSourceUrlAsync(

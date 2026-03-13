@@ -7,12 +7,127 @@
         <MudText Typo="Typo.body2" Class="admin-muted-text">@Districts.Count total</MudText>
     </MudStack>
 
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudNumericField T="int"
+                         Label="Min"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
+                         Min="0"
+                         Disabled="@IsBusy"
+                         Value="RandomizeMin"
+                         ValueChanged="HandleRandomizeMinChanged" />
+        <MudNumericField T="int"
+                         Label="Max"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
+                         Min="0"
+                         Disabled="@IsBusy"
+                         Value="RandomizeMax"
+                         ValueChanged="HandleRandomizeMaxChanged" />
+       
+        <MudTooltip Text="Randomize resources">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Class="district-randomize-action"
+                       Disabled="@IsBusy"
+                       OnClick="HandleRandomizeResourcesAsync">
+                <MudIcon Icon="@Icons.Material.Filled.Casino" />
+            </MudButton>
+        </MudTooltip>
+    </MudStack>
+
     @if (Districts.Count == 0)
     {
         <MudAlert Severity="Severity.Info">No districts available yet.</MudAlert>
     }
     else
     {
+        var editingDistrict = EditingDistrict;
+        @if (editingDistrict is not null)
+        {
+            <MudPaper Outlined="true" Class="pa-3 mb-3">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                    <MudText Typo="Typo.subtitle2">Edit @editingDistrict.Name</MudText>
+                    <MudTooltip Text="Close editor">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Secondary"
+                                   Class="grid-square-action"
+                                   Disabled="@IsBusy"
+                                   OnClick="HandleCloseEditorAsync">
+                            <MudIcon Icon="@Icons.Material.Filled.Close" />
+                        </MudButton>
+                    </MudTooltip>
+                </MudStack>
+                <MudGrid>
+                    <MudItem xs="6" md="4">
+                        <MudNumericField T="int"
+                                         Label="Gold"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0"
+                                         Disabled="@IsBusy"
+                                         Value="EditorInput.Gold"
+                                         ValueChanged="value => UpdateEditor(editor => editor.Gold = value)" />
+                    </MudItem>
+                    <MudItem xs="6" md="4">
+                        <MudNumericField T="int"
+                                         Label="Voters"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0"
+                                         Disabled="@IsBusy"
+                                         Value="EditorInput.Voters"
+                                         ValueChanged="value => UpdateEditor(editor => editor.Voters = value)" />
+                    </MudItem>
+                    <MudItem xs="6" md="4">
+                        <MudNumericField T="int"
+                                         Label="Likes"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0"
+                                         Disabled="@IsBusy"
+                                         Value="EditorInput.Likes"
+                                         ValueChanged="value => UpdateEditor(editor => editor.Likes = value)" />
+                    </MudItem>
+                    <MudItem xs="6" md="4">
+                        <MudNumericField T="int"
+                                         Label="Oil"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0"
+                                         Disabled="@IsBusy"
+                                         Value="EditorInput.Oil"
+                                         ValueChanged="value => UpdateEditor(editor => editor.Oil = value)" />
+                    </MudItem>
+                    <MudItem xs="6" md="8">
+                        <MudNumericField T="double"
+                                         Label="Trigger radius (m)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="5"
+                                         Disabled="@IsBusy"
+                                         Value="EditorInput.TriggerRadiusMeters"
+                                         ValueChanged="value => UpdateEditor(editor => editor.TriggerRadiusMeters = value)" />
+                    </MudItem>
+                </MudGrid>
+                <MudStack Row="true" Spacing="2" Class="mt-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               Disabled="@IsBusy"
+                               OnClick="HandleSaveSelectedDistrictAsync">
+                        Save
+                    </MudButton>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Secondary"
+                               Disabled="@IsBusy"
+                               OnClick="HandleCloseEditorAsync">
+                        Close
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        }
+
         <MudTable T="DistrictPreviewItem"
                   Items="Districts"
                   Dense="true"
@@ -20,22 +135,33 @@
                   Striped="true"
                   Class="district-preview-table"
                   RowClassFunc="GetRowClass"
-                  OnRowClick="HandleRowClick">
+                  OnRowClick="HandleRowClick"
+                  >
             <HeaderContent>
                 <MudTh>Name</MudTh>
-                <MudTh>Gold</MudTh>
-                <MudTh>Voters</MudTh>
-                <MudTh>Likes</MudTh>
-                <MudTh>Oil</MudTh>
-                <MudTh>Trigger radius (m)</MudTh>
+                <MudTh Style="text-align: center;">Gold</MudTh>
+                <MudTh Style="text-align: center;">Voters</MudTh>
+                <MudTh Style="text-align: center;">Likes</MudTh>
+                <MudTh Style="text-align: center;">Oil</MudTh>
+                <MudTh Style="text-align: right;"></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Name">@context.Name</MudTd>
-                <MudTd DataLabel="Gold">@context.Gold</MudTd>
-                <MudTd DataLabel="Voters">@context.Voters</MudTd>
-                <MudTd DataLabel="Likes">@context.Likes</MudTd>
-                <MudTd DataLabel="Oil">@context.Oil</MudTd>
-                <MudTd DataLabel="Trigger radius (m)">@FormatTriggerRadius(context.TriggerRadiusMeters)</MudTd>
+                <MudTd DataLabel="Gold" Style="text-align: center;">@context.Gold</MudTd>
+                <MudTd DataLabel="Voters" Style="text-align: center;">@context.Voters</MudTd>
+                <MudTd DataLabel="Likes" Style="text-align: center;">@context.Likes</MudTd>
+                <MudTd DataLabel="Oil" Style="text-align: center;">@context.Oil</MudTd>
+                <MudTd DataLabel="Actions" Style="text-align: right;">
+                    <MudTooltip Text="Edit district resources">
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   Class="grid-square-action"
+                                   Disabled="@IsBusy"
+                                   OnClick="() => HandleEditDistrictResourcesAsync(context.Id)">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                        </MudButton>
+                    </MudTooltip>
+                </MudTd>
             </RowTemplate>
         </MudTable>
     }
@@ -50,6 +176,47 @@
 
     [Parameter]
     public EventCallback<int> OnDistrictSelected { get; set; }
+
+    [Parameter]
+    public int? EditingDistrictId { get; set; }
+
+    [Parameter, EditorRequired]
+    public DistrictResourceEditorInput EditorInput { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<DistrictResourceEditorInput> EditorInputChanged { get; set; }
+
+    [Parameter]
+    public int RandomizeMin { get; set; }
+
+    [Parameter]
+    public EventCallback<int> RandomizeMinChanged { get; set; }
+
+    [Parameter]
+    public int RandomizeMax { get; set; }
+
+    [Parameter]
+    public EventCallback<int> RandomizeMaxChanged { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaveSelectedDistrict { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnEditDistrictResources { get; set; }
+
+    [Parameter]
+    public EventCallback OnCloseDistrictEditor { get; set; }
+
+    [Parameter]
+    public EventCallback OnRandomizeResources { get; set; }
+
+    private DistrictPreviewItem? EditingDistrict =>
+        EditingDistrictId is int editingDistrictId
+            ? Districts.FirstOrDefault(district => district.Id == editingDistrictId)
+            : null;
 
     private string GetRowClass(DistrictPreviewItem district, int _)
     {
@@ -70,5 +237,31 @@
         return radiusMeters.HasValue
             ? $"{radiusMeters.Value:F0}"
             : "N/A";
+    }
+
+    private Task HandleSaveSelectedDistrictAsync() => OnSaveSelectedDistrict.InvokeAsync();
+
+    private Task HandleRandomizeResourcesAsync() => OnRandomizeResources.InvokeAsync();
+
+    private Task HandleRandomizeMinChanged(int value) => RandomizeMinChanged.InvokeAsync(value);
+
+    private Task HandleRandomizeMaxChanged(int value) => RandomizeMaxChanged.InvokeAsync(value);
+
+    private Task HandleEditDistrictResourcesAsync(int districtId) => OnEditDistrictResources.InvokeAsync(districtId);
+
+    private Task HandleCloseEditorAsync() => OnCloseDistrictEditor.InvokeAsync();
+
+    private Task UpdateEditor(Action<DistrictResourceEditorInput> updateAction)
+    {
+        var nextInput = new DistrictResourceEditorInput
+        {
+            Gold = EditorInput.Gold,
+            Voters = EditorInput.Voters,
+            Likes = EditorInput.Likes,
+            Oil = EditorInput.Oil,
+            TriggerRadiusMeters = EditorInput.TriggerRadiusMeters
+        };
+        updateAction(nextInput);
+        return EditorInputChanged.InvokeAsync(nextInput);
     }
 }

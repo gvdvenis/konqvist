@@ -786,6 +786,161 @@ public sealed class DistrictImportAdminServiceTests
         Assert.Empty(preview);
     }
 
+    [Fact]
+    public async Task UpdateDistrictResourcesAsync_SavesEditedValuesForSelectedDistrict()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        int districtId;
+        await using (var dbContext = await harness.DbFactory.CreateDbContextAsync())
+        {
+            var district = new DistrictTemplate
+            {
+                GameTemplateId = templateId,
+                Name = "Alpha",
+                GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}",
+                TriggerLat = 0.5d,
+                TriggerLng = 0.5d,
+                TriggerRadiusMeters = 20d,
+                Gold = 0,
+                Voters = 0,
+                Likes = 0,
+                Oil = 0
+            };
+            dbContext.DistrictTemplates.Add(district);
+            await dbContext.SaveChangesAsync();
+            districtId = district.Id;
+        }
+
+        var service = CreateService(harness.DbFactory);
+        var result = await service.UpdateDistrictResourcesAsync(
+            templateId,
+            districtId,
+            new DistrictResourceEditorInput
+            {
+                Gold = 4,
+                Voters = 5,
+                Likes = 6,
+                Oil = 7,
+                TriggerRadiusMeters = 35d
+            });
+
+        Assert.Equal(SaveDistrictResourcesResult.Saved, result);
+        await using var updatedContext = await harness.DbFactory.CreateDbContextAsync();
+        var updatedDistrict = await updatedContext.DistrictTemplates
+            .SingleAsync(entity => entity.Id == districtId);
+        Assert.Equal(4, updatedDistrict.Gold);
+        Assert.Equal(5, updatedDistrict.Voters);
+        Assert.Equal(6, updatedDistrict.Likes);
+        Assert.Equal(7, updatedDistrict.Oil);
+        Assert.Equal(35d, updatedDistrict.TriggerRadiusMeters);
+    }
+
+    [Fact]
+    public async Task UpdateDistrictResourcesAsync_WithInvalidInput_ReturnsInvalidInput()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var result = await service.UpdateDistrictResourcesAsync(
+            templateId,
+            districtId: 1,
+            new DistrictResourceEditorInput
+            {
+                Gold = -1,
+                Voters = 2,
+                Likes = 3,
+                Oil = 4,
+                TriggerRadiusMeters = 25d
+            });
+
+        Assert.Equal(SaveDistrictResourcesResult.InvalidInput, result);
+    }
+
+    [Fact]
+    public async Task RandomizeDistrictResourcesAsync_AssignsValuesWithinInclusiveRangeInTens()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        await using (var dbContext = await harness.DbFactory.CreateDbContextAsync())
+        {
+            dbContext.DistrictTemplates.AddRange(
+                new DistrictTemplate
+                {
+                    GameTemplateId = templateId,
+                    Name = "Alpha",
+                    GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}",
+                    TriggerLat = 0.5d,
+                    TriggerLng = 0.5d,
+                    TriggerRadiusMeters = 20d,
+                    Gold = 0,
+                    Voters = 0,
+                    Likes = 0,
+                    Oil = 0
+                },
+                new DistrictTemplate
+                {
+                    GameTemplateId = templateId,
+                    Name = "Beta",
+                    GeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[2,2],[2,3],[3,3],[3,2],[2,2]]]}",
+                    TriggerLat = 2.5d,
+                    TriggerLng = 2.5d,
+                    TriggerRadiusMeters = 25d,
+                    Gold = 0,
+                    Voters = 0,
+                    Likes = 0,
+                    Oil = 0
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var service = CreateService(harness.DbFactory);
+        var result = await service.RandomizeDistrictResourcesAsync(templateId, minValue: 10, maxValue: 60);
+
+        Assert.Equal(RandomizeDistrictResourcesStatus.Randomized, result.Status);
+        Assert.Equal(2, result.DistrictsUpdated);
+        await using var updatedContext = await harness.DbFactory.CreateDbContextAsync();
+        var districts = await updatedContext.DistrictTemplates
+            .Where(entity => entity.GameTemplateId == templateId)
+            .ToListAsync();
+        Assert.All(districts, district =>
+        {
+            Assert.InRange(district.Gold, 10, 60);
+            Assert.InRange(district.Voters, 10, 60);
+            Assert.InRange(district.Likes, 10, 60);
+            Assert.InRange(district.Oil, 10, 60);
+            Assert.Equal(0, district.Gold % 10);
+            Assert.Equal(0, district.Voters % 10);
+            Assert.Equal(0, district.Likes % 10);
+            Assert.Equal(0, district.Oil % 10);
+        });
+    }
+
+    [Fact]
+    public async Task RandomizeDistrictResourcesAsync_WithInvalidRange_ReturnsInvalidRange()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var result = await service.RandomizeDistrictResourcesAsync(templateId, minValue: 7, maxValue: 3);
+
+        Assert.Equal(RandomizeDistrictResourcesStatus.InvalidRange, result.Status);
+    }
+
+    [Fact]
+    public async Task RandomizeDistrictResourcesAsync_WithoutAnyTenValueInRange_ReturnsInvalidRange()
+    {
+        var harness = await RoundConfigurationTestHarness.CreateAsync();
+        var templateId = await harness.CreateTemplateAsync(totalRounds: 4);
+        var service = CreateService(harness.DbFactory);
+
+        var result = await service.RandomizeDistrictResourcesAsync(templateId, minValue: 1, maxValue: 9);
+
+        Assert.Equal(RandomizeDistrictResourcesStatus.InvalidRange, result.Status);
+    }
+
     private static DistrictImportAdminService CreateService(
         TestDbContextFactory dbFactory,
         Func<HttpRequestMessage, CancellationToken, HttpResponseMessage>? responder = null)

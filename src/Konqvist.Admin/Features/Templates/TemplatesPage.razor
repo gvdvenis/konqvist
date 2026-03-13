@@ -15,12 +15,27 @@
         Manage reusable games and their core gameplay settings.
     </MudText>
 
-    <TemplateCreateForm @key="_templateEditorKey"
-                        InitialInput="_templateEditorInput"
-                        IsEditMode="@_editingTemplateId.HasValue"
-                        OnSubmit="SaveTemplateAsync"
-                        OnCancelEdit="CancelEditAsync"
-                        IsBusy="_isBusy" />
+    @if (_showTemplateEditor)
+    {
+        <TemplateCreateForm @key="_templateEditorKey"
+                            InitialInput="_templateEditorInput"
+                            IsEditMode="@_editingTemplateId.HasValue"
+                            OnSubmit="SaveTemplateAsync"
+                            OnCancelEdit="CancelEditAsync"
+                            IsBusy="_isBusy" />
+    }
+    else
+    {
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Add"
+                    Disabled="@_isBusy"
+                    OnClick="ShowCreateTemplateForm">
+                Add new game
+            </MudButton>
+        </MudStack>
+    }
     <TemplateListTable Templates="_templates"
                        OnEditTemplate="BeginEditAsync"
                        OnDeleteTemplate="DeleteTemplateAsync"
@@ -41,6 +56,7 @@
     private IReadOnlyList<GameTemplateListItem> _templates = [];
     private bool _isBusy;
     private int? _editingTemplateId;
+    private bool _showTemplateEditor;
     private int _templateEditorKey;
     private CreateGameTemplateInput _templateEditorInput = new();
 
@@ -94,6 +110,7 @@
     private Task BeginEditAsync(GameTemplateListItem template)
     {
         _editingTemplateId = template.Id;
+        _showTemplateEditor = true;
         _templateEditorInput = new CreateGameTemplateInput
         {
             Name = template.Name,
@@ -114,9 +131,17 @@
         return InvokeAsync(StateHasChanged);
     }
 
+    private Task ShowCreateTemplateForm()
+    {
+        ResetEditor();
+        _showTemplateEditor = true;
+        return InvokeAsync(StateHasChanged);
+    }
+
     private void ResetEditor()
     {
         _editingTemplateId = null;
+        _showTemplateEditor = false;
         _templateEditorInput = new CreateGameTemplateInput();
         _templateEditorKey++;
     }

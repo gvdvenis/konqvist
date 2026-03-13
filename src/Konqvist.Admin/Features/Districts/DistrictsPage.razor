@@ -34,7 +34,6 @@
             <MudText Typo="Typo.body2" Class="admin-muted-text">
                 Import districts for game <b>@_templateName</b>.
             </MudText>
-            <MudText Typo="Typo.body2" Class="admin-muted-text">@_districtCount configured</MudText>
 
             @if (ShowChoiceState)
             {
@@ -62,7 +61,7 @@
                     }
                     <DistrictLinkedSourcePanel IsBusy="_isBusy"
                                                @bind-SourceUrlInput="_sourceUrlInput"
-                                               OnClearSourceUrl="ClearSourceUrlAsync"
+                                               IsSourceLocked="IsSourceLocked"
                                                OnRefreshFromSource="RefreshFromSourceAsync"
                                                ShowBackToChoices="ShowSourceBackToChoices"
                                                OnBackToChoices="HandleSourceBackToChoicesAsync"
@@ -95,7 +94,19 @@
                         }
                         <DistrictListPreviewPanel Districts="_districtPreviewItems"
                                                   SelectedDistrictId="_selectedDistrictId"
-                                                  OnDistrictSelected="HandleDistrictSelectedAsync" />
+                                                  OnDistrictSelected="HandleDistrictSelectedAsync"
+                                                  EditingDistrictId="_editingDistrictId"
+                                                  EditorInput="_districtEditor"
+                                                  EditorInputChanged="HandleDistrictEditorChangedAsync"
+                                                  RandomizeMin="_randomizeMin"
+                                                  RandomizeMinChanged="HandleRandomizeMinChanged"
+                                                  RandomizeMax="_randomizeMax"
+                                                  RandomizeMaxChanged="HandleRandomizeMaxChanged"
+                                                  IsBusy="_isBusy"
+                                                  OnEditDistrictResources="BeginEditDistrictResourcesAsync"
+                                                  OnCloseDistrictEditor="CloseDistrictEditorAsync"
+                                                  OnSaveSelectedDistrict="SaveSelectedDistrictResourcesAsync"
+                                                  OnRandomizeResources="RandomizeResourcesAsync" />
                     </MudItem>
                     <MudItem xs="12" md="8">
                         <DistrictMapPreviewPanel Districts="_districtPreviewItems"
@@ -139,6 +150,10 @@
     private string _sourceUrlInput = string.Empty;
     private string? _savedSourceUrl;
     private bool _snapshotLoaded;
+    private DistrictResourceEditorInput _districtEditor = new();
+    private int? _editingDistrictId;
+    private int _randomizeMin;
+    private int _randomizeMax = 10;
     private bool IsSourceLocked => !string.IsNullOrWhiteSpace(_savedSourceUrl);
     private bool HasDistrictPreview => _districtPreviewItems.Count > 0 || !string.IsNullOrWhiteSpace(_mapOutlineGeoJson);
     private bool ShowSourceBackToChoices => !IsSourceLocked || string.IsNullOrWhiteSpace(_sourceUrlInput);
@@ -164,6 +179,8 @@
             _districtPreviewItems = [];
             _mapOutlineGeoJson = null;
             _selectedDistrictId = null;
+            _editingDistrictId = null;
+            _districtEditor = new DistrictResourceEditorInput();
             _flowState = DistrictImportFlowState.Choice;
             _snapshotLoaded = true;
             return;
@@ -179,6 +196,10 @@
             ? DistrictImportFlowState.Source
             : DistrictImportFlowState.Choice;
         await LoadDistrictPreviewAsync();
+        if (_editingDistrictId is int editingDistrictId)
+        {
+            InitializeDistrictEditor(editingDistrictId);
+        }
         _snapshotLoaded = true;
     });
 
@@ -303,6 +324,8 @@
             _districtPreviewItems = [];
             _mapOutlineGeoJson = null;
             _selectedDistrictId = null;
+            _editingDistrictId = null;
+            _districtEditor = new DistrictResourceEditorInput();
             _flowState = DistrictImportFlowState.Choice;
             return;
         }
@@ -323,6 +346,10 @@
         }
 
         await LoadDistrictPreviewAsync();
+        if (_editingDistrictId is int editingDistrictId)
+        {
+            InitializeDistrictEditor(editingDistrictId);
+        }
     }
 
     private void ShowUploadFlow()
@@ -485,6 +512,8 @@
         if (_districtPreviewItems.Count == 0)
         {
             _selectedDistrictId = null;
+            _editingDistrictId = null;
+            _districtEditor = new DistrictResourceEditorInput();
             return;
         }
 
@@ -492,12 +521,150 @@
         {
             _selectedDistrictId = null;
         }
+
+        if (_editingDistrictId is null || _districtPreviewItems.All(item => item.Id != _editingDistrictId.Value))
+        {
+            _editingDistrictId = null;
+            _districtEditor = new DistrictResourceEditorInput();
+        }
     }
 
     private Task HandleDistrictSelectedAsync(int districtId)
     {
         _selectedDistrictId = districtId;
         return InvokeAsync(StateHasChanged);
+    }
+
+    private Task BeginEditDistrictResourcesAsync(int districtId)
+    {
+        _selectedDistrictId = districtId;
+        _editingDistrictId = districtId;
+        InitializeDistrictEditor(districtId);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task CloseDistrictEditorAsync()
+    {
+        _editingDistrictId = null;
+        _districtEditor = new DistrictResourceEditorInput();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task HandleDistrictEditorChangedAsync(DistrictResourceEditorInput input)
+    {
+        _districtEditor = input;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleRandomizeMinChanged(int value)
+    {
+        _randomizeMin = value;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleRandomizeMaxChanged(int value)
+    {
+        _randomizeMax = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveSelectedDistrictResourcesAsync()
+    {
+        if (_editingDistrictId is not int editingDistrictId)
+        {
+            Snackbar.Add("Use the edit action on a district row first.", Severity.Warning);
+            return;
+        }
+
+        var result = SaveDistrictResourcesResult.DistrictNotFound;
+        await RunBusyAsync(async () =>
+        {
+            result = await DistrictImportService.UpdateDistrictResourcesAsync(
+                TemplateId,
+                editingDistrictId,
+                _districtEditor);
+            if (result == SaveDistrictResourcesResult.Saved)
+            {
+                await LoadDistrictPreviewAsync();
+                _editingDistrictId = null;
+                _districtEditor = new DistrictResourceEditorInput();
+            }
+        });
+
+        switch (result)
+        {
+            case SaveDistrictResourcesResult.Saved:
+                Snackbar.Add("District values updated.", Severity.Success);
+                break;
+            case SaveDistrictResourcesResult.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case SaveDistrictResourcesResult.DistrictNotFound:
+                Snackbar.Add("District not found.", Severity.Warning);
+                break;
+            case SaveDistrictResourcesResult.InvalidInput:
+                Snackbar.Add("Values must be non-negative and trigger radius must be greater than zero.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected save district resources result: {result}");
+        }
+    }
+
+    private async Task RandomizeResourcesAsync()
+    {
+        var result = RandomizeDistrictResourcesResult.InvalidRange();
+        await RunBusyAsync(async () =>
+        {
+            result = await DistrictImportService.RandomizeDistrictResourcesAsync(
+                TemplateId,
+                _randomizeMin,
+                _randomizeMax);
+            if (result.Status == RandomizeDistrictResourcesStatus.Randomized)
+            {
+                await LoadDistrictPreviewAsync();
+                if (_editingDistrictId is int editingDistrictId)
+                {
+                    InitializeDistrictEditor(editingDistrictId);
+                }
+            }
+        });
+
+        switch (result.Status)
+        {
+            case RandomizeDistrictResourcesStatus.Randomized:
+                Snackbar.Add(
+                    $"Randomized resources for {result.DistrictsUpdated} district(s).",
+                    Severity.Success);
+                break;
+            case RandomizeDistrictResourcesStatus.TemplateNotFound:
+                Snackbar.Add("Game not found.", Severity.Warning);
+                break;
+            case RandomizeDistrictResourcesStatus.InvalidRange:
+                Snackbar.Add("Use a non-negative min/max range that includes at least one multiple of 10.", Severity.Warning);
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected randomize district resources status: {result.Status}");
+        }
+    }
+
+    private void InitializeDistrictEditor(int districtId)
+    {
+        var selectedDistrict = _districtPreviewItems.FirstOrDefault(item => item.Id == districtId);
+        if (selectedDistrict is null)
+        {
+            _districtEditor = new DistrictResourceEditorInput();
+            _editingDistrictId = null;
+            return;
+        }
+
+        _districtEditor = new DistrictResourceEditorInput
+        {
+            Gold = selectedDistrict.Gold,
+            Voters = selectedDistrict.Voters,
+            Likes = selectedDistrict.Likes,
+            Oil = selectedDistrict.Oil,
+            TriggerRadiusMeters = selectedDistrict.TriggerRadiusMeters ?? 1d
+        };
     }
 
     private bool TryGetMapOutlineListItemText(out string listItemText)

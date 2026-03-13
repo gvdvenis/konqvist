@@ -1,6 +1,8 @@
 @page "/team/{Name}"
+@using Konqvist.Client.Features.Auth
 @inject LoginApiClient LoginApiClient
 @inject NavigationManager NavigationManager
+@inject ClientAuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Team Login</PageTitle>
 
@@ -85,6 +87,7 @@
             return;
         }
 
+        AuthenticationStateProvider.RefreshAuthenticationState();
         NavigationManager.NavigateTo("/waiting");
     }
 }

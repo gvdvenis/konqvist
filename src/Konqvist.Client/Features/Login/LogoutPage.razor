@@ -1,20 +1,20 @@
-@page "/login"
-@page "/login/{Token}"
+@page "/logout"
+@page "/team/{Name}/logout"
 @using Konqvist.Client.Features.Auth
 @inject LoginApiClient LoginApiClient
 @inject NavigationManager NavigationManager
 @inject ClientAuthenticationStateProvider AuthenticationStateProvider
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Logout</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Class="pa-6">
-        <MudText Typo="Typo.h6" Class="mb-2">Logging you in…</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">Logging you out…</MudText>
 
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
         {
             <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@ErrorMessage</MudAlert>
-            <MudButton Variant="Variant.Outlined" OnClick="TryLoginAsync">Retry</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="LogoutAsync">Retry</MudButton>
         }
         else
         {
@@ -24,26 +24,17 @@
 </MudContainer>
 
 @code {
-    [Parameter] public string Token { get; set; } = string.Empty;
+    [Parameter] public string? Name { get; set; }
 
     private string? ErrorMessage { get; set; }
 
-    protected override Task OnParametersSetAsync()
-    {
-        if (string.IsNullOrWhiteSpace(Token))
-        {
-            ErrorMessage = "Login token is required. Open your team login page URL.";
-            return Task.CompletedTask;
-        }
+    protected override Task OnParametersSetAsync() => LogoutAsync();
 
-        return TryLoginAsync();
-    }
-
-    private async Task TryLoginAsync()
+    private async Task LogoutAsync()
     {
         ErrorMessage = null;
 
-        var result = await LoginApiClient.LoginAsync(Token);
+        var result = await LoginApiClient.LogoutAsync(Name);
         if (!result.IsSuccess)
         {
             ErrorMessage = result.ErrorMessage;
@@ -51,6 +42,9 @@
         }
 
         AuthenticationStateProvider.RefreshAuthenticationState();
-        NavigationManager.NavigateTo("/waiting");
+        var target = string.IsNullOrWhiteSpace(Name)
+            ? "/login"
+            : $"/team/{Uri.EscapeDataString(Name)}";
+        NavigationManager.NavigateTo(target, replace: true);
     }
 }

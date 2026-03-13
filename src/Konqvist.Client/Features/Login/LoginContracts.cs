@@ -6,6 +6,11 @@ public sealed record LoginRequest([property: JsonPropertyName("token")] string T
 
 public sealed record AuthErrorResponse([property: JsonPropertyName("message")] string Message);
 
+public sealed record AuthIdentityResponse(
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("team")] string Team,
+    [property: JsonPropertyName("playerSessionId")] int PlayerSessionId);
+
 public sealed record TeamStatusResponse(
     [property: JsonPropertyName("teamName")] string TeamName,
     [property: JsonPropertyName("runnerSlotTaken")] bool RunnerSlotTaken,
@@ -15,6 +20,11 @@ public sealed record TeamStatusResponse(
 public sealed record LoginResult(bool IsSuccess, string? ErrorMessage)
 {
     public static LoginResult Success() => new(true, null);
+}
+
+public sealed record LogoutResult(bool IsSuccess, string? ErrorMessage)
+{
+    public static LogoutResult Success() => new(true, null);
 }
 
 public sealed record TeamStatusResult(TeamStatusResponse? TeamStatus, string? ErrorMessage)

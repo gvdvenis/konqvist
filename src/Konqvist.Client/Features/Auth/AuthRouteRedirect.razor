@@ -1,0 +1,58 @@
+@using System.Security.Claims
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    [Parameter] public string RequestedPath { get; set; } = "/";
+    private bool HasNavigated { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || HasNavigated)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var target = ResolveTarget(authState.User);
+
+        HasNavigated = true;
+        NavigationManager.NavigateTo(target, replace: true);
+    }
+
+    private string ResolveTarget(ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var role = user.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (RequestedPath.StartsWith("/scores", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(role, "Runner", StringComparison.Ordinal))
+            {
+                return "/map";
+            }
+
+            if (RequestedPath.StartsWith("/gm", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(role, "TeamLeader", StringComparison.Ordinal))
+            {
+                return "/scores";
+            }
+
+            return "/";
+        }
+
+        var team = user.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.Team)?.Value;
+        if (!string.IsNullOrWhiteSpace(team))
+        {
+            return $"/team/{Uri.EscapeDataString(team)}";
+        }
+
+        if (AuthenticationStateProvider is ClientAuthenticationStateProvider provider
+            && !string.IsNullOrWhiteSpace(provider.LastKnownTeamName))
+        {
+            return $"/team/{Uri.EscapeDataString(provider.LastKnownTeamName)}";
+        }
+
+        return "/login";
+    }
+}

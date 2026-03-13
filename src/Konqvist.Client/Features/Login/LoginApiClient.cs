@@ -64,6 +64,62 @@ public sealed class LoginApiClient(HttpClient httpClient)
         }
     }
 
+    public async Task<AuthIdentityResponse?> GetCurrentIdentityAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync(
+                LoginJsonSerializerContext.Default.AuthIdentityResponse,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<LogoutResult> LogoutAsync(string? teamName = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var path = string.IsNullOrWhiteSpace(teamName)
+                ? "/api/auth/logout"
+                : $"/api/auth/logout?teamName={Uri.EscapeDataString(teamName)}";
+            using var request = new HttpRequestMessage(HttpMethod.Post, path);
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return LogoutResult.Success();
+            }
+
+            var error = await ReadErrorMessageAsync(response, cancellationToken);
+            return new LogoutResult(false, error ?? "Logout failed.");
+        }
+        catch (HttpRequestException)
+        {
+            return new LogoutResult(false, "Could not reach the server API.");
+        }
+        catch (TaskCanceledException)
+        {
+            return new LogoutResult(false, "Logout request timed out.");
+        }
+    }
+
     private static async Task<string?> ReadErrorMessageAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         try

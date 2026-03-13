@@ -8,5 +8,6 @@ public static class AuthConstants
     public static class ClaimTypes
     {
         public const string PlayerSessionId = "konqvist:player_session_id";
+        public const string TeamTemplateId = "konqvist:team_template_id";
     }
 }

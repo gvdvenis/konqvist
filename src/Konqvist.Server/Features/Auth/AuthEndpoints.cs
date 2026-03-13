@@ -94,6 +94,7 @@ public static class AuthEndpoints
         var claims = new[]
         {
             new Claim(AuthConstants.ClaimTypes.PlayerSessionId, playerSession.Id.ToString()),
+            new Claim(AuthConstants.ClaimTypes.TeamTemplateId, playerTemplate.TeamTemplateId.ToString()),
             new Claim(ClaimTypes.Role, playerTemplate.Role.ToString())
         };
         var principal = new ClaimsPrincipal(
@@ -108,10 +109,15 @@ public static class AuthEndpoints
 
     private static async Task<IResult> LogoutAsync(
         HttpContext httpContext,
+        string? teamName,
         KonqvistDbContext dbContext,
         CancellationToken cancellationToken)
     {
         var playerSessionId = GetPlayerSessionId(httpContext.User);
+        var teamTemplateId = GetTeamTemplateId(httpContext.User);
+        var role = httpContext.User.FindFirstValue(ClaimTypes.Role);
+
+        var hasChanges = false;
         if (playerSessionId is not null)
         {
             var playerSession = await dbContext.PlayerSessions
@@ -119,8 +125,52 @@ public static class AuthEndpoints
             if (playerSession is not null)
             {
                 playerSession.IsLoggedIn = false;
-                await dbContext.SaveChangesAsync(cancellationToken);
+                hasChanges = true;
             }
+        }
+
+        if (teamTemplateId is null && !string.IsNullOrWhiteSpace(teamName))
+        {
+            teamTemplateId = await dbContext.TeamTemplates
+                .Where(entity => entity.Name == teamName)
+                .Select(entity => (int?)entity.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if ((string.Equals(role, PlayerRole.Runner.ToString(), StringComparison.Ordinal) || !string.IsNullOrWhiteSpace(teamName))
+            && teamTemplateId is not null)
+        {
+            var activeSessionId = await dbContext.GameSessions
+                .OrderByDescending(entity => entity.Status == GameStatus.Running)
+                .ThenByDescending(entity => entity.Id)
+                .Where(entity => entity.Status == GameStatus.Pending || entity.Status == GameStatus.Running)
+                .Select(entity => (int?)entity.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (activeSessionId is not null)
+            {
+                var runnerSessions = await dbContext.PlayerSessions
+                    .Where(entity => entity.GameSessionId == activeSessionId.Value
+                                     && entity.IsLoggedIn
+                                     && entity.PlayerTemplate.TeamTemplateId == teamTemplateId.Value
+                                     && entity.PlayerTemplate.Role == PlayerRole.Runner)
+                    .ToListAsync(cancellationToken);
+
+                if (runnerSessions.Count > 0)
+                {
+                    foreach (var runnerSession in runnerSessions)
+                    {
+                        runnerSession.IsLoggedIn = false;
+                    }
+
+                    hasChanges = true;
+                }
+            }
+        }
+
+        if (hasChanges)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
@@ -223,6 +273,12 @@ public static class AuthEndpoints
     private static int? GetPlayerSessionId(ClaimsPrincipal principal)
     {
         var claim = principal.FindFirst(AuthConstants.ClaimTypes.PlayerSessionId)?.Value;
+        return int.TryParse(claim, out var value) ? value : null;
+    }
+
+    private static int? GetTeamTemplateId(ClaimsPrincipal principal)
+    {
+        var claim = principal.FindFirst(AuthConstants.ClaimTypes.TeamTemplateId)?.Value;
         return int.TryParse(claim, out var value) ? value : null;
     }
 }

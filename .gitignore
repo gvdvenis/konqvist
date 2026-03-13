@@ -20,6 +20,11 @@ TestResults/
 # Logs and diagnostics
 *.log
 
+# Local SQLite data (runtime/dev)
+*.db
+*.db-shm
+*.db-wal
+
 # NuGet
 *.nupkg
 *.snupkg

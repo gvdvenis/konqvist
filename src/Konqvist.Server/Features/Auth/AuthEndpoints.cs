@@ -16,6 +16,7 @@ public static class AuthEndpoints
         group.MapPost("/login", LoginAsync);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", MeAsync);
+        group.MapGet("/team-status/{name}", TeamStatusAsync);
 
         return endpoints;
     }
@@ -157,6 +158,66 @@ public static class AuthEndpoints
             playerSession.PlayerTemplate.Role.ToString(),
             playerSession.PlayerTemplate.TeamTemplate.Name,
             playerSession.Id));
+    }
+
+    private static async Task<IResult> TeamStatusAsync(
+        string name,
+        KonqvistDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return Results.BadRequest(new AuthErrorResponse("Team name is required."));
+        }
+
+        var teamPlayers = await dbContext.PlayerTemplates
+            .Where(entity => entity.TeamTemplate.Name == name)
+            .Select(entity => new
+            {
+                entity.TeamTemplateId,
+                TeamName = entity.TeamTemplate.Name,
+                entity.Role,
+                entity.LoginToken
+            })
+            .ToListAsync(cancellationToken);
+        if (teamPlayers.Count == 0)
+        {
+            return Results.NotFound(new AuthErrorResponse($"Team '{name}' was not found."));
+        }
+
+        var runnerToken = teamPlayers
+            .Where(entity => entity.Role == PlayerRole.Runner)
+            .Select(entity => entity.LoginToken)
+            .FirstOrDefault();
+        var teamCaptainToken = teamPlayers
+            .Where(entity => entity.Role == PlayerRole.TeamLeader)
+            .Select(entity => entity.LoginToken)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(runnerToken) || string.IsNullOrWhiteSpace(teamCaptainToken))
+        {
+            return Results.Conflict(new AuthErrorResponse($"Team '{name}' is missing required player tokens."));
+        }
+
+        var activeSessionId = await dbContext.GameSessions
+            .OrderByDescending(entity => entity.Status == GameStatus.Running)
+            .ThenByDescending(entity => entity.Id)
+            .Where(entity => entity.Status == GameStatus.Pending || entity.Status == GameStatus.Running)
+            .Select(entity => (int?)entity.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var runnerSlotTaken = activeSessionId is not null && await dbContext.PlayerSessions
+            .AnyAsync(
+                entity => entity.GameSessionId == activeSessionId.Value
+                          && entity.IsLoggedIn
+                          && entity.PlayerTemplate.TeamTemplateId == teamPlayers[0].TeamTemplateId
+                          && entity.PlayerTemplate.Role == PlayerRole.Runner,
+                cancellationToken);
+
+        return Results.Ok(new TeamStatusResponse(
+            teamPlayers[0].TeamName,
+            runnerSlotTaken,
+            runnerToken,
+            teamCaptainToken));
     }
 
     private static int? GetPlayerSessionId(ClaimsPrincipal principal)

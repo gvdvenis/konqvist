@@ -1,9 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace Konqvist.Server.Features.Auth;
+namespace Konqvist.Client.Features.Login;
 
 [JsonSerializable(typeof(LoginRequest))]
-[JsonSerializable(typeof(AuthIdentityResponse))]
 [JsonSerializable(typeof(AuthErrorResponse))]
 [JsonSerializable(typeof(TeamStatusResponse))]
-public partial class AuthJsonSerializerContext : JsonSerializerContext;
+public partial class LoginJsonSerializerContext : JsonSerializerContext;

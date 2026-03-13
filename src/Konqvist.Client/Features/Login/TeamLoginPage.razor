@@ -1,0 +1,90 @@
+@page "/team/{Name}"
+@inject LoginApiClient LoginApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Team Login</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6">
+        <MudText Typo="Typo.h5">@DisplayTeamName</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">Choose your role to continue.</MudText>
+
+        @if (IsLoading)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@ErrorMessage</MudAlert>
+            <MudButton Variant="Variant.Outlined" OnClick="LoadTeamStatusAsync">Retry</MudButton>
+        }
+        else if (TeamStatus is not null)
+        {
+            <MudStack Spacing="2">
+                <MudTooltip Text="Runner slot is currently taken." Disabled="@(!TeamStatus.RunnerSlotTaken)">
+                    <span class="d-inline-block">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Disabled="@(IsSubmitting || TeamStatus.RunnerSlotTaken)"
+                                   OnClick="() => LoginAsync(TeamStatus.RunnerToken)">Runner</MudButton>
+                    </span>
+                </MudTooltip>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           FullWidth="true"
+                           Disabled="@IsSubmitting"
+                           OnClick="() => LoginAsync(TeamStatus.TeamCaptainToken)">Team Captain</MudButton>
+            </MudStack>
+
+            @if (!string.IsNullOrWhiteSpace(LoginErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mt-4">@LoginErrorMessage</MudAlert>
+            }
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public string Name { get; set; } = string.Empty;
+
+    private TeamStatusResponse? TeamStatus { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? LoginErrorMessage { get; set; }
+    private bool IsLoading { get; set; }
+    private bool IsSubmitting { get; set; }
+    private string DisplayTeamName => TeamStatus?.TeamName ?? Name;
+
+    protected override Task OnParametersSetAsync() => LoadTeamStatusAsync();
+
+    private async Task LoadTeamStatusAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        LoginErrorMessage = null;
+        TeamStatus = null;
+
+        var result = await LoginApiClient.GetTeamStatusAsync(Name);
+        TeamStatus = result.TeamStatus;
+        ErrorMessage = result.ErrorMessage;
+        IsLoading = false;
+    }
+
+    private async Task LoginAsync(string token)
+    {
+        IsSubmitting = true;
+        LoginErrorMessage = null;
+
+        var result = await LoginApiClient.LoginAsync(token);
+        IsSubmitting = false;
+        if (!result.IsSuccess)
+        {
+            LoginErrorMessage = result.ErrorMessage;
+            await LoadTeamStatusAsync();
+            return;
+        }
+
+        NavigationManager.NavigateTo("/waiting");
+    }
+}

@@ -1,0 +1,43 @@
+@page "/login/{Token}"
+@inject LoginApiClient LoginApiClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6">
+        <MudText Typo="Typo.h6" Class="mb-2">Logging you in…</MudText>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@ErrorMessage</MudAlert>
+            <MudButton Variant="Variant.Outlined" OnClick="TryLoginAsync">Retry</MudButton>
+        }
+        else
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public string Token { get; set; } = string.Empty;
+
+    private string? ErrorMessage { get; set; }
+
+    protected override Task OnParametersSetAsync() => TryLoginAsync();
+
+    private async Task TryLoginAsync()
+    {
+        ErrorMessage = null;
+
+        var result = await LoginApiClient.LoginAsync(Token);
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.ErrorMessage;
+            return;
+        }
+
+        NavigationManager.NavigateTo("/waiting");
+    }
+}

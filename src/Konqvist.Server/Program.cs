@@ -53,6 +53,16 @@ try
             };
         });
     builder.Services.AddAuthorization();
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins("http://localhost:5183", "https://localhost:7133")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+    });
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
@@ -87,6 +97,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseSerilogRequestLogging();
+    app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
 

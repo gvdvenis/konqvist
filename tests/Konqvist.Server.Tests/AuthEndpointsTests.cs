@@ -112,6 +112,38 @@ public sealed class AuthEndpointsTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task TeamStatus_WhenRunnerLoggedIn_ReturnsTokensAndRunnerSlotTaken()
+    {
+        await using var factory = new ServerAppFactory();
+        var sessionId = await CreatePendingSessionFromSeedTemplateAsync(factory.Services);
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+            var alphaRunnerTemplateId = await dbContext.PlayerTemplates
+                .Where(entity => entity.LoginToken == "AR15ee")
+                .Select(entity => entity.Id)
+                .SingleAsync();
+            var alphaRunnerSession = await dbContext.PlayerSessions
+                .SingleAsync(entity => entity.GameSessionId == sessionId && entity.PlayerTemplateId == alphaRunnerTemplateId);
+            alphaRunnerSession.IsLoggedIn = true;
+            await dbContext.SaveChangesAsync();
+        }
+
+        var client = CreateHttpsClient(factory);
+
+        var response = await client.GetAsync("/api/auth/team-status/Alpha");
+        var body = await response.Content.ReadFromJsonAsync<TeamStatusResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("Alpha", body.TeamName);
+        Assert.True(body.RunnerSlotTaken);
+        Assert.Equal("AR15ee", body.RunnerToken);
+        Assert.Equal("ATC5y85", body.TeamCaptainToken);
+    }
+
     private static async Task<int> CreatePendingSessionFromSeedTemplateAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();

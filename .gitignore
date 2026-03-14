@@ -10,6 +10,7 @@
 *.sln.docstates
 .idea/
 .vscode/
+.anvil/
 
 # Test output
 TestResults/

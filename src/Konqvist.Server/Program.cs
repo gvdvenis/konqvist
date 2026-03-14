@@ -1,8 +1,12 @@
 using Konqvist.Infrastructure.Persistence;
+using Konqvist.Server.Domain.Aggregates;
+using Konqvist.Server.Domain.Persistence;
+using Konqvist.Server.Domain.Serialization;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.Admin;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -25,7 +29,11 @@ try
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 14));
 
-    builder.Services.AddDbContext<KonqvistDbContext>(options =>
+    builder.Services.AddDbContext<KonqvistDbContext>(
+        options => options.UseSqlite(connectionString),
+        contextLifetime: ServiceLifetime.Scoped,
+        optionsLifetime: ServiceLifetime.Singleton);
+    builder.Services.AddDbContextFactory<KonqvistDbContext>(options =>
         options.UseSqlite(connectionString));
     builder.Services
         .AddOptions<AdminAppOptions>()
@@ -33,7 +41,10 @@ try
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
         options.SerializerOptions.TypeInfoResolverChain.Insert(0, AuthJsonSerializerContext.Default);
+        options.SerializerOptions.TypeInfoResolverChain.Insert(0, GameAggregateJsonSerializerContext.Default);
     });
+    builder.Services.AddSingleton<IGameEventWalWriter, EfGameEventWalWriter>();
+    builder.Services.AddSingleton<GameAggregate>();
     builder.Services.AddAuthentication(AuthConstants.AuthenticationScheme)
         .AddCookie(AuthConstants.AuthenticationScheme, options =>
         {

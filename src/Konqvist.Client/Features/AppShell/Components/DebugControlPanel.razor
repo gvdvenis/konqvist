@@ -1,0 +1,54 @@
+<MudDrawer Anchor="Anchor.End"
+           Variant="DrawerVariant.Temporary"
+           Open="@Open"
+           OpenChanged="@OpenChanged"
+           Elevation="8"
+           Class="debug-drawer pa-4">
+    <MudStack Spacing="2">
+        <MudText Typo="Typo.h6">Debug Controls</MudText>
+        <MudText Typo="Typo.caption">Shortcut: Ctrl+Shift+K (or Ctrl+Alt+K), or double-click top bar.</MudText>
+
+        <MudSwitch T="bool" Label="Authenticated" Value="@IsAuthenticated" ValueChanged="@IsAuthenticatedChanged" />
+        <MudSwitch T="bool" Label="SignalR Connected" Value="@IsConnected" ValueChanged="@IsConnectedChanged" />
+
+        <MudSelect T="string" Label="Role" Value="@Role" ValueChanged="@RoleChanged" Dense="true">
+            <MudSelectItem Value="@("Runner")">Runner</MudSelectItem>
+            <MudSelectItem Value="@("TeamLeader")">Team Leader</MudSelectItem>
+            <MudSelectItem Value="@("GameMaster")">Game Master</MudSelectItem>
+        </MudSelect>
+
+        <MudSelect T="string" Label="Game status" Value="@GameStatus" ValueChanged="@GameStatusChanged" Dense="true">
+            <MudSelectItem Value="@("Pending")">Pending</MudSelectItem>
+            <MudSelectItem Value="@("Running")">Running</MudSelectItem>
+            <MudSelectItem Value="@("Finished")">Finished</MudSelectItem>
+        </MudSelect>
+
+        <MudSelect T="string" Label="Game phase" Value="@GamePhase" ValueChanged="@GamePhaseChanged" Dense="true">
+            <MudSelectItem Value="@("WaitingForPlayers")">WaitingForPlayers</MudSelectItem>
+            <MudSelectItem Value="@("Gathering")">Gathering</MudSelectItem>
+            <MudSelectItem Value="@("Voting")">Voting</MudSelectItem>
+            <MudSelectItem Value="@("RoundResolution")">RoundResolution</MudSelectItem>
+            <MudSelectItem Value="@("Finished")">Finished</MudSelectItem>
+        </MudSelect>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Warning" OnClick="RunnerLogoutRequested">Simulate Runner Logout</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="ResetRequested">Clear debug overrides</MudButton>
+    </MudStack>
+</MudDrawer>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public EventCallback<bool> IsAuthenticatedChanged { get; set; }
+    [Parameter] public bool IsConnected { get; set; }
+    [Parameter] public EventCallback<bool> IsConnectedChanged { get; set; }
+    [Parameter] public string Role { get; set; } = "Runner";
+    [Parameter] public EventCallback<string> RoleChanged { get; set; }
+    [Parameter] public string GameStatus { get; set; } = "Pending";
+    [Parameter] public EventCallback<string> GameStatusChanged { get; set; }
+    [Parameter] public string GamePhase { get; set; } = "WaitingForPlayers";
+    [Parameter] public EventCallback<string> GamePhaseChanged { get; set; }
+    [Parameter] public EventCallback RunnerLogoutRequested { get; set; }
+    [Parameter] public EventCallback ResetRequested { get; set; }
+}

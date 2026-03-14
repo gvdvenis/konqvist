@@ -1,0 +1,41 @@
+<MudAppBar Dense="true" Elevation="1" Fixed="false" Class="px-2" @ondblclick="OnHeaderDoubleClick">
+    <MudText Typo="Typo.subtitle1">@DisplayTeamName</MudText>
+    <MudSpacer />
+    @if (IsAuthenticated)
+    {
+        <MudTooltip Text="@($"Role: {Role}. Toggle light/dark mode.")">
+            <MudIconButton Icon="@RoleIcon"
+                           Color="Color.Inherit"
+                           Size="Size.Medium"
+                           OnClick="OnRoleIconClick" />
+        </MudTooltip>
+        <MudChip T="string"
+                 Color="@(IsConnected ? Color.Success : Color.Error)"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small">
+            <MudIcon Icon="@(IsConnected ? Icons.Material.Filled.Wifi : Icons.Material.Filled.WifiOff)"
+                     Size="Size.Small"
+                     Class="me-1" />
+            @(IsConnected ? "Connected" : "Offline")
+        </MudChip>
+    }
+</MudAppBar>
+
+@code {
+    [Parameter] public string TeamName { get; set; } = "No Team";
+    [Parameter] public string Role { get; set; } = "Runner";
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public bool IsConnected { get; set; } = true;
+    [Parameter] public EventCallback OnRoleIconClick { get; set; }
+    [Parameter] public EventCallback OnHeaderDoubleClick { get; set; }
+
+    private string DisplayTeamName => IsAuthenticated && !string.IsNullOrWhiteSpace(TeamName) ? TeamName : "Konqvist";
+
+    private string RoleIcon => Role switch
+    {
+        "Runner" => Icons.Material.Filled.DirectionsRun,
+        "TeamLeader" => Icons.Material.Filled.Groups,
+        "GameMaster" => Icons.Material.Filled.AdminPanelSettings,
+        _ => Icons.Material.Filled.Person
+    };
+}

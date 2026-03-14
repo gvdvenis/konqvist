@@ -25,6 +25,12 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             var role = user.FindFirst(ClaimTypes.Role)?.Value;
+            var gameStatus = user.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GameStatus)?.Value;
+            if (string.Equals(gameStatus, "Pending", StringComparison.Ordinal)
+                && !string.Equals(role, "GameMaster", StringComparison.Ordinal))
+            {
+                return "/waiting";
+            }
 
             if (RequestedPath.StartsWith("/scores", StringComparison.OrdinalIgnoreCase)
                 && string.Equals(role, "Runner", StringComparison.Ordinal))

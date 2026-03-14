@@ -190,13 +190,13 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 - "Waiting for Game Master to start the game…" message with animated indicator
 
 ### Done means
-- [ ] `/team/alpha` shows correct team name with Runner and Team Captain buttons
-- [ ] Runner button is disabled when another Runner is already logged in for that team
-- [ ] Successful login navigates to `/waiting` and sets the session cookie
-- [ ] Refreshing the page keeps the session (cookie-based auth persists)
-- [ ] Navigating to a role-restricted page without correct role redirects to login
-- [ ] Top bar shows team name and role icon; dark/light mode toggle works
-- [ ] Bottom tab bar shows correct tabs per role
+- [x] `/team/alpha` shows correct team name with Runner and Team Captain buttons
+- [x] Runner button is disabled when another Runner is already logged in for that team
+- [x] Successful login navigates to `/waiting` and sets the session cookie
+- [x] Refreshing the page keeps the session (cookie-based auth persists)
+- [x] Navigating to a role-restricted page without correct role redirects to login
+- [x] Top bar shows team name and role icon; dark/light mode toggle works
+- [x] Bottom tab bar shows correct tabs per role
 
 ---
 

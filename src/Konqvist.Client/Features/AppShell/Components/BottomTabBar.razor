@@ -1,0 +1,74 @@
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager NavigationManager
+
+@if (Tabs.Count > 0)
+{
+    <MudAppBar Bottom="true" Fixed="true" Dense="true" Elevation="4" Color="Color.Surface" DisableGutters="true">
+        <MudSpacer />
+        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="tab-row">
+            @foreach (var tab in Tabs)
+            {
+                <MudButton Href="@tab.Href"                           Variant="Variant.Text"                           Color="Color.Inherit"
+                           Class="@($"app-tab-button{(IsActive(tab) ? " active" : string.Empty)}")">
+                    <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@tab.Icon" Size="Size.Small" />
+                        <MudText Typo="Typo.caption">@tab.Label</MudText>
+                    </MudStack>
+                </MudButton>
+            }
+        </MudStack>
+        <MudSpacer />
+    </MudAppBar>
+}
+
+@code {
+    [Parameter] public string Role { get; set; } = "Runner";
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public string GameStatus { get; set; } = "Pending";
+    [Parameter] public string GamePhase { get; set; } = "WaitingForPlayers";
+
+    private IReadOnlyList<TabItem> Tabs
+    {
+        get
+        {
+            if (!IsAuthenticated)
+            {
+                return [];
+            }
+
+            var isPreStart = string.Equals(GameStatus, "Pending", StringComparison.Ordinal)
+                             || string.Equals(GamePhase, "WaitingForPlayers", StringComparison.Ordinal);
+            if (isPreStart && !string.Equals(Role, "GameMaster", StringComparison.Ordinal))
+            {
+                return [];
+            }
+
+            return Role switch
+            {
+                "TeamLeader" => [MapTab, ScoresTab],
+                "GameMaster" => [MapTab, VotingTab, ScoresTab],
+                _ => [MapTab]
+            };
+        }
+    }
+
+    private static readonly TabItem MapTab = new("/map", "Map", Icons.Material.Filled.Map, NavLinkMatch.All);
+    private static readonly TabItem VotingTab = new("/gm", "Voting", Icons.Material.Filled.HowToVote, NavLinkMatch.Prefix);
+    private static readonly TabItem ScoresTab = new("/scores", "Scores", Icons.Material.Filled.Leaderboard,
+NavLinkMatch.Prefix);
+
+    private bool IsActive(TabItem tab)
+    {
+        var currentPath = $"/{NavigationManager.ToBaseRelativePath(NavigationManager.Uri)}".TrimEnd('/');
+        if (string.IsNullOrEmpty(currentPath))
+        {
+            currentPath = "/";
+        }
+
+        return tab.Match == NavLinkMatch.All
+            ? string.Equals(currentPath, tab.Href, StringComparison.OrdinalIgnoreCase)
+            : currentPath.StartsWith(tab.Href, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record TabItem(string Href, string Label, string Icon, NavLinkMatch Match);
+}

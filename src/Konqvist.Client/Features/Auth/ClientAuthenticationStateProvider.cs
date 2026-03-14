@@ -12,6 +12,8 @@ public sealed class ClientAuthenticationStateProvider(LoginApiClient loginApiCli
     public static class ClaimTypes
     {
         public const string Team = "konqvist:team";
+        public const string GameStatus = "konqvist:game_status";
+        public const string GamePhase = "konqvist:game_phase";
     }
 
     public string? LastKnownTeamName { get; private set; }
@@ -24,12 +26,19 @@ public sealed class ClientAuthenticationStateProvider(LoginApiClient loginApiCli
             return AnonymousState;
         }
 
-        LastKnownTeamName = identity.Team;
+        var role = string.IsNullOrWhiteSpace(identity.Role) ? "Runner" : identity.Role;
+        var team = string.IsNullOrWhiteSpace(identity.Team) ? "No Team" : identity.Team;
+        var gameStatus = string.IsNullOrWhiteSpace(identity.GameStatus) ? "Pending" : identity.GameStatus;
+        var gamePhase = string.IsNullOrWhiteSpace(identity.GamePhase) ? "WaitingForPlayers" : identity.GamePhase;
+
+        LastKnownTeamName = team;
         var claims = new[]
         {
-            new Claim(System.Security.Claims.ClaimTypes.Role, identity.Role),
-            new Claim(ClaimTypes.Team, identity.Team),
-            new Claim("konqvist:player_session_id", identity.PlayerSessionId.ToString())
+            new Claim(System.Security.Claims.ClaimTypes.Role, role),
+            new Claim(ClaimTypes.Team, team),
+            new Claim("konqvist:player_session_id", identity.PlayerSessionId.ToString()),
+            new Claim(ClaimTypes.GameStatus, gameStatus),
+            new Claim(ClaimTypes.GamePhase, gamePhase)
         };
 
         return new AuthenticationState(

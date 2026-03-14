@@ -32,6 +32,8 @@ public sealed class AuthEndpointsTests
         Assert.Equal("Runner", meBody.Role);
         Assert.Equal("Alpha", meBody.Team);
         Assert.True(meBody.PlayerSessionId > 0);
+        Assert.Equal(GameStatus.Pending.ToString(), meBody.GameStatus);
+        Assert.Equal(GamePhase.WaitingForPlayers.ToString(), meBody.GamePhase);
     }
 
     [Fact]

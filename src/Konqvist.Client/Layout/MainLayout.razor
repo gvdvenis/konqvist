@@ -1,20 +1,222 @@
-﻿@inherits LayoutComponentBase
-<MudThemeProvider />
+@using System.Security.Claims
+@using Konqvist.Client.Features.Auth
+@using Konqvist.Client.Features.Login
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject LoginApiClient LoginApiClient
+@inherits LayoutComponentBase
+
+<MudThemeProvider @bind-IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div @onkeydown:document="HandleDebugShortcut">
+<MudLayout Class="app-shell">
+    <TopBar TeamName="@_teamName"
+            Role="@EffectiveRole"
+            IsAuthenticated="@EffectiveIsAuthenticated"
+            IsConnected="@EffectiveIsConnected"
+            OnRoleIconClick="ToggleThemeAsync"
+            OnHeaderDoubleClick="OpenDebugPanel" />
+    <OfflineBanner Visible="@(!EffectiveIsConnected)" />
+    <MudMainContent Class="app-content">
+        @Body
+    </MudMainContent>
+    <BottomTabBar Role="@EffectiveRole"
+                  IsAuthenticated="@EffectiveIsAuthenticated"
+                  GameStatus="@EffectiveGameStatus"
+                  GamePhase="@EffectiveGamePhase" />
+    @if (IsDebugBuild)
+    {
+        <DebugControlPanel Open="@_isDebugPanelOpen"
+                           OpenChanged="@OnDebugPanelOpenChanged"
+                           IsAuthenticated="@EffectiveIsAuthenticated"
+                           IsAuthenticatedChanged="@OnDebugAuthChanged"
+                           IsConnected="@EffectiveIsConnected"
+                           IsConnectedChanged="@OnDebugConnectedChanged"
+                           Role="@EffectiveRole"
+                           RoleChanged="@OnDebugRoleChanged"
+                           GameStatus="@EffectiveGameStatus"
+                           GameStatusChanged="@OnDebugGameStatusChanged"
+                           GamePhase="@EffectiveGamePhase"
+                           GamePhaseChanged="@OnDebugGamePhaseChanged"
+                           RunnerLogoutRequested="@SimulateRunnerLogoutAsync"
+                           ResetRequested="@ResetDebugOverrides" />
+    }
+</MudLayout>
 </div>
+
+@code {
+    private const string ThemePreferenceStorageKey = "konqvist:theme:isDark";
+    private string _teamName = "No Team";
+    private string _role = "Runner";
+    private string _gameStatus = "Pending";
+    private string _gamePhase = "WaitingForPlayers";
+    private bool _isAuthenticated;
+    private bool _isDarkMode;
+
+    // Stub for Slice 3.4 until SignalR state is wired.
+    private bool _isSignalRConnected = true;
+    private bool _isDebugPanelOpen;
+    private bool? _debugIsAuthenticated;
+    private bool? _debugIsConnected;
+    private string? _debugRole;
+    private string? _debugGameStatus;
+    private string? _debugGamePhase;
+    private const bool IsDebugBuild =
+#if DEBUG
+        true;
+#else
+        false;
+#endif
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private bool EffectiveIsAuthenticated => _debugIsAuthenticated ?? _isAuthenticated;
+    private bool EffectiveIsConnected => _debugIsConnected ?? _isSignalRConnected;
+    private string EffectiveRole => _debugRole ?? _role;
+    private string EffectiveGameStatus => _debugGameStatus ?? _gameStatus;
+    private string EffectiveGamePhase => _debugGamePhase ?? _gamePhase;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthenticationStateTask is null)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        _role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "Runner";
+        _teamName = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.Team)?.Value ?? "No Team";
+        _gameStatus = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GameStatus)?.Value ?? "Pending";
+        _gamePhase = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GamePhase)?.Value ?? "WaitingForPlayers";
+
+        if (ShouldForceWaitingRoute())
+        {
+            NavigationManager.NavigateTo("/waiting", replace: true);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var storedThemePreference = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", ThemePreferenceStorageKey);
+        if (bool.TryParse(storedThemePreference, out var isDarkMode))
+        {
+            _isDarkMode = isDarkMode;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", ThemePreferenceStorageKey, _isDarkMode.ToString());
+    }
+
+    private bool ShouldForceWaitingRoute()
+    {
+        if (!EffectiveIsAuthenticated
+            || string.Equals(EffectiveRole, "GameMaster", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var isPreStart = string.Equals(EffectiveGameStatus, "Pending", StringComparison.Ordinal)
+                         || string.Equals(EffectiveGamePhase, "WaitingForPlayers", StringComparison.Ordinal);
+        if (!isPreStart)
+        {
+            return false;
+        }
+
+        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var normalizedPath = $"/{relativePath}".TrimEnd('/');
+        if (string.IsNullOrEmpty(normalizedPath))
+        {
+            normalizedPath = "/";
+        }
+
+        return normalizedPath is not "/waiting"
+               && !normalizedPath.EndsWith("/logout", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Task OnDebugPanelOpenChanged(bool isOpen)
+    {
+        _isDebugPanelOpen = isOpen;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDebugAuthChanged(bool isAuthenticated)
+    {
+        _debugIsAuthenticated = isAuthenticated;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDebugConnectedChanged(bool isConnected)
+    {
+        _debugIsConnected = isConnected;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDebugRoleChanged(string role)
+    {
+        _debugRole = role;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDebugGameStatusChanged(string gameStatus)
+    {
+        _debugGameStatus = gameStatus;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDebugGamePhaseChanged(string gamePhase)
+    {
+        _debugGamePhase = gamePhase;
+        return Task.CompletedTask;
+    }
+
+    private async Task SimulateRunnerLogoutAsync()
+    {
+        _debugIsAuthenticated = false;
+        _debugRole = "Runner";
+        await LoginApiClient.LogoutAsync(_teamName);
+        NavigationManager.NavigateTo("/login", replace: true);
+    }
+
+    private Task ResetDebugOverrides()
+    {
+        _debugIsAuthenticated = null;
+        _debugIsConnected = null;
+        _debugRole = null;
+        _debugGameStatus = null;
+        _debugGamePhase = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OpenDebugPanel()
+    {
+        _isDebugPanelOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private Task HandleDebugShortcut(KeyboardEventArgs args)
+    {
+#if DEBUG
+        var togglePressed = string.Equals(args.Key, "k", StringComparison.OrdinalIgnoreCase)
+                            && args.CtrlKey
+                            && (args.AltKey || args.ShiftKey);
+        if (togglePressed)
+        {
+            _isDebugPanelOpen = !_isDebugPanelOpen;
+            StateHasChanged();
+        }
+#endif
+        return Task.CompletedTask;
+    }
+}

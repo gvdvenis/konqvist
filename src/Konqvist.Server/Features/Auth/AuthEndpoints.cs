@@ -104,7 +104,9 @@ public static class AuthEndpoints
         return Results.Ok(new AuthIdentityResponse(
             playerTemplate.Role.ToString(),
             playerTemplate.TeamTemplate.Name,
-            playerSession.Id));
+            playerSession.Id,
+            activeSession.Status.ToString(),
+            activeSession.CurrentPhase.ToString()));
     }
 
     private static async Task<IResult> LogoutAsync(
@@ -197,6 +199,7 @@ public static class AuthEndpoints
         var playerSession = await dbContext.PlayerSessions
             .Include(entity => entity.PlayerTemplate)
             .ThenInclude(entity => entity.TeamTemplate)
+            .Include(entity => entity.GameSession)
             .FirstOrDefaultAsync(entity => entity.Id == playerSessionId.Value, cancellationToken);
         if (playerSession is null || !playerSession.IsLoggedIn)
         {
@@ -207,7 +210,9 @@ public static class AuthEndpoints
         return Results.Ok(new AuthIdentityResponse(
             playerSession.PlayerTemplate.Role.ToString(),
             playerSession.PlayerTemplate.TeamTemplate.Name,
-            playerSession.Id));
+            playerSession.Id,
+            playerSession.GameSession.Status.ToString(),
+            playerSession.GameSession.CurrentPhase.ToString()));
     }
 
     private static async Task<IResult> TeamStatusAsync(

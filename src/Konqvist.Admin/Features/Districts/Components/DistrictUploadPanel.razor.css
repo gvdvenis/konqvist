@@ -1,0 +1,10 @@
+.district-upload-inline {
+    width: 100%;
+}
+
+.district-upload-inline ::deep .mud-input-control-input-container {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+}

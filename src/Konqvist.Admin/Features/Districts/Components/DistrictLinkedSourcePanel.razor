@@ -9,13 +9,12 @@
                 @if (_isCollapsed)
                 {
                     <MudTooltip Text="Edit linked source">
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   Class="grid-square-action"
-                                   Disabled="@IsBusy"
-                                   OnClick="HandleExpand">
-                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
-                        </MudButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Disabled="@IsBusy"
+                                       OnClick="HandleExpand" />
                     </MudTooltip>
                 }
                 else if (ShowBackToChoices)
@@ -32,11 +31,11 @@
         </MudStack>
         @if (_isCollapsed)
         {
-            <MudText Typo="Typo.body2" Class="admin-muted-text">@SourceUrlInput</MudText>
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">@SourceUrlInput</MudText>
         }
         else
         {
-            <MudText Typo="Typo.body2" Class="admin-muted-text">
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
                 Enter an HTTPS KML/KMZ URL, then import districts from that source.
             </MudText>
             <MudTextField T="string"

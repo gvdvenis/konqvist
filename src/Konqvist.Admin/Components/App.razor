@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.6.1/ol.css" />
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
     <link rel="stylesheet" href="@Assets["_content/OpenLayers.Blazor/OpenLayers.Blazor.css"]" />
@@ -18,7 +17,7 @@
 </head>
 
 <body>
-    <MudThemeProvider @rendermode="InteractiveServer" />
+    <MudThemeProvider @rendermode="InteractiveServer" Theme="Konqvist.Admin.Theme.KonqvistAdminTheme.Instance" />
     <MudPopoverProvider @rendermode="InteractiveServer" />
     <MudDialogProvider @rendermode="InteractiveServer" />
     <MudSnackbarProvider @rendermode="InteractiveServer" />

@@ -1,3 +1,4 @@
+@using Konqvist.Client.Theme
 @using System.Security.Claims
 @using Konqvist.Client.Features.Auth
 @using Konqvist.Client.Features.Login
@@ -6,7 +7,7 @@
 @inject LoginApiClient LoginApiClient
 @inherits LayoutComponentBase
 
-<MudThemeProvider @bind-IsDarkMode="_isDarkMode" />
+<MudThemeProvider Theme="KonqvistClientTheme.Instance" @bind-IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />

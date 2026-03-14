@@ -13,27 +13,27 @@
                 Back to choices
             </MudButton>
         </MudStack>
-        <MudText Typo="Typo.body2" Class="admin-muted-text">
+        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
             Upload a <b>.kml</b> or <b>.kmz</b> file. Import replaces all existing districts in this game.
         </MudText>
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <MudFileUpload T="IBrowserFile"
-                           FilesChanged="OnFileChanged"
-                           Accept=".kml,.kmz"
-                           MaxFileSize="@MaxUploadFileSizeBytes"
-                           Disabled="@IsBusy">
-                <SelectedTemplate/>
-            </MudFileUpload>
-            @if (SelectedFile is not null)
-            {
-                <MudChip T="string"
-                         Color="Color.Secondary"
-                         Variant="Variant.Filled"
-                         Disabled="@IsBusy"
-                         OnClose="HandleSelectedFileChipClosed">
-                    @SelectedFile.Name
-                </MudChip>
-            }
+            <div class="district-upload-inline">
+                <MudFileUpload T="IBrowserFile"
+                               @bind-Files="BoundFile"
+                               Accept=".kml,.kmz"
+                               MaxFileSize="@MaxUploadFileSizeBytes"
+                               Disabled="@IsBusy">
+                    <CustomContent Context="context">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.AttachFile"
+                                   Disabled="@IsBusy"
+                                   OnClick="@context.OpenFilePickerAsync">
+                            Choose file
+                        </MudButton>
+                    </CustomContent>
+                </MudFileUpload>
+            </div>
         </MudStack>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -64,8 +64,9 @@
     [Parameter]
     public EventCallback OnImport { get; set; }
 
-    private Task HandleSelectedFileChipClosed(MudChip<string> _)
+    private IBrowserFile? BoundFile
     {
-        return OnFileChanged.InvokeAsync(null);
+        get => SelectedFile;
+        set => _ = OnFileChanged.InvokeAsync(value);
     }
 }

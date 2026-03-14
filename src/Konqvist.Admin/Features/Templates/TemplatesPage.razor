@@ -8,10 +8,11 @@
 @layout MainLayout
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inherits Konqvist.Admin.Components.AdminPageBase
 
-<MudStack Class="admin-page-content" Spacing="3">
+<MudStack Spacing="3">
     <MudText Typo="Typo.h4">Games</MudText>
-    <MudText Typo="Typo.body2" Class="admin-muted-text">
+    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
         Manage reusable games and their core gameplay settings.
     </MudText>
 
@@ -22,7 +23,7 @@
                             IsEditMode="@_editingTemplateId.HasValue"
                             OnSubmit="SaveTemplateAsync"
                             OnCancelEdit="CancelEditAsync"
-                            IsBusy="_isBusy" />
+                            IsBusy="IsBusy" />
     }
     else
     {
@@ -30,7 +31,7 @@
             <MudButton Variant="Variant.Filled"
                     Color="Color.Primary"
                     StartIcon="@Icons.Material.Filled.Add"
-                    Disabled="@_isBusy"
+                    Disabled="@IsBusy"
                     OnClick="ShowCreateTemplateForm">
                 Add new game
             </MudButton>
@@ -40,7 +41,7 @@
                        OnEditTemplate="BeginEditAsync"
                        OnDeleteTemplate="DeleteTemplateAsync"
                        OnRegenerateLoginToken="RegenerateLoginTokenAsync"
-                       IsBusy="_isBusy" />
+                       IsBusy="IsBusy" />
 </MudStack>
 
 @code {
@@ -54,7 +55,6 @@
     private IDialogService DialogService { get; set; } = null!;
 
     private IReadOnlyList<GameTemplateListItem> _templates = [];
-    private bool _isBusy;
     private int? _editingTemplateId;
     private bool _showTemplateEditor;
     private int _templateEditorKey;
@@ -153,7 +153,8 @@
             new DialogParameters
             {
                 [nameof(ConfirmationDialog.Message)] = "Delete this game? This action cannot be undone.",
-                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete"
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete",
+                [nameof(ConfirmationDialog.ConfirmColor)] = Color.Error
             });
         var dialogResult = await dialog.Result;
         if (dialogResult is null || dialogResult.Canceled)
@@ -224,18 +225,4 @@
         });
     }
 
-    private async Task RunBusyAsync(Func<Task> action)
-    {
-        _isBusy = true;
-        await InvokeAsync(StateHasChanged);
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            _isBusy = false;
-            await InvokeAsync(StateHasChanged);
-        }
-    }
 }

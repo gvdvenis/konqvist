@@ -4,7 +4,7 @@
 <MudPaper Elevation="1" Class="pa-4">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
         <MudText Typo="Typo.h6">District list</MudText>
-        <MudText Typo="Typo.body2" Class="admin-muted-text">@Districts.Count total</MudText>
+        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">@Districts.Count total</MudText>
     </MudStack>
 
     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-3">
@@ -26,13 +26,12 @@
                          ValueChanged="HandleRandomizeMaxChanged" />
        
         <MudTooltip Text="Randomize resources">
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Secondary"
-                       Class="district-randomize-action"
-                       Disabled="@IsBusy"
-                       OnClick="HandleRandomizeResourcesAsync">
-                <MudIcon Icon="@Icons.Material.Filled.Casino" />
-            </MudButton>
+            <MudIconButton Icon="@Icons.Material.Filled.Casino"
+                           Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           Size="Size.Medium"
+                           Disabled="@IsBusy"
+                           OnClick="HandleRandomizeResourcesAsync" />
         </MudTooltip>
     </MudStack>
 
@@ -49,13 +48,12 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
                     <MudText Typo="Typo.subtitle2">Edit @editingDistrict.Name</MudText>
                     <MudTooltip Text="Close editor">
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Secondary"
-                                   Class="grid-square-action"
-                                   Disabled="@IsBusy"
-                                   OnClick="HandleCloseEditorAsync">
-                            <MudIcon Icon="@Icons.Material.Filled.Close" />
-                        </MudButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                       Variant="Variant.Text"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       Disabled="@IsBusy"
+                                       OnClick="HandleCloseEditorAsync" />
                     </MudTooltip>
                 </MudStack>
                 <MudGrid>
@@ -153,13 +151,12 @@
                 <MudTd DataLabel="Oil" Style="text-align: center;">@context.Oil</MudTd>
                 <MudTd DataLabel="Actions" Style="text-align: right;">
                     <MudTooltip Text="Edit district resources">
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   Class="grid-square-action"
-                                   Disabled="@IsBusy"
-                                   OnClick="() => HandleEditDistrictResourcesAsync(context.Id)">
-                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
-                        </MudButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       Disabled="@IsBusy"
+                                       OnClick="() => HandleEditDistrictResourcesAsync(context.Id)" />
                     </MudTooltip>
                 </MudTd>
             </RowTemplate>

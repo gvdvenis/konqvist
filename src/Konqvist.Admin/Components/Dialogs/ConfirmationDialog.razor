@@ -3,8 +3,8 @@
         <MudText Typo="Typo.body1">@Message</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Confirm">@ConfirmButtonText</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="@ConfirmColor" OnClick="Confirm">@ConfirmButtonText</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -17,6 +17,9 @@
 
     [Parameter]
     public string ConfirmButtonText { get; set; } = "Confirm";
+
+    [Parameter]
+    public Color ConfirmColor { get; set; } = Color.Primary;
 
     private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
 

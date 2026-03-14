@@ -6,10 +6,11 @@
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
+@inherits Konqvist.Admin.Components.AdminPageBase
 
-<MudStack Class="admin-page-content" Spacing="3">
+<MudStack Spacing="3">
     <MudText Typo="Typo.h4">Session</MudText>
-    <MudText Typo="Typo.body2" Class="admin-muted-text">
+    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
         Create, start, and reset the current game session.
     </MudText>
 
@@ -20,7 +21,7 @@
                        Variant="Variant.Outlined"
                        Value="_selectedTemplateId"
                        ValueChanged="OnTemplateChanged"
-                       Disabled="@_isBusy">
+                       Disabled="@IsBusy">
                 @foreach (var template in _templates)
                 {
                     <MudSelectItem T="int?" Value="@template.Id">@template.Name</MudSelectItem>
@@ -28,7 +29,7 @@
             </MudSelect>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       Disabled="@(_isBusy || _selectedTemplateId is null || _hasActiveSession)"
+                       Disabled="@(IsBusy || _selectedTemplateId is null || _hasActiveSession)"
                        OnClick="CreateSessionAsync">
                 Create session
             </MudButton>
@@ -57,13 +58,13 @@
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Success"
-                               Disabled="@(_isBusy || _currentStatus != GameStatus.Pending)"
+                               Disabled="@(IsBusy || _currentStatus != GameStatus.Pending)"
                                OnClick="StartSessionAsync">
                         Start
                     </MudButton>
-                    <MudButton Variant="Variant.Outlined"
+                    <MudButton Variant="Variant.Filled"
                                Color="Color.Warning"
-                               Disabled="@(_isBusy || _currentStatus != GameStatus.Finished)"
+                               Disabled="@(IsBusy || _currentStatus != GameStatus.Finished)"
                                OnClick="ResetSessionAsync">
                         Reset
                     </MudButton>
@@ -89,8 +90,6 @@
     private string? _currentTemplateName;
     private GameStatus? _currentStatus;
     private DateTime? _startedAt;
-    private bool _isBusy;
-
     private bool _hasActiveSession => _currentStatus is GameStatus.Pending or GameStatus.Running;
 
     protected override async Task OnInitializedAsync()
@@ -190,7 +189,8 @@
             new DialogParameters
             {
                 [nameof(ConfirmationDialog.Message)] = "Reset this finished session? This deletes all session-layer data and recreates a Pending session.",
-                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Reset"
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Reset",
+                [nameof(ConfirmationDialog.ConfirmColor)] = Color.Error
             });
         var dialogResult = await dialog.Result;
         if (dialogResult is null || dialogResult.Canceled)
@@ -221,18 +221,4 @@
         }
     }
 
-    private async Task RunBusyAsync(Func<Task> action)
-    {
-        _isBusy = true;
-        await InvokeAsync(StateHasChanged);
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            _isBusy = false;
-            await InvokeAsync(StateHasChanged);
-        }
-    }
 }

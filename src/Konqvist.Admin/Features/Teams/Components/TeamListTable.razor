@@ -6,7 +6,7 @@
 <MudPaper Elevation="1" Class="pa-4">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
         <MudText Typo="Typo.h6">Configured teams</MudText>
-        <MudText Typo="Typo.body2" Class="admin-muted-text">@Teams.Count total</MudText>
+        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">@Teams.Count total</MudText>
     </MudStack>
 
     @if (Teams.Count == 0)
@@ -35,22 +35,20 @@
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudTextField T="string" Value="@context.RunnerToken" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         <MudTooltip Text="Copy runner token">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Primary"
-                                       Class="grid-square-action"
-                                       Disabled="@IsBusy"
-                                       OnClick="() => CopyRunnerTokenAsync(context.RunnerToken)">
-                                <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                           Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Disabled="@IsBusy"
+                                           OnClick="() => CopyRunnerTokenAsync(context.RunnerToken)" />
                         </MudTooltip>
                         <MudTooltip Text="Regenerate runner token">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Secondary"
-                                       Class="grid-square-action"
-                                       Disabled="@IsBusy"
-                                       OnClick="() => OnRegenerateToken(context, PlayerRole.Runner)">
-                                <MudIcon Icon="@Icons.Material.Filled.Refresh" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Variant="Variant.Text"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           Disabled="@IsBusy"
+                                           OnClick="() => OnRegenerateToken(context, PlayerRole.Runner)" />
                         </MudTooltip>
                     </MudStack>
                 </MudTd>
@@ -58,44 +56,40 @@
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudTextField T="string" Value="@context.TeamCaptainToken" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         <MudTooltip Text="Copy team captain token">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Primary"
-                                       Class="grid-square-action"
-                                       Disabled="@IsBusy"
-                                       OnClick="() => CopyTeamCaptainTokenAsync(context.TeamCaptainToken)">
-                                <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                           Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Disabled="@IsBusy"
+                                           OnClick="() => CopyTeamCaptainTokenAsync(context.TeamCaptainToken)" />
                         </MudTooltip>
                         <MudTooltip Text="Regenerate team captain token">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Secondary"
-                                       Class="grid-square-action"
-                                       Disabled="@IsBusy"
-                                       OnClick="() => OnRegenerateToken(context, PlayerRole.TeamLeader)">
-                                <MudIcon Icon="@Icons.Material.Filled.Refresh" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Variant="Variant.Text"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           Disabled="@IsBusy"
+                                           OnClick="() => OnRegenerateToken(context, PlayerRole.TeamLeader)" />
                         </MudTooltip>
                     </MudStack>
                 </MudTd>
                 <MudTd DataLabel="Actions" Style="text-align: right;">
                     <MudStack Row="true" Spacing="1" Justify="Justify.FlexEnd">
                         <MudTooltip Text="Edit team">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Primary"
-                                       Class="grid-square-action"
-                                       Disabled="@(IsBusy || EditingTeamId == context.Id)"
-                                       OnClick="() => OnEditTeam(context)">
-                                <MudIcon Icon="@Icons.Material.Filled.Edit" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Disabled="@(IsBusy || EditingTeamId == context.Id)"
+                                           OnClick="() => OnEditTeam(context)" />
                         </MudTooltip>
                         <MudTooltip Text="Delete team">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Error"
-                                       Class="grid-square-action"
-                                       Disabled="@IsBusy"
-                                       OnClick="() => OnDeleteTeam(context.Id)">
-                                <MudIcon Icon="@Icons.Material.Filled.Delete" />
-                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Variant="Variant.Text"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="@IsBusy"
+                                           OnClick="() => OnDeleteTeam(context.Id)" />
                         </MudTooltip>
                     </MudStack>
                 </MudTd>

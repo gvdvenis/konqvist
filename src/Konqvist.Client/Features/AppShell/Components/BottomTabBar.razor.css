@@ -1,0 +1,20 @@
+.tab-row {
+    width: 100%;
+    max-width: 480px;
+}
+
+.app-tab-button {
+    min-width: 64px;
+    padding: 4px 8px;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.app-tab-button:hover {
+    opacity: 0.85;
+}
+
+.app-tab-button.active {
+    opacity: 1;
+    color: var(--mud-palette-primary) !important;
+}

@@ -8,7 +8,7 @@
 @layout MainLayout
 @attribute [Authorize]
 
-<MudStack Class="admin-page-content" Spacing="3">
+<MudStack Spacing="3">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
         <MudText Typo="Typo.h4">Districts</MudText>
         <MudButton Variant="Variant.Text"
@@ -31,7 +31,7 @@
         }
         else
         {
-            <MudText Typo="Typo.body2" Class="admin-muted-text">
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
                 Import districts for game <b>@_templateName</b>.
             </MudText>
 

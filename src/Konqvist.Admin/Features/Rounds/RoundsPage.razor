@@ -6,8 +6,9 @@
 @using MudBlazor
 @layout MainLayout
 @attribute [Authorize]
+@inherits Konqvist.Admin.Components.AdminPageBase
 
-<MudStack Class="admin-page-content" Spacing="3">
+<MudStack Spacing="3">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
         <MudText Typo="Typo.h4">Rounds</MudText>
         <MudButton Variant="Variant.Text"
@@ -24,14 +25,14 @@
     }
     else
     {
-        <MudText Typo="Typo.body2" Class="admin-muted-text">
+        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
             Configure rounds for game <b>@_templateName</b>.
         </MudText>
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
-                       Disabled="@_isBusy"
+                       Disabled="@IsBusy"
                        OnClick="AddRoundAsync">
                 Add round
             </MudButton>
@@ -51,7 +52,7 @@
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Round">
-                        <MudTextField T="int" Value="@context.RoundNumber" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <MudText Typo="Typo.body2">@context.RoundNumber</MudText>
                     </MudTd>
                     <MudTd DataLabel="ROI resource">
                         <MudSelect T="ResourceType"
@@ -78,22 +79,20 @@
                     <MudTd DataLabel="Actions" Style="text-align: right;">
                         <MudStack Row="true" Spacing="1" Justify="Justify.FlexEnd">
                             <MudTooltip Text="Save round">
-                                <MudButton Variant="Variant.Text"
-                                           Color="Color.Primary"
-                                           Class="grid-square-action"
-                                           Disabled="@_isBusy"
-                                           OnClick="() => SaveRoundAsync(context.Id)">
-                                    <MudIcon Icon="@Icons.Material.Filled.Save" />
-                                </MudButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                               Variant="Variant.Text"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               Disabled="@IsBusy"
+                                               OnClick="() => SaveRoundAsync(context.Id)" />
                             </MudTooltip>
                             <MudTooltip Text="Delete round">
-                                <MudButton Variant="Variant.Text"
-                                           Color="Color.Error"
-                                           Class="grid-square-action"
-                                           Disabled="@(_isBusy || _rounds.Count <= 1)"
-                                           OnClick="() => DeleteRoundAsync(context.Id)">
-                                    <MudIcon Icon="@Icons.Material.Filled.Delete" />
-                                </MudButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Variant="Variant.Text"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Disabled="@(IsBusy || _rounds.Count <= 1)"
+                                               OnClick="() => DeleteRoundAsync(context.Id)" />
                             </MudTooltip>
                         </MudStack>
                     </MudTd>
@@ -125,7 +124,6 @@
     private Dictionary<int, Dictionary<string, string>> _errorsByRoundId = [];
     private string _templateName = string.Empty;
     private bool _templateNotFound;
-    private bool _isBusy;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -237,7 +235,8 @@
             new DialogParameters
             {
                 [nameof(ConfirmationDialog.Message)] = "Delete this round? Round numbers will be re-indexed.",
-                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete"
+                [nameof(ConfirmationDialog.ConfirmButtonText)] = "Delete",
+                [nameof(ConfirmationDialog.ConfirmColor)] = Color.Error
             });
         var dialogResult = await dialog.Result;
         if (dialogResult is null || dialogResult.Canceled)
@@ -297,20 +296,5 @@
         return _errorsByRoundId.TryGetValue(roundTemplateId, out var errors)
             ? errors.GetValueOrDefault(propertyName)
             : null;
-    }
-
-    private async Task RunBusyAsync(Func<Task> action)
-    {
-        _isBusy = true;
-        await InvokeAsync(StateHasChanged);
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            _isBusy = false;
-            await InvokeAsync(StateHasChanged);
-        }
     }
 }

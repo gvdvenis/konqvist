@@ -5,7 +5,7 @@
 
 <MudPaper Elevation="2" Class="pa-6">
     <MudText Typo="Typo.h5" Class="mb-2">Admin Login</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);" Class="mb-4">
         Sign in with the credentials configured in appsettings.
     </MudText>
 
@@ -25,7 +25,7 @@
                       Required="true"
                       Margin="Margin.Dense"
                       InputId="admin-username"
-                      Name="username"
+                      UserAttributes="@_usernameAttrs"
                       @bind-Value="_username"
                       Immediate="true" />
         <MudTextField T="string"
@@ -36,7 +36,7 @@
                       Margin="Margin.Dense"
                       Class="mt-2"
                       InputId="admin-password"
-                      Name="password"
+                      UserAttributes="@_passwordAttrs"
                       @bind-Value="_password"
                       Immediate="true" />
         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4">
@@ -52,6 +52,8 @@
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? RawReturnUrl { get; set; }
 
+    private readonly Dictionary<string, object> _usernameAttrs = new() { { "name", "username" } };
+    private readonly Dictionary<string, object> _passwordAttrs = new() { { "name", "password" } };
     private string _username = string.Empty;
     private string _password = string.Empty;
 

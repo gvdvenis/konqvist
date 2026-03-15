@@ -1,4 +1,5 @@
 using Konqvist.Infrastructure.Persistence;
+using Konqvist.Server.Domain.Aggregates;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Hubs;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,7 @@ public static class PhaseNavigationTestEndpoints
                 AuthenticationSchemes = AuthConstants.AuthenticationScheme
             });
         group.MapPost("/gathering/{gameSessionId:int}", BroadcastGatheringAsync);
+        group.MapPost("/reset/{gameSessionId:int}", ResetSessionAsync);
 
         return endpoints;
     }
@@ -76,6 +78,55 @@ public static class PhaseNavigationTestEndpoints
         logger.LogInformation(
             "Broadcasted development Gathering phase change for game session {GameSessionId}.",
             session.Id);
+
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ResetSessionAsync(
+        int gameSessionId,
+        HttpContext httpContext,
+        KonqvistDbContext dbContext,
+        GameAggregate gameAggregate,
+        IHubContext<GameHub, IGameClient> hubContext,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
+    {
+        var logger = loggerFactory.CreateLogger("PhaseNavigationTestEndpoints");
+        var role = httpContext.User.FindFirstValue(ClaimTypes.Role);
+        var callerGameSessionIdValue = httpContext.User.FindFirstValue(AuthConstants.ClaimTypes.GameSessionId);
+        if (!string.Equals(role, Konqvist.Infrastructure.Entities.Enums.PlayerRole.GameMaster.ToString(), StringComparison.Ordinal)
+            || !int.TryParse(callerGameSessionIdValue, out var callerGameSessionId)
+            || callerGameSessionId != gameSessionId)
+        {
+            return Results.Unauthorized();
+        }
+
+        GameAggregate.DevelopmentSessionResetResult result;
+        try
+        {
+            result = await gameAggregate.ResetToWaitingForPlayersForDevelopmentAsync(gameSessionId, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return Results.NotFound();
+        }
+
+        if (result.PreviousPhase != Konqvist.Infrastructure.Entities.Enums.GamePhase.WaitingForPlayers)
+        {
+            var message = new PhaseChangedMessage(
+                result.GameSessionId,
+                result.CurrentRoundSessionId,
+                result.PreviousPhase.ToString(),
+                result.CurrentPhase.ToString(),
+                null,
+                DateTime.UtcNow);
+
+            await hubContext.Clients.Group(GameHubGroups.Game(result.GameSessionId)).PhaseChanged(message);
+        }
+
+        logger.LogInformation(
+            "Reset development game session {GameSessionId} back to Pending/WaitingForPlayers for manual validation.",
+            result.GameSessionId);
 
         return Results.NoContent();
     }

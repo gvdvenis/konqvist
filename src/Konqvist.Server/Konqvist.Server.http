@@ -70,6 +70,20 @@ POST {{Konqvist.Server_HostAddress}}/api/dev/phase-test/gathering/{{GameSessionI
 
 ###
 
+# POST /api/dev/phase-test/reset/{gameSessionId} — development-only helper to
+# rewind the current session back to Pending / WaitingForPlayers so M4 manual
+# validation can be repeated from a clean pre-start state. Requires a GM cookie
+# for the same game session.
+POST {{Konqvist.Server_HostAddress}}/api/dev/phase-test/reset/{{GameSessionId}}
+
+###
+
+# POST /api/game/start — GM starts the active pending session, transitions it to
+# Running/Gathering, and broadcasts the phase change to connected clients.
+POST {{Konqvist.Server_HostAddress}}/api/game/start
+
+###
+
 # ── Other seed tokens ─────────────────────────────────────────────────────────
 # Alpha Team Leader : ATCsC1a
 # Bravo Runner      : BRV6X4

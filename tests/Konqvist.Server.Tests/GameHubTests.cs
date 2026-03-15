@@ -21,6 +21,121 @@ namespace Konqvist.Server.Tests;
 public sealed class GameHubTests
 {
     [Fact]
+    public async Task StartGameEndpoint_WithGameMasterCookie_TransitionsPendingSession_AndBroadcastsPhaseChanged()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.WaitingForPlayers, status: GameStatus.Pending);
+
+        var runnerCookie = await LoginAndGetCookieAsync(factory, scenario.RunnerToken);
+        await using var runnerConnection = CreateHubConnection(factory, runnerCookie);
+        var runnerPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        runnerConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                runnerPhaseChanged.TrySetResult(message);
+            }
+        });
+        await runnerConnection.StartAsync();
+
+        var leaderCookie = await LoginAndGetCookieAsync(factory, scenario.TeamLeaderToken);
+        await using var leaderConnection = CreateHubConnection(factory, leaderCookie);
+        var leaderPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        leaderConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                leaderPhaseChanged.TrySetResult(message);
+            }
+        });
+        await leaderConnection.StartAsync();
+
+        var gameMasterCookie = await LoginAndGetCookieAsync(factory, scenario.GmToken);
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", gameMasterCookie);
+
+        var response = await client.PostAsync("/api/game/start", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var runnerMessage = await runnerPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var leaderMessage = await leaderPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(GamePhase.WaitingForPlayers.ToString(), runnerMessage.PreviousPhase);
+        Assert.Equal(GamePhase.Gathering.ToString(), runnerMessage.CurrentPhase);
+        Assert.Equal(GamePhase.Gathering.ToString(), leaderMessage.CurrentPhase);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+        var session = await dbContext.GameSessions.SingleAsync(entity => entity.Id == scenario.GameSessionId);
+        Assert.Equal(GameStatus.Running, session.Status);
+        Assert.Equal(GamePhase.Gathering, session.CurrentPhase);
+        Assert.NotNull(session.StartedAt);
+        Assert.NotNull(session.CurrentRoundSessionId);
+        Assert.Equal(
+            1,
+            await dbContext.GameEvents.CountAsync(entity =>
+                entity.GameSessionId == scenario.GameSessionId && entity.EventType == "GamePhaseChanged"));
+    }
+
+    [Fact]
+    public async Task StartGameEndpoint_WhenSessionAlreadyRunning_ReturnsConflict()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.Gathering, status: GameStatus.Running);
+
+        var gameMasterCookie = await LoginAndGetCookieAsync(factory, scenario.GmToken);
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", gameMasterCookie);
+
+        var response = await client.PostAsync("/api/game/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task StartGameEndpoint_WhenSessionWasMarkedRunningButStillWaiting_RepairsStateAndBroadcastsPhaseChanged()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.WaitingForPlayers, status: GameStatus.Running);
+
+        var runnerCookie = await LoginAndGetCookieAsync(factory, scenario.RunnerToken);
+        await using var runnerConnection = CreateHubConnection(factory, runnerCookie);
+        var runnerPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        runnerConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                runnerPhaseChanged.TrySetResult(message);
+            }
+        });
+        await runnerConnection.StartAsync();
+
+        var gameMasterCookie = await LoginAndGetCookieAsync(factory, scenario.GmToken);
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", gameMasterCookie);
+
+        var response = await client.PostAsync("/api/game/start", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var runnerMessage = await runnerPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(GamePhase.WaitingForPlayers.ToString(), runnerMessage.PreviousPhase);
+        Assert.Equal(GamePhase.Gathering.ToString(), runnerMessage.CurrentPhase);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+        var session = await dbContext.GameSessions.SingleAsync(entity => entity.Id == scenario.GameSessionId);
+        Assert.Equal(GameStatus.Running, session.Status);
+        Assert.Equal(GamePhase.Gathering, session.CurrentPhase);
+        Assert.NotNull(session.StartedAt);
+        Assert.NotNull(session.CurrentRoundSessionId);
+        Assert.Equal(
+            1,
+            await dbContext.GameEvents.CountAsync(entity =>
+                entity.GameSessionId == scenario.GameSessionId && entity.EventType == "GamePhaseChanged"));
+    }
+
+    [Fact]
     public async Task Connect_WithCookie_TracksRunnerOnlineStateAcrossConnectAndDisconnect()
     {
         await using var factory = new ServerAppFactory();
@@ -264,6 +379,110 @@ public sealed class GameHubTests
     }
 
     [Fact]
+    public async Task DevelopmentResetPhaseTestEndpoint_RewindsSessionAndAllowsStartingAgain()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.Gathering, status: GameStatus.Running);
+
+        await using (var setupScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = setupScope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+            var round = await dbContext.RoundSessions
+                .Include(entity => entity.Votes)
+                .OrderBy(entity => entity.Id)
+                .FirstAsync(entity => entity.GameSessionId == scenario.GameSessionId);
+            var session = await dbContext.GameSessions
+                .Include(entity => entity.Teams)
+                .Include(entity => entity.Districts)
+                .SingleAsync(entity => entity.Id == scenario.GameSessionId);
+
+            round.Status = RoundStatus.Voting;
+            round.VotingEnabled = true;
+            round.VotingStartedAt = DateTime.UtcNow;
+            round.Votes.Add(new Vote
+            {
+                VotingTeamSessionId = scenario.TeamSessionId,
+                TargetTeamSessionId = scenario.OtherTeamSessionId,
+                VoteValue = 1,
+                IsAutocast = false,
+                CastAt = DateTime.UtcNow
+            });
+
+            session.Teams.Single(entity => entity.Id == scenario.TeamSessionId).TotalScore = 9;
+
+            var district = session.Districts.Single(entity => entity.Id == scenario.DistrictSessionId);
+            district.CurrentOwnerTeamSessionId = scenario.TeamSessionId;
+            district.IsClaimedThisRound = true;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var runnerCookie = await LoginAndGetCookieAsync(factory, scenario.RunnerToken);
+        await using var runnerConnection = CreateHubConnection(factory, runnerCookie);
+        var runnerPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        runnerConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId
+                && message.CurrentPhase == GamePhase.WaitingForPlayers.ToString())
+            {
+                runnerPhaseChanged.TrySetResult(message);
+            }
+        });
+        await runnerConnection.StartAsync();
+
+        var gameMasterCookie = await LoginAndGetCookieAsync(factory, scenario.GmToken);
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", gameMasterCookie);
+
+        var resetResponse = await client.PostAsync($"/api/dev/phase-test/reset/{scenario.GameSessionId}", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, resetResponse.StatusCode);
+
+        var waitingMessage = await runnerPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(GamePhase.Gathering.ToString(), waitingMessage.PreviousPhase);
+        Assert.Equal(GamePhase.WaitingForPlayers.ToString(), waitingMessage.CurrentPhase);
+
+        await runnerConnection.InvokeAsync(nameof(GameHub.UpdateLocation), 52.1234d, 5.4321d);
+
+        await using (var verifyScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = verifyScope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+            var session = await dbContext.GameSessions
+                .Include(entity => entity.Teams)
+                .Include(entity => entity.Districts)
+                .Include(entity => entity.Rounds)
+                .SingleAsync(entity => entity.Id == scenario.GameSessionId);
+
+            Assert.Equal(GameStatus.Pending, session.Status);
+            Assert.Equal(GamePhase.WaitingForPlayers, session.CurrentPhase);
+            Assert.Null(session.StartedAt);
+            Assert.Equal(0, session.Teams.Sum(entity => entity.TotalScore));
+            Assert.All(session.Districts, district =>
+            {
+                Assert.Null(district.CurrentOwnerTeamSessionId);
+                Assert.False(district.IsClaimedThisRound);
+            });
+            Assert.All(session.Rounds, round =>
+            {
+                Assert.Equal(RoundStatus.Gathering, round.Status);
+                Assert.False(round.VotingEnabled);
+                Assert.Null(round.VotingStartedAt);
+                Assert.Null(round.WinnerTeamSessionId);
+            });
+            Assert.Equal(0, await dbContext.Votes.CountAsync(entity => entity.RoundSession.GameSessionId == scenario.GameSessionId));
+            Assert.Equal(0, await dbContext.GameEvents.CountAsync(entity => entity.GameSessionId == scenario.GameSessionId));
+
+            var runnerSession = await dbContext.PlayerSessions.SingleAsync(entity => entity.Id == scenario.RunnerPlayerSessionId);
+            Assert.Null(runnerSession.LocationLat);
+            Assert.Null(runnerSession.LocationLng);
+            Assert.Null(runnerSession.LocationUpdatedAt);
+            Assert.Null(runnerSession.LastSeen);
+        }
+
+        var restartResponse = await client.PostAsync("/api/game/start", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, restartResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Connect_WithGameMasterCookie_ReceivesLocationAndPhaseUpdates()
     {
         await using var factory = new ServerAppFactory();
@@ -422,6 +641,7 @@ public sealed class GameHubTests
     private static async Task<HubScenario> SeedHubScenarioAsync(
         IServiceProvider services,
         GamePhase phase,
+        GameStatus status = GameStatus.Running,
         bool votingEnabled = false,
         int locationBroadcastIntervalSeconds = 30,
         int minLocationUpdateIntervalSeconds = 5)
@@ -506,7 +726,7 @@ public sealed class GameHubTests
         var session = new GameSession
         {
             GameTemplateId = gameTemplate.Id,
-            Status = GameStatus.Running,
+            Status = status,
             CurrentPhase = phase
         };
 

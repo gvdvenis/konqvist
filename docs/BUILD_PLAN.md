@@ -256,13 +256,13 @@ The agent should implement **one slice at a time**. Do not ask it to implement a
 - Waiting room page navigates away on receiving `GamePhaseChanged`
 
 ### Done means
-- [ ] `GameAggregate` singleton is registered and holds in-memory state
-- [ ] WAL writes to the database only for the 8 persisted event types — verified by inspecting the `GameEvents` table
-- [ ] Two browser tabs logged in as different players both receive a SignalR event when game phase changes
-- [ ] Clicking "Start Game" in the GM dashboard navigates Runner clients from `/waiting` to `/map`
-- [ ] `GameHubService` reconnection handler calls the state resync endpoint on reconnect
-- [ ] `OfflineBanner` appears when SignalR connection is manually severed (e.g. DevTools offline mode)
-- [ ] Fluxor Redux DevTools (if using the Fluxor dev extension) show actions being dispatched on phase change
+- [x] `GameAggregate` singleton is registered and holds in-memory state
+- [x] WAL writes to the database only for the 8 persisted event types — verified by inspecting the `GameEvents` table
+- [x] Two browser tabs logged in as different players both receive a SignalR event when game phase changes
+- [x] Clicking "Start Game" in the GM dashboard navigates Runner clients from `/waiting` to `/map`
+- [x] `GameHubService` reconnection handler calls the state resync endpoint on reconnect
+- [x] `OfflineBanner` appears when SignalR connection is manually severed (e.g. DevTools offline mode)
+- [x] Fluxor Redux DevTools (if using the Fluxor dev extension) show actions being dispatched on phase change
 
 ---
 

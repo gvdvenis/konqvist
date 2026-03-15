@@ -6,6 +6,7 @@ using Fluxor.Blazor.Web.ReduxDevTools;
 using Konqvist.Client;
 using Konqvist.Client.Core.SignalR;
 using Konqvist.Client.Features.Auth;
+using Konqvist.Client.Features.Game;
 using Konqvist.Client.Features.Login;
 using MudBlazor.Services;
 
@@ -15,6 +16,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+builder.Services.AddScoped<GameApiClient>();
 builder.Services.AddScoped<LoginApiClient>();
 builder.Services.AddFluxor(options =>
 {

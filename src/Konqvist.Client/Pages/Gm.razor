@@ -1,11 +1,114 @@
 @page "/gm"
 @page "/gm/{*Path}"
+@using System.Security.Claims
+@using Fluxor
+@using Konqvist.Client.Core.Models
+@using Konqvist.Client.Features.Auth
+@using Konqvist.Client.Features.Game.Store
 @attribute [Authorize(Roles = "GameMaster")]
+@inject Konqvist.Client.Features.Game.GameApiClient GameApiClient
+@inject IState<GameState> GameState
+@implements IDisposable
 
 <PageTitle>GM</PageTitle>
 
-<MudText Typo="Typo.h6">Game Master</MudText>
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h6">Game Master</MudText>
+    <MudText Typo="Typo.body2">Use the dashboard controls below to progress the live game.</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Disabled="@(!CanStartGame)"
+               OnClick="StartGameAsync">
+        @(_isStarting ? "Starting..." : "Start Game")
+    </MudButton>
+    @if (!CanStartGame && string.IsNullOrWhiteSpace(_message))
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+            The game is already in progress. Current phase: @EffectivePhase.
+        </MudAlert>
+    }
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <MudAlert Severity="@_messageSeverity" Variant="Variant.Outlined">@_message</MudAlert>
+    }
+</MudStack>
 
 @code {
     [Parameter] public string? Path { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private bool _isStarting;
+    private string? _message;
+    private Severity _messageSeverity = Severity.Normal;
+    private string _gameStatus = "Pending";
+    private GamePhase _authPhase = GamePhase.WaitingForPlayers;
+
+    private GamePhase EffectivePhase => GameState.Value.GameSessionId.HasValue ? GameState.Value.CurrentPhase : _authPhase;
+
+    private bool CanStartGame =>
+        !_isStarting &&
+        string.Equals(_gameStatus, "Pending", StringComparison.Ordinal) &&
+        EffectivePhase == GamePhase.WaitingForPlayers;
+
+    protected override void OnInitialized()
+    {
+        GameState.StateChanged += HandleGameStateChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthenticationStateTask is null)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        _gameStatus = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GameStatus)?.Value ?? "Pending";
+        _authPhase = ParsePhase(
+            authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GamePhase)?.Value);
+    }
+
+    private async Task StartGameAsync()
+    {
+        if (!CanStartGame)
+        {
+            return;
+        }
+
+        _isStarting = true;
+        _message = null;
+
+        try
+        {
+            var result = await GameApiClient.StartGameAsync();
+            if (result.IsSuccess)
+            {
+                _message = "Game started. Connected players should now move into the Gathering phase.";
+                _messageSeverity = Severity.Success;
+                return;
+            }
+
+            _message = result.ErrorMessage ?? "Could not start the game.";
+            _messageSeverity = Severity.Error;
+        }
+        finally
+        {
+            _isStarting = false;
+        }
+    }
+
+    private static GamePhase ParsePhase(string? value)
+        => Enum.TryParse<GamePhase>(value, ignoreCase: true, out var phase)
+            ? phase
+            : GamePhase.WaitingForPlayers;
+
+    private void HandleGameStateChanged(object? sender, EventArgs args)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        GameState.StateChanged -= HandleGameStateChanged;
+    }
 }

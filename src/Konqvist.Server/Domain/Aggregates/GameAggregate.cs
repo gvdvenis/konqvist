@@ -18,6 +18,7 @@ public sealed class GameAggregate(
     private readonly SemaphoreSlim _mutex = new(1, 1);
     private readonly ConcurrentDictionary<int, SemaphoreSlim> _locationMutexes = [];
     private AggregateState? _state;
+    private int _stateGeneration;
 
     public GamePhase CurrentPhase => _state?.CurrentPhase ?? GamePhase.WaitingForPlayers;
 
@@ -26,6 +27,195 @@ public sealed class GameAggregate(
     public IReadOnlyDictionary<int, int> TeamScores => _state?.TeamScores ?? EmptyScores;
 
     public IReadOnlyDictionary<int, int?> DistrictOwnership => _state?.DistrictOwnership ?? EmptyDistrictOwnership;
+
+    public async Task ReloadAsync(CancellationToken cancellationToken = default)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            _state = null;
+            _locationMutexes.Clear();
+            await EnsureInitializedAsync(cancellationToken);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
+    public async Task<DevelopmentSessionResetResult> ResetToWaitingForPlayersForDevelopmentAsync(
+        int gameSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            var state = await EnsureInitializedAsync(cancellationToken);
+            if (state.GameSessionId != gameSessionId)
+            {
+                throw new InvalidOperationException($"Game session '{gameSessionId}' is not the active session.");
+            }
+
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var session = await dbContext.GameSessions
+                .Include(entity => entity.Teams)
+                .Include(entity => entity.Districts)
+                .Include(entity => entity.Players)
+                .Include(entity => entity.Rounds)
+                    .ThenInclude(entity => entity.RoundTemplate)
+                .Include(entity => entity.Rounds)
+                    .ThenInclude(entity => entity.Votes)
+                .SingleOrDefaultAsync(entity => entity.Id == gameSessionId, cancellationToken)
+                ?? throw new InvalidOperationException("The active game session could not be found.");
+
+            var orderedRounds = session.Rounds
+                .OrderBy(entity => entity.RoundTemplate.RoundNumber)
+                .ThenBy(entity => entity.Id)
+                .ToList();
+            if (orderedRounds.Count == 0)
+            {
+                throw new InvalidOperationException("The active game session has no rounds.");
+            }
+
+            var previousPhase = session.CurrentPhase;
+            _stateGeneration++;
+
+            session.Status = GameStatus.Pending;
+            session.CurrentPhase = GamePhase.WaitingForPlayers;
+            session.StartedAt = null;
+            session.FinishedAt = null;
+            session.CurrentRoundSessionId = orderedRounds[0].Id;
+
+            foreach (var team in session.Teams)
+            {
+                team.TotalScore = 0;
+                team.TotalGold = 0;
+                team.TotalVoters = 0;
+                team.TotalLikes = 0;
+                team.TotalOil = 0;
+            }
+
+            foreach (var district in session.Districts)
+            {
+                district.CurrentOwnerTeamSessionId = null;
+                district.IsClaimedThisRound = false;
+                district.LastClaimedAt = null;
+            }
+
+            foreach (var player in session.Players)
+            {
+                player.IsOnline = false;
+                player.LastSeen = null;
+                player.LocationLat = null;
+                player.LocationLng = null;
+                player.LocationUpdatedAt = null;
+            }
+
+            foreach (var round in orderedRounds)
+            {
+                round.Status = RoundStatus.Gathering;
+                round.VotingEnabled = false;
+                round.VotingStartedAt = null;
+                round.WinnerTeamSessionId = null;
+            }
+
+            dbContext.Votes.RemoveRange(orderedRounds.SelectMany(entity => entity.Votes));
+            dbContext.GameEvents.RemoveRange(dbContext.GameEvents.Where(entity => entity.GameSessionId == session.Id));
+            dbContext.RoundSnapshots.RemoveRange(dbContext.RoundSnapshots.Where(entity => entity.RoundSession.GameSessionId == session.Id));
+            dbContext.DistrictOwnershipSnapshots.RemoveRange(dbContext.DistrictOwnershipSnapshots.Where(entity => entity.RoundSession.GameSessionId == session.Id));
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            state.CurrentPhase = GamePhase.WaitingForPlayers;
+            state.CurrentRoundSessionId = orderedRounds[0].Id;
+            state.CurrentRoundNumber = orderedRounds[0].RoundTemplate.RoundNumber;
+            state.VotingEnabled = false;
+            state.DistrictClaimsThisRound.Clear();
+            state.TeamsThatVotedThisRound.Clear();
+            state.LastLocationUpdateAt.Clear();
+            state.LastOpponentLocationBroadcastAt.Clear();
+
+            foreach (var team in session.Teams)
+            {
+                state.TeamScores[team.Id] = 0;
+            }
+
+            foreach (var district in session.Districts)
+            {
+                state.DistrictOwnership[district.Id] = null;
+            }
+
+            return new DevelopmentSessionResetResult(
+                session.Id,
+                state.CurrentRoundSessionId,
+                previousPhase,
+                state.CurrentPhase);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
+    public async Task<GameAggregateCommandResult<GamePhaseChanged>> StartGame(
+        int gameSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            var state = await EnsureInitializedAsync(cancellationToken);
+            if (state.GameSessionId != gameSessionId)
+            {
+                throw new InvalidOperationException($"Game session '{gameSessionId}' is not the active session.");
+            }
+
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var session = await dbContext.GameSessions
+                .Include(entity => entity.Rounds)
+                    .ThenInclude(entity => entity.RoundTemplate)
+                .SingleOrDefaultAsync(entity => entity.Id == state.GameSessionId, cancellationToken)
+                ?? throw new InvalidOperationException("The active game session could not be found.");
+
+            var canRecoverLegacyStartedSession =
+                session.Status == GameStatus.Running &&
+                session.CurrentPhase == GamePhase.WaitingForPlayers &&
+                state.CurrentPhase == GamePhase.WaitingForPlayers;
+
+            if (session.Status != GameStatus.Pending && !canRecoverLegacyStartedSession)
+            {
+                throw new InvalidOperationException("The active game session has already been started.");
+            }
+
+            var occurredAt = DateTime.UtcNow;
+            var phaseChanged = CreatePhaseChangedEvent(state, GamePhase.Gathering, actorPlayerSessionId: null, occurredAt)
+                ?? throw new InvalidOperationException("The active game session is already in the Gathering phase.");
+
+            session.Status = GameStatus.Running;
+            session.StartedAt ??= occurredAt;
+            session.CurrentPhase = GamePhase.Gathering;
+            session.CurrentRoundSessionId ??= state.CurrentRoundSessionId;
+
+            dbContext.GameEvents.Add(new Infrastructure.Entities.Session.GameEvent
+            {
+                GameSessionId = phaseChanged.GameSessionId,
+                RoundSessionId = phaseChanged.RoundSessionId,
+                EventType = phaseChanged.EventType,
+                Payload = GameEventPayloadSerializer.Serialize(phaseChanged),
+                OccurredAt = phaseChanged.OccurredAt,
+                ActorPlayerSessionId = phaseChanged.ActorPlayerSessionId
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            Apply(phaseChanged, state);
+
+            return new GameAggregateCommandResult<GamePhaseChanged>(phaseChanged, [phaseChanged]);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
 
     public async Task<GameAggregateCommandResult<DistrictClaimed>> ClaimDistrict(
         int actorPlayerSessionId,
@@ -138,6 +328,7 @@ public sealed class GameAggregate(
             DateTime? lastBroadcastAt;
             bool isThrottled;
             bool shouldBroadcastToOpponents;
+            int stateGeneration;
 
             await _mutex.WaitAsync(cancellationToken);
             try
@@ -146,6 +337,22 @@ public sealed class GameAggregate(
                 teamSessionId = GetActorTeamSessionId(state, actorPlayerSessionId);
                 roundSessionId = state.CurrentRoundSessionId;
                 EnsureActorRole(state, actorPlayerSessionId, PlayerRole.Runner, "update location");
+
+                if (state.CurrentPhase != GamePhase.Gathering)
+                {
+                    var ignoredLocationUpdated = new LocationUpdated(
+                        state.GameSessionId,
+                        roundSessionId,
+                        actorPlayerSessionId,
+                        teamSessionId,
+                        latitude,
+                        longitude,
+                        Accepted: false,
+                        BroadcastToOpponents: false,
+                        DateTime.UtcNow);
+
+                    return new GameAggregateCommandResult<LocationUpdated>(ignoredLocationUpdated, [], WasIdempotent: true);
+                }
 
                 occurredAt = DateTime.UtcNow;
                 lastLocationUpdateAt = state.LastLocationUpdateAt.TryGetValue(actorPlayerSessionId, out var trackedLastLocationUpdateAt)
@@ -158,6 +365,7 @@ public sealed class GameAggregate(
                     && occurredAt - lastLocationUpdateAt.Value < TimeSpan.FromSeconds(state.MinLocationUpdateIntervalSeconds);
                 shouldBroadcastToOpponents = !lastBroadcastAt.HasValue
                     || occurredAt - lastBroadcastAt.Value >= TimeSpan.FromSeconds(state.LocationBroadcastIntervalSeconds);
+                stateGeneration = _stateGeneration;
             }
             finally
             {
@@ -198,6 +406,28 @@ public sealed class GameAggregate(
             await _mutex.WaitAsync(cancellationToken);
             try
             {
+                if (_stateGeneration != stateGeneration)
+                {
+                    playerSession.LocationLat = null;
+                    playerSession.LocationLng = null;
+                    playerSession.LocationUpdatedAt = null;
+                    playerSession.LastSeen = null;
+                    await dbContext.SaveChangesAsync(CancellationToken.None);
+
+                    var supersededLocationUpdated = new LocationUpdated(
+                        state.GameSessionId,
+                        roundSessionId,
+                        actorPlayerSessionId,
+                        teamSessionId,
+                        latitude,
+                        longitude,
+                        Accepted: false,
+                        BroadcastToOpponents: false,
+                        occurredAt);
+
+                    return new GameAggregateCommandResult<LocationUpdated>(supersededLocationUpdated, [], WasIdempotent: true);
+                }
+
                 roundSessionId = state.CurrentRoundSessionId;
                 state.LastLocationUpdateAt[actorPlayerSessionId] = occurredAt;
                 if (shouldBroadcastToOpponents)
@@ -637,5 +867,10 @@ public sealed class GameAggregate(
 
         public int LocationBroadcastIntervalSeconds { get; init; }
     }
-
+    
+    public sealed record DevelopmentSessionResetResult(
+        int GameSessionId,
+        int CurrentRoundSessionId,
+        GamePhase PreviousPhase,
+        GamePhase CurrentPhase);
 }

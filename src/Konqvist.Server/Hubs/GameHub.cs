@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Persistence;
 using Konqvist.Server.Domain.Aggregates;
-using Konqvist.Server.Domain.Events;
 using Konqvist.Server.Features.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -22,19 +21,26 @@ public sealed class GameHub(
     public override async Task OnConnectedAsync()
     {
         var player = await GetConnectedPlayerAsync(Context.ConnectionAborted, refresh: true)
-            ?? throw new HubException("The current connection is not associated with a valid player session.");
+            ?? throw new HubException("The current connection is not associated with a valid game session.");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, GameHubGroups.Game(player.GameSessionId), Context.ConnectionAborted);
-        await Groups.AddToGroupAsync(Context.ConnectionId, GameHubGroups.Team(player.GameSessionId, player.TeamSessionId), Context.ConnectionAborted);
-        await Groups.AddToGroupAsync(Context.ConnectionId, GameHubGroups.Player(player.PlayerSessionId), Context.ConnectionAborted);
-
-        var isFirstConnection = connectionTracker.AddConnection(player.PlayerSessionId, Context.ConnectionId);
-        if (isFirstConnection)
+        foreach (var teamSessionId in player.SubscribedTeamSessionIds)
         {
-            var runnerStateChanged = await SetOnlineStateAsync(player, isOnline: true, Context.ConnectionAborted);
-            if (runnerStateChanged is not null)
+            await Groups.AddToGroupAsync(Context.ConnectionId, GameHubGroups.Team(player.GameSessionId, teamSessionId), Context.ConnectionAborted);
+        }
+
+        if (player.PlayerSessionId.HasValue)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, GameHubGroups.Player(player.PlayerSessionId.Value), Context.ConnectionAborted);
+
+            var isFirstConnection = connectionTracker.AddConnection(player.PlayerSessionId.Value, Context.ConnectionId);
+            if (isFirstConnection)
             {
-                await Clients.Group(GameHubGroups.Game(player.GameSessionId)).RunnerStateChanged(runnerStateChanged);
+                var runnerStateChanged = await SetOnlineStateAsync(player, isOnline: true, Context.ConnectionAborted);
+                if (runnerStateChanged is not null)
+                {
+                    await Clients.Group(GameHubGroups.Game(player.GameSessionId)).RunnerStateChanged(runnerStateChanged);
+                }
             }
         }
 
@@ -57,7 +63,7 @@ public sealed class GameHub(
             if (player is not null && isLastConnection)
             {
                 var runnerStateChanged = await SetOnlineStateAsync(player, isOnline: false, CancellationToken.None);
-                if (connectionTracker.HasConnections(player.PlayerSessionId))
+                if (player.PlayerSessionId.HasValue && connectionTracker.HasConnections(player.PlayerSessionId.Value))
                 {
                     await SetOnlineStateAsync(player, isOnline: true, CancellationToken.None);
                     return;
@@ -81,10 +87,12 @@ public sealed class GameHub(
     {
         var player = await GetConnectedPlayerAsync(Context.ConnectionAborted, refresh: true)
             ?? throw new HubException("The current connection is not associated with a valid player session.");
+        var playerSessionId = player.PlayerSessionId
+            ?? throw new HubException("Only player sessions can claim districts.");
 
         try
         {
-            var result = await gameAggregate.ClaimDistrict(player.PlayerSessionId, districtId, Context.ConnectionAborted);
+            var result = await gameAggregate.ClaimDistrict(playerSessionId, districtId, Context.ConnectionAborted);
             var message = new DistrictClaimedMessage(
                 result.PrimaryEvent.GameSessionId,
                 result.PrimaryEvent.RoundSessionId,
@@ -111,10 +119,12 @@ public sealed class GameHub(
     {
         var player = await GetConnectedPlayerAsync(Context.ConnectionAborted, refresh: true)
             ?? throw new HubException("The current connection is not associated with a valid player session.");
+        var playerSessionId = player.PlayerSessionId
+            ?? throw new HubException("Only player sessions can cast votes.");
 
         try
         {
-            var result = await gameAggregate.CastVote(player.PlayerSessionId, targetTeamId, cancellationToken: Context.ConnectionAborted);
+            var result = await gameAggregate.CastVote(playerSessionId, targetTeamId, cancellationToken: Context.ConnectionAborted);
             var message = new VoteCastMessage(
                 result.PrimaryEvent.GameSessionId,
                 result.PrimaryEvent.RoundSessionId,
@@ -136,10 +146,14 @@ public sealed class GameHub(
     {
         var player = await GetConnectedPlayerAsync(Context.ConnectionAborted, refresh: true)
             ?? throw new HubException("The current connection is not associated with a valid player session.");
+        var playerSessionId = player.PlayerSessionId
+            ?? throw new HubException("Only player sessions can update locations.");
+        var teamSessionId = player.TeamSessionId
+            ?? throw new HubException("Only team-bound player sessions can update locations.");
 
         try
         {
-            var result = await gameAggregate.UpdateLocation(player.PlayerSessionId, lat, lng, Context.ConnectionAborted);
+            var result = await gameAggregate.UpdateLocation(playerSessionId, lat, lng, Context.ConnectionAborted);
             var message = new LocationUpdatedMessage(
                 result.PrimaryEvent.GameSessionId,
                 result.PrimaryEvent.RoundSessionId,
@@ -154,7 +168,7 @@ public sealed class GameHub(
                 return;
             }
 
-            await Clients.Group(GameHubGroups.Team(player.GameSessionId, player.TeamSessionId)).LocationUpdated(message);
+            await Clients.Group(GameHubGroups.Team(player.GameSessionId, teamSessionId)).LocationUpdated(message);
 
             if (!result.PrimaryEvent.BroadcastToOpponents)
             {
@@ -162,8 +176,8 @@ public sealed class GameHub(
             }
 
             var opponentGroups = player.AllTeamSessionIds
-                .Where(teamSessionId => teamSessionId != player.TeamSessionId)
-                .Select(teamSessionId => GameHubGroups.Team(player.GameSessionId, teamSessionId))
+                .Where(opponentTeamSessionId => opponentTeamSessionId != teamSessionId)
+                .Select(opponentTeamSessionId => GameHubGroups.Team(player.GameSessionId, opponentTeamSessionId))
                 .ToArray();
             if (opponentGroups.Length > 0)
             {
@@ -190,12 +204,52 @@ public sealed class GameHub(
         var playerSessionId = GetPlayerSessionId(Context.User);
         if (!playerSessionId.HasValue)
         {
-            if (allowMissing)
+            var role = GetRole(Context.User);
+            if (role != PlayerRole.GameMaster)
             {
-                return null;
+                if (allowMissing)
+                {
+                    return null;
+                }
+
+                throw new HubException("The current connection is not associated with a player session.");
             }
 
-            throw new HubException("The current connection is not associated with a player session.");
+            var gameSessionId = GetGameSessionId(Context.User);
+            if (!gameSessionId.HasValue)
+            {
+                if (allowMissing)
+                {
+                    return null;
+                }
+
+                throw new HubException("The current connection is not associated with a game session.");
+            }
+
+            await using var gameSessionDbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var gameSession = await gameSessionDbContext.GameSessions
+                .Include(entity => entity.Teams)
+                .SingleOrDefaultAsync(entity => entity.Id == gameSessionId.Value, cancellationToken);
+            if (gameSession is null)
+            {
+                if (allowMissing)
+                {
+                    return null;
+                }
+
+                throw new HubException($"Game session '{gameSessionId.Value}' was not found.");
+            }
+
+            var connectedGameMaster = new ConnectedPlayerContext(
+                null,
+                gameSession.Id,
+                null,
+                PlayerRole.GameMaster,
+                gameSession.Teams.Select(entity => entity.Id).ToArray(),
+                gameSession.Teams.Select(entity => entity.Id).ToArray(),
+                true);
+            Context.Items[PlayerContextKey] = connectedGameMaster;
+            return connectedGameMaster;
         }
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -242,6 +296,7 @@ public sealed class GameHub(
             teamSession.Id,
             playerSession.PlayerTemplate.Role,
             playerSession.GameSession.Teams.Select(entity => entity.Id).ToArray(),
+            [teamSession.Id],
             playerSession.IsLoggedIn);
         Context.Items[PlayerContextKey] = connectedPlayer;
         return connectedPlayer;
@@ -252,9 +307,14 @@ public sealed class GameHub(
         bool isOnline,
         CancellationToken cancellationToken)
     {
+        var playerSessionId = player.PlayerSessionId
+            ?? throw new InvalidOperationException("Online state updates require a player session.");
+        var teamSessionId = player.TeamSessionId
+            ?? throw new InvalidOperationException("Online state updates require a team session.");
+
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var playerSession = await dbContext.PlayerSessions
-            .SingleOrDefaultAsync(entity => entity.Id == player.PlayerSessionId, cancellationToken);
+            .SingleOrDefaultAsync(entity => entity.Id == playerSessionId, cancellationToken);
         if (playerSession is null)
         {
             return null;
@@ -272,8 +332,8 @@ public sealed class GameHub(
 
         return new RunnerStateChangedMessage(
             player.GameSessionId,
-            player.PlayerSessionId,
-            player.TeamSessionId,
+            playerSessionId,
+            teamSessionId,
             player.IsLoggedIn,
             isOnline,
             playerSession.LastSeen,
@@ -286,11 +346,24 @@ public sealed class GameHub(
         return int.TryParse(claim, out var playerSessionId) ? playerSessionId : null;
     }
 
+    private static int? GetGameSessionId(ClaimsPrincipal? principal)
+    {
+        var claim = principal?.FindFirst(AuthConstants.ClaimTypes.GameSessionId)?.Value;
+        return int.TryParse(claim, out var gameSessionId) ? gameSessionId : null;
+    }
+
+    private static PlayerRole? GetRole(ClaimsPrincipal? principal)
+    {
+        var claim = principal?.FindFirst(ClaimTypes.Role)?.Value;
+        return Enum.TryParse<PlayerRole>(claim, out var role) ? role : null;
+    }
+
     private sealed record ConnectedPlayerContext(
-        int PlayerSessionId,
+        int? PlayerSessionId,
         int GameSessionId,
-        int TeamSessionId,
+        int? TeamSessionId,
         PlayerRole Role,
         IReadOnlyList<int> AllTeamSessionIds,
+        IReadOnlyList<int> SubscribedTeamSessionIds,
         bool IsLoggedIn);
 }

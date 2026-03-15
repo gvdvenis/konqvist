@@ -9,5 +9,6 @@ public static class AuthConstants
     {
         public const string PlayerSessionId = "konqvist:player_session_id";
         public const string TeamTemplateId = "konqvist:team_template_id";
+        public const string GameSessionId = "konqvist:game_session_id";
     }
 }

@@ -7,6 +7,10 @@ public sealed record GameStartedAction(
     int CurrentRoundNumber,
     GamePhase CurrentPhase);
 
+public sealed record NavigateToPhaseAction(
+    GamePhase CurrentPhase,
+    PlayerRole? Role = null);
+
 public sealed record GamePhaseChangedAction(
     int GameSessionId,
     GamePhase CurrentPhase,

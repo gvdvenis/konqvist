@@ -4,7 +4,6 @@ using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Entities.Session;
 using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
-using Konqvist.Server;
 using Konqvist.Server.Features.Auth;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +32,33 @@ public sealed class AuthEndpointsTests
         Assert.Equal("Runner", meBody.Role);
         Assert.Equal("Alpha", meBody.Team);
         Assert.True(meBody.PlayerSessionId > 0);
+        Assert.Equal(GameStatus.Pending.ToString(), meBody.GameStatus);
+        Assert.Equal(GamePhase.WaitingForPlayers.ToString(), meBody.GamePhase);
+    }
+
+    [Fact]
+    public async Task Login_WithValidGameMasterToken_ReturnsIdentityAndMeReturnsGameMaster()
+    {
+        await using var factory = new ServerAppFactory();
+        await CreatePendingSessionFromSeedTemplateAsync(factory.Services);
+        var client = CreateHttpsClient(factory);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { token = "GM57t7" });
+        var loginBody = await loginResponse.Content.ReadFromJsonAsync<AuthIdentityResponse>();
+        var meResponse = await client.GetAsync("/api/auth/me");
+        var meBody = await meResponse.Content.ReadFromJsonAsync<AuthIdentityResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+        Assert.NotNull(loginBody);
+        Assert.Equal("GameMaster", loginBody.Role);
+        Assert.Equal(string.Empty, loginBody.Team);
+        Assert.Null(loginBody.PlayerSessionId);
+
+        Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
+        Assert.NotNull(meBody);
+        Assert.Equal("GameMaster", meBody.Role);
+        Assert.Equal(string.Empty, meBody.Team);
+        Assert.Null(meBody.PlayerSessionId);
         Assert.Equal(GameStatus.Pending.ToString(), meBody.GameStatus);
         Assert.Equal(GamePhase.WaitingForPlayers.ToString(), meBody.GamePhase);
     }
@@ -93,13 +119,14 @@ public sealed class AuthEndpointsTests
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
         Assert.NotNull(loginBody);
+        Assert.True(loginBody.PlayerSessionId.HasValue);
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, meResponse.StatusCode);
 
         await using var scope = factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
         var alphaRunnerSession = await dbContext.PlayerSessions
-            .SingleAsync(entity => entity.Id == loginBody.PlayerSessionId);
+            .SingleAsync(entity => entity.Id == loginBody.PlayerSessionId!.Value);
         Assert.False(alphaRunnerSession.IsLoggedIn);
     }
 

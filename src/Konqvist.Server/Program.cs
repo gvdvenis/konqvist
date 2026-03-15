@@ -4,11 +4,10 @@ using Konqvist.Server.Domain.Persistence;
 using Konqvist.Server.Domain.Serialization;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.Admin;
+using Konqvist.Server.Features.Diagnostics;
 using Konqvist.Server.Features.SessionState;
 using Konqvist.Server.Hubs;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -96,6 +95,7 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.MapPhaseNavigationTestEndpoints();
     }
 
     var adminAppOptions = app.Services
@@ -135,5 +135,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
-public partial class Program;

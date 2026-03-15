@@ -9,7 +9,6 @@ using Konqvist.Client.Features.Scores.Store;
 using Konqvist.Client.Features.Voting.Store;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Konqvist.Client.Core.SignalR;
 
@@ -170,10 +169,13 @@ public sealed class GameHubService(
 
         connection.On<PhaseChangedMessage>(GameHubMethodNames.PhaseChanged, message =>
         {
+            var currentPhase = ParseGamePhase(message.CurrentPhase);
+
             dispatcher.Dispatch(new GamePhaseChangedAction(
                 message.GameSessionId,
-                ParseGamePhase(message.CurrentPhase),
+                currentPhase,
                 null));
+            dispatcher.Dispatch(new NavigateToPhaseAction(currentPhase));
         });
 
         connection.On<VoteStartedMessage>(GameHubMethodNames.VoteStarted, _ =>

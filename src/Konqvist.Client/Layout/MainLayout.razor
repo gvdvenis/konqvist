@@ -1,6 +1,10 @@
 @using Konqvist.Client.Theme
 @using System.Security.Claims
+@using Fluxor
+@using Konqvist.Client.Core.Models
 @using Konqvist.Client.Core.SignalR
+@using Konqvist.Client.Features.Game
+@using Konqvist.Client.Features.Game.Store
 @using Konqvist.Client.Features.Auth
 @using Konqvist.Client.Features.Login
 @using Microsoft.AspNetCore.SignalR.Client
@@ -8,6 +12,7 @@
 @inject NavigationManager NavigationManager
 @inject LoginApiClient LoginApiClient
 @inject GameHubService GameHubService
+@inject IState<GameState> GameState
 @implements IAsyncDisposable
 @inherits LayoutComponentBase
 
@@ -55,7 +60,6 @@
     private string _teamName = "No Team";
     private string _role = "Runner";
     private string _gameStatus = "Pending";
-    private string _gamePhase = "WaitingForPlayers";
     private bool _isAuthenticated;
     private bool _isDarkMode;
 
@@ -79,13 +83,14 @@
     private bool EffectiveIsConnected => _debugIsConnected ?? _isSignalRConnected;
     private string EffectiveRole => _debugRole ?? _role;
     private string EffectiveGameStatus => _debugGameStatus ?? _gameStatus;
-    private string EffectiveGamePhase => _debugGamePhase ?? _gamePhase;
+    private string EffectiveGamePhase => _debugGamePhase ?? GameState.Value.CurrentPhase.ToString();
     private IDisposable? _connectionStateSubscription;
 
     protected override void OnInitialized()
     {
         _isSignalRConnected = GameHubService.CurrentConnectionState == HubConnectionState.Connected;
         _connectionStateSubscription = GameHubService.ConnectionState.Subscribe(new ConnectionStateObserver(this));
+        GameState.StateChanged += HandleGameStateChanged;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -100,7 +105,6 @@
         _role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "Runner";
         _teamName = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.Team)?.Value ?? "No Team";
         _gameStatus = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GameStatus)?.Value ?? "Pending";
-        _gamePhase = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GamePhase)?.Value ?? "WaitingForPlayers";
 
         if (_isAuthenticated)
         {
@@ -140,28 +144,17 @@
 
     private bool ShouldForceWaitingRoute()
     {
-        if (!EffectiveIsAuthenticated
-            || string.Equals(EffectiveRole, "GameMaster", StringComparison.Ordinal))
-        {
-            return false;
-        }
+        var currentRoute = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        return PhaseRouting.ShouldForceWaitingRoute(
+            EffectiveIsAuthenticated,
+            string.Equals(EffectiveRole, nameof(PlayerRole.GameMaster), StringComparison.Ordinal),
+            GameState.Value.CurrentPhase,
+            currentRoute);
+    }
 
-        var isPreStart = string.Equals(EffectiveGameStatus, "Pending", StringComparison.Ordinal)
-                         || string.Equals(EffectiveGamePhase, "WaitingForPlayers", StringComparison.Ordinal);
-        if (!isPreStart)
-        {
-            return false;
-        }
-
-        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-        var normalizedPath = $"/{relativePath}".TrimEnd('/');
-        if (string.IsNullOrEmpty(normalizedPath))
-        {
-            normalizedPath = "/";
-        }
-
-        return normalizedPath is not "/waiting"
-               && !normalizedPath.EndsWith("/logout", StringComparison.OrdinalIgnoreCase);
+    private void HandleGameStateChanged(object? sender, EventArgs args)
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private Task OnDebugPanelOpenChanged(bool isOpen)
@@ -241,6 +234,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        GameState.StateChanged -= HandleGameStateChanged;
         _connectionStateSubscription?.Dispose();
         await GameHubService.StopAsync();
     }

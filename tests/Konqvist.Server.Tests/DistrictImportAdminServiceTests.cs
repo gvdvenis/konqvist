@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Net;
-using System.Net.Http;
 using Konqvist.Admin.Features.Districts;
 using Konqvist.Infrastructure.Entities.Template;
 using Microsoft.EntityFrameworkCore;

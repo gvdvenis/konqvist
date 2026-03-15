@@ -4,8 +4,6 @@ using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Entities.Session;
 using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
-using Konqvist.Server;
-using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.SessionState;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -113,6 +111,54 @@ public sealed class SessionStateEndpointsTests
         var response = await client.GetAsync("/api/session/state");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetState_WithAuthenticatedGameMaster_ReturnsFullSessionSnapshotForAllTeams()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedSessionScenarioAsync(factory.Services, GamePhase.Voting, votingEnabled: true);
+        var client = CreateHttpsClient(factory);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { token = scenario.GmToken });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<KonqvistDbContext>();
+
+            var runnerSession = await dbContext.PlayerSessions.SingleAsync(entity => entity.Id == scenario.RunnerPlayerSessionId);
+            runnerSession.IsLoggedIn = true;
+            runnerSession.IsOnline = true;
+            runnerSession.LocationLat = 52.1234d;
+            runnerSession.LocationLng = 5.4321d;
+            runnerSession.LocationUpdatedAt = DateTime.UtcNow;
+
+            var otherRunnerSession = await dbContext.PlayerSessions.SingleAsync(entity => entity.Id == scenario.OtherRunnerPlayerSessionId);
+            otherRunnerSession.IsLoggedIn = true;
+            otherRunnerSession.IsOnline = true;
+            otherRunnerSession.LocationLat = 53.1234d;
+            otherRunnerSession.LocationLng = 6.4321d;
+            otherRunnerSession.LocationUpdatedAt = DateTime.UtcNow;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/session/state");
+        var body = await response.Content.ReadFromJsonAsync<SessionStateResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal(GamePhase.Voting, body.Game.CurrentPhase);
+        Assert.Equal(scenario.GameSessionId, body.Game.GameSessionId);
+        Assert.True(body.Map.RunnerPositions.ContainsKey(scenario.RunnerPlayerSessionId));
+        Assert.True(body.Map.RunnerPositions.ContainsKey(scenario.OtherRunnerPlayerSessionId));
+        Assert.Null(body.Player.PlayerSessionId);
+        Assert.Null(body.Player.TeamSessionId);
+        Assert.Null(body.Player.TeamName);
+        Assert.Equal(PlayerRole.GameMaster, body.Player.Role);
+        Assert.True(body.Player.IsLoggedIn);
+        Assert.False(body.Player.IsOnline);
     }
 
     private static async Task<SessionScenario> SeedSessionScenarioAsync(
@@ -278,7 +324,8 @@ public sealed class SessionStateEndpointsTests
             runnerPlayerSession.Id,
             otherRunnerPlayerSession.Id,
             alphaTeam.Name,
-            runnerToken);
+            runnerToken,
+            gameTemplate.GmLoginToken);
     }
 
     private static HttpClient CreateHttpsClient(WebApplicationFactory<ServerEntryPointMarker> factory)
@@ -298,7 +345,8 @@ public sealed class SessionStateEndpointsTests
         int RunnerPlayerSessionId,
         int OtherRunnerPlayerSessionId,
         string TeamName,
-        string RunnerToken);
+        string RunnerToken,
+        string GmToken);
 
     private sealed class ServerAppFactory : WebApplicationFactory<ServerEntryPointMarker>
     {

@@ -31,15 +31,24 @@ public sealed class ClientAuthenticationStateProvider(LoginApiClient loginApiCli
         var gameStatus = string.IsNullOrWhiteSpace(identity.GameStatus) ? "Pending" : identity.GameStatus;
         var gamePhase = string.IsNullOrWhiteSpace(identity.GamePhase) ? "WaitingForPlayers" : identity.GamePhase;
 
-        LastKnownTeamName = team;
-        var claims = new[]
+        LastKnownTeamName = string.Equals(role, "GameMaster", StringComparison.Ordinal) || string.IsNullOrWhiteSpace(identity.Team)
+            ? null
+            : identity.Team;
+        var claims = new List<Claim>
         {
             new Claim(System.Security.Claims.ClaimTypes.Role, role),
-            new Claim(ClaimTypes.Team, team),
-            new Claim("konqvist:player_session_id", identity.PlayerSessionId.ToString()),
             new Claim(ClaimTypes.GameStatus, gameStatus),
             new Claim(ClaimTypes.GamePhase, gamePhase)
         };
+        if (!string.IsNullOrWhiteSpace(identity.Team))
+        {
+            claims.Add(new Claim(ClaimTypes.Team, identity.Team));
+        }
+
+        if (identity.PlayerSessionId.HasValue)
+        {
+            claims.Add(new Claim("konqvist:player_session_id", identity.PlayerSessionId.Value.ToString()));
+        }
 
         return new AuthenticationState(
             new ClaimsPrincipal(new ClaimsIdentity(claims, "PlayerCookie")));

@@ -1,4 +1,5 @@
 @Konqvist.Server_HostAddress = http://localhost:5062
+@GameSessionId = 1
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -29,10 +30,50 @@ POST {{Konqvist.Server_HostAddress}}/api/auth/logout
 
 ###
 
+# ── Phase navigation test flow ────────────────────────────────────────────────
+
+# POST /api/auth/login — Bravo Team Leader (use this auth cookie for the
+# session-state and phase-test requests below)
+POST {{Konqvist.Server_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "token": "BTC53Sk" }
+
+###
+
+# POST /api/auth/login — Game Master (expect 200 + auth cookie)
+POST {{Konqvist.Server_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "token": "GMzKVG" }
+
+###
+
+# GET /api/auth/me — Game Master identity (expect 200 + GameMaster role)
+GET {{Konqvist.Server_HostAddress}}/api/auth/me
+Accept: application/json
+
+###
+
+# GET /api/session/state — inspect the active session and confirm the current
+# gameSessionId before broadcasting a phase change
+GET {{Konqvist.Server_HostAddress}}/api/session/state
+Accept: application/json
+
+###
+
+# POST /api/dev/phase-test/gathering/{gameSessionId} — development-only test
+# hook for slice 4.6. Requires an authenticated caller in the same game
+# session; team players and the GM are both accepted. Set @GameSessionId from
+# /api/session/state.
+POST {{Konqvist.Server_HostAddress}}/api/dev/phase-test/gathering/{{GameSessionId}}
+
+###
+
 # ── Other seed tokens ─────────────────────────────────────────────────────────
 # Alpha Team Leader : ATCsC1a
 # Bravo Runner      : BRV6X4
 # Bravo Team Leader : BTC53Sk
-# GM                : GMzKVG  (used on /api/auth/login against GameTemplate.GmLoginToken)
+# GM                : GMzKVG
 
 ###

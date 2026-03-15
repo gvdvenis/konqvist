@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Konqvist.Infrastructure.Entities.Enums;
+using Konqvist.Infrastructure.Entities.Session;
 using Konqvist.Infrastructure.Persistence;
 using Konqvist.Server.Features.Auth;
 using Microsoft.AspNetCore.Authentication;
@@ -28,36 +29,73 @@ public static class SessionStateEndpoints
         KonqvistDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        var playerSessionId = GetPlayerSessionId(httpContext.User);
-        if (playerSessionId is null)
+        var role = GetRole(httpContext.User);
+        if (role is null)
         {
             await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
             return Results.Unauthorized();
         }
 
-        var playerSession = await dbContext.PlayerSessions
-            .Include(entity => entity.PlayerTemplate)
-                .ThenInclude(entity => entity.TeamTemplate)
-            .Include(entity => entity.GameSession)
-                .ThenInclude(entity => entity.GameTemplate)
-            .FirstOrDefaultAsync(entity => entity.Id == playerSessionId.Value, cancellationToken);
-        if (playerSession is null || !playerSession.IsLoggedIn)
+        PlayerSession? playerSession = null;
+        GameSession? gameSession;
+
+        if (role == PlayerRole.GameMaster)
         {
-            await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
-            return Results.Unauthorized();
+            var gameSessionId = GetGameSessionId(httpContext.User);
+            if (gameSessionId is null)
+            {
+                await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
+                return Results.Unauthorized();
+            }
+
+            gameSession = await dbContext.GameSessions
+                .Where(entity => entity.Id == gameSessionId.Value)
+                .Include(entity => entity.GameTemplate)
+                .Include(entity => entity.Teams)
+                    .ThenInclude(entity => entity.TeamTemplate)
+                .Include(entity => entity.Districts)
+                .Include(entity => entity.Players)
+                    .ThenInclude(entity => entity.PlayerTemplate)
+                        .ThenInclude(entity => entity.TeamTemplate)
+                .Include(entity => entity.Rounds)
+                    .ThenInclude(entity => entity.RoundTemplate)
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+        else
+        {
+            var playerSessionId = GetPlayerSessionId(httpContext.User);
+            if (playerSessionId is null)
+            {
+                await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
+                return Results.Unauthorized();
+            }
+
+            playerSession = await dbContext.PlayerSessions
+                .Include(entity => entity.PlayerTemplate)
+                    .ThenInclude(entity => entity.TeamTemplate)
+                .Include(entity => entity.GameSession)
+                    .ThenInclude(entity => entity.GameTemplate)
+                .FirstOrDefaultAsync(entity => entity.Id == playerSessionId.Value, cancellationToken);
+            if (playerSession is null || !playerSession.IsLoggedIn)
+            {
+                await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
+                return Results.Unauthorized();
+            }
+
+            gameSession = await dbContext.GameSessions
+                .Where(entity => entity.Id == playerSession.GameSessionId)
+                .Include(entity => entity.GameTemplate)
+                .Include(entity => entity.Teams)
+                    .ThenInclude(entity => entity.TeamTemplate)
+                .Include(entity => entity.Districts)
+                .Include(entity => entity.Players)
+                    .ThenInclude(entity => entity.PlayerTemplate)
+                        .ThenInclude(entity => entity.TeamTemplate)
+                .Include(entity => entity.Rounds)
+                    .ThenInclude(entity => entity.RoundTemplate)
+                .SingleOrDefaultAsync(cancellationToken);
         }
 
-        var gameSession = await dbContext.GameSessions
-            .Where(entity => entity.Id == playerSession.GameSessionId)
-            .Include(entity => entity.GameTemplate)
-            .Include(entity => entity.Teams)
-                .ThenInclude(entity => entity.TeamTemplate)
-            .Include(entity => entity.Districts)
-            .Include(entity => entity.Players)
-                .ThenInclude(entity => entity.PlayerTemplate)
-            .Include(entity => entity.Rounds)
-                .ThenInclude(entity => entity.RoundTemplate)
-            .SingleOrDefaultAsync(cancellationToken);
         if (gameSession is null)
         {
             await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
@@ -87,8 +125,10 @@ public static class SessionStateEndpoints
             ? (TimeSpan?)CalculateTimeRemaining(currentRound.VotingStartedAt.Value, gameSession.GameTemplate.VotingDurationSeconds)
             : null;
 
-        var teamSession = gameSession.Teams
-            .SingleOrDefault(entity => entity.TeamTemplateId == playerSession.PlayerTemplate.TeamTemplateId);
+        var visibleTeamTemplateId = playerSession?.PlayerTemplate.TeamTemplateId;
+        var teamSession = visibleTeamTemplateId.HasValue
+            ? gameSession.Teams.SingleOrDefault(entity => entity.TeamTemplateId == visibleTeamTemplateId.Value)
+            : null;
 
         var response = new SessionStateResponse(
             new SessionGameStateSnapshot(
@@ -103,8 +143,8 @@ public static class SessionStateEndpoints
                         && entity.IsLoggedIn
                         && entity.LocationLat.HasValue
                         && entity.LocationLng.HasValue
-                        && (playerSession.PlayerTemplate.Role == PlayerRole.GameMaster
-                            || entity.PlayerTemplate.TeamTemplateId == playerSession.PlayerTemplate.TeamTemplateId))
+                        && (!visibleTeamTemplateId.HasValue
+                            || entity.PlayerTemplate.TeamTemplateId == visibleTeamTemplateId.Value))
                     .ToDictionary(
                         entity => entity.Id,
                         entity => new SessionRunnerPosition(entity.LocationLat!.Value, entity.LocationLng!.Value))),
@@ -122,12 +162,12 @@ public static class SessionStateEndpoints
                         entity.TotalLikes,
                         entity.TotalOil))),
             new SessionPlayerStateSnapshot(
-                playerSession.Id,
+                playerSession?.Id,
                 teamSession?.Id,
-                playerSession.PlayerTemplate.TeamTemplate.Name,
-                playerSession.PlayerTemplate.Role,
-                playerSession.IsLoggedIn,
-                playerSession.IsOnline));
+                playerSession?.PlayerTemplate.TeamTemplate.Name,
+                role,
+                playerSession?.IsLoggedIn ?? true,
+                playerSession?.IsOnline ?? false));
 
         return Results.Ok(response);
     }
@@ -136,6 +176,18 @@ public static class SessionStateEndpoints
     {
         var claimValue = user.FindFirstValue(AuthConstants.ClaimTypes.PlayerSessionId);
         return int.TryParse(claimValue, out var playerSessionId) ? playerSessionId : null;
+    }
+
+    private static int? GetGameSessionId(ClaimsPrincipal user)
+    {
+        var claimValue = user.FindFirstValue(AuthConstants.ClaimTypes.GameSessionId);
+        return int.TryParse(claimValue, out var gameSessionId) ? gameSessionId : null;
+    }
+
+    private static PlayerRole? GetRole(ClaimsPrincipal user)
+    {
+        var claimValue = user.FindFirstValue(ClaimTypes.Role);
+        return Enum.TryParse<PlayerRole>(claimValue, out var role) ? role : null;
     }
 
     private static TimeSpan CalculateTimeRemaining(DateTime votingStartedAt, int votingDurationSeconds)

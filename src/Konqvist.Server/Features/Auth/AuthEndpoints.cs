@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Entities.Session;
+using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -32,14 +33,6 @@ public static class AuthEndpoints
             return Results.BadRequest(new AuthErrorResponse("Login token is required."));
         }
 
-        var playerTemplate = await dbContext.PlayerTemplates
-            .Include(entity => entity.TeamTemplate)
-            .FirstOrDefaultAsync(entity => entity.LoginToken == request.Token, cancellationToken);
-        if (playerTemplate is null)
-        {
-            return Results.Unauthorized();
-        }
-
         var activeSession = await dbContext.GameSessions
             .OrderByDescending(entity => entity.Status == GameStatus.Running)
             .ThenByDescending(entity => entity.Id)
@@ -51,6 +44,39 @@ public static class AuthEndpoints
             return Results.Conflict(new AuthErrorResponse("No active game session is available for login."));
         }
 
+        var playerTemplate = await dbContext.PlayerTemplates
+            .Include(entity => entity.TeamTemplate)
+            .FirstOrDefaultAsync(entity => entity.LoginToken == request.Token, cancellationToken);
+        if (playerTemplate is not null)
+        {
+            return await SignInPlayerAsync(playerTemplate, activeSession, httpContext, dbContext, cancellationToken);
+        }
+
+        var isGameMasterLogin = await dbContext.GameTemplates
+            .AnyAsync(
+                entity => entity.Id == activeSession.GameTemplateId && entity.GmLoginToken == request.Token,
+                cancellationToken);
+        if (!isGameMasterLogin)
+        {
+            return Results.Unauthorized();
+        }
+
+        await SignInGameMasterAsync(activeSession, httpContext);
+        return Results.Ok(new AuthIdentityResponse(
+            PlayerRole.GameMaster.ToString(),
+            string.Empty,
+            null,
+            activeSession.Status.ToString(),
+            activeSession.CurrentPhase.ToString()));
+    }
+
+    private static async Task<IResult> SignInPlayerAsync(
+        PlayerTemplate playerTemplate,
+        GameSession activeSession,
+        HttpContext httpContext,
+        KonqvistDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
         if (playerTemplate.Role == PlayerRole.Runner)
         {
             var anotherRunnerLoggedIn = await dbContext.PlayerSessions
@@ -95,6 +121,7 @@ public static class AuthEndpoints
         {
             new Claim(AuthConstants.ClaimTypes.PlayerSessionId, playerSession.Id.ToString()),
             new Claim(AuthConstants.ClaimTypes.TeamTemplateId, playerTemplate.TeamTemplateId.ToString()),
+            new Claim(AuthConstants.ClaimTypes.GameSessionId, activeSession.Id.ToString()),
             new Claim(ClaimTypes.Role, playerTemplate.Role.ToString())
         };
         var principal = new ClaimsPrincipal(
@@ -107,6 +134,19 @@ public static class AuthEndpoints
             playerSession.Id,
             activeSession.Status.ToString(),
             activeSession.CurrentPhase.ToString()));
+    }
+
+    private static async Task SignInGameMasterAsync(GameSession activeSession, HttpContext httpContext)
+    {
+        var claims = new[]
+        {
+            new Claim(AuthConstants.ClaimTypes.GameSessionId, activeSession.Id.ToString()),
+            new Claim(ClaimTypes.Role, PlayerRole.GameMaster.ToString())
+        };
+
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(claims, AuthConstants.AuthenticationScheme));
+        await httpContext.SignInAsync(AuthConstants.AuthenticationScheme, principal);
     }
 
     private static async Task<IResult> LogoutAsync(
@@ -187,6 +227,33 @@ public static class AuthEndpoints
         if (httpContext.User.Identity?.IsAuthenticated != true)
         {
             return Results.Unauthorized();
+        }
+
+        var role = httpContext.User.FindFirstValue(ClaimTypes.Role);
+        if (string.Equals(role, PlayerRole.GameMaster.ToString(), StringComparison.Ordinal))
+        {
+            var gameSessionId = GetGameSessionId(httpContext.User);
+            if (gameSessionId is null)
+            {
+                await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
+                return Results.Unauthorized();
+            }
+
+            var gameSession = await dbContext.GameSessions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(entity => entity.Id == gameSessionId.Value, cancellationToken);
+            if (gameSession is null)
+            {
+                await httpContext.SignOutAsync(AuthConstants.AuthenticationScheme);
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(new AuthIdentityResponse(
+                PlayerRole.GameMaster.ToString(),
+                string.Empty,
+                null,
+                gameSession.Status.ToString(),
+                gameSession.CurrentPhase.ToString()));
         }
 
         var playerSessionId = GetPlayerSessionId(httpContext.User);
@@ -284,6 +351,12 @@ public static class AuthEndpoints
     private static int? GetTeamTemplateId(ClaimsPrincipal principal)
     {
         var claim = principal.FindFirst(AuthConstants.ClaimTypes.TeamTemplateId)?.Value;
+        return int.TryParse(claim, out var value) ? value : null;
+    }
+
+    private static int? GetGameSessionId(ClaimsPrincipal principal)
+    {
+        var claim = principal.FindFirst(AuthConstants.ClaimTypes.GameSessionId)?.Value;
         return int.TryParse(claim, out var value) ? value : null;
     }
 }

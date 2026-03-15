@@ -5,10 +5,10 @@ using Konqvist.Infrastructure.Entities.Enums;
 using Konqvist.Infrastructure.Entities.Session;
 using Konqvist.Infrastructure.Entities.Template;
 using Konqvist.Infrastructure.Persistence;
-using Konqvist.Server;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Hubs;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
@@ -218,6 +218,94 @@ public sealed class GameHubTests
             1,
             await dbContext.GameEvents.CountAsync(entity =>
                 entity.GameSessionId == scenario.GameSessionId && entity.EventType == "VoteCast"));
+    }
+
+    [Fact]
+    public async Task DevelopmentGatheringPhaseTestEndpoint_BroadcastsPhaseChangedToConnectedClients()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.WaitingForPlayers);
+
+        var runnerCookie = await LoginAndGetCookieAsync(factory, scenario.RunnerToken);
+        await using var runnerConnection = CreateHubConnection(factory, runnerCookie);
+        var runnerPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        runnerConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                runnerPhaseChanged.TrySetResult(message);
+            }
+        });
+        await runnerConnection.StartAsync();
+
+        var leaderCookie = await LoginAndGetCookieAsync(factory, scenario.TeamLeaderToken);
+        await using var leaderConnection = CreateHubConnection(factory, leaderCookie);
+        var leaderPhaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        leaderConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                leaderPhaseChanged.TrySetResult(message);
+            }
+        });
+        await leaderConnection.StartAsync();
+        await Task.Delay(250);
+
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", leaderCookie);
+        var response = await client.PostAsync($"/api/dev/phase-test/gathering/{scenario.GameSessionId}", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var runnerMessage = await runnerPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var leaderMessage = await leaderPhaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(GamePhase.Gathering.ToString(), runnerMessage.CurrentPhase);
+        Assert.Equal(GamePhase.Gathering.ToString(), leaderMessage.CurrentPhase);
+    }
+
+    [Fact]
+    public async Task Connect_WithGameMasterCookie_ReceivesLocationAndPhaseUpdates()
+    {
+        await using var factory = new ServerAppFactory();
+        var scenario = await SeedHubScenarioAsync(factory.Services, GamePhase.Gathering);
+
+        var gameMasterCookie = await LoginAndGetCookieAsync(factory, scenario.GmToken);
+        await using var gameMasterConnection = CreateHubConnection(factory, gameMasterCookie);
+        var locationUpdated = new TaskCompletionSource<LocationUpdatedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var phaseChanged = new TaskCompletionSource<PhaseChangedMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        gameMasterConnection.On<LocationUpdatedMessage>(nameof(IGameClient.LocationUpdated), message =>
+        {
+            if (message.PlayerSessionId == scenario.RunnerPlayerSessionId)
+            {
+                locationUpdated.TrySetResult(message);
+            }
+        });
+        gameMasterConnection.On<PhaseChangedMessage>(nameof(IGameClient.PhaseChanged), message =>
+        {
+            if (message.GameSessionId == scenario.GameSessionId)
+            {
+                phaseChanged.TrySetResult(message);
+            }
+        });
+        await gameMasterConnection.StartAsync();
+
+        var runnerCookie = await LoginAndGetCookieAsync(factory, scenario.RunnerToken);
+        await using var runnerConnection = CreateHubConnection(factory, runnerCookie);
+        await runnerConnection.StartAsync();
+        await runnerConnection.InvokeAsync(nameof(GameHub.UpdateLocation), 52.1234d, 5.4321d);
+
+        var locationMessage = await locationUpdated.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(scenario.RunnerPlayerSessionId, locationMessage.PlayerSessionId);
+        Assert.Equal(52.1234d, locationMessage.Latitude);
+        Assert.Equal(5.4321d, locationMessage.Longitude);
+
+        var client = CreateHttpsClient(factory);
+        client.DefaultRequestHeaders.Add("Cookie", gameMasterCookie);
+        var response = await client.PostAsync($"/api/dev/phase-test/gathering/{scenario.GameSessionId}", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var phaseMessage = await phaseChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(GamePhase.Gathering.ToString(), phaseMessage.CurrentPhase);
     }
 
     [Fact]
@@ -495,7 +583,8 @@ public sealed class GameHubTests
             runnerPlayerSession.Id,
             runnerToken,
             teamLeaderToken,
-            otherTeamLeaderToken);
+            otherTeamLeaderToken,
+            gameTemplate.GmLoginToken);
     }
 
     private sealed record HubScenario(
@@ -506,7 +595,8 @@ public sealed class GameHubTests
         int RunnerPlayerSessionId,
         string RunnerToken,
         string TeamLeaderToken,
-        string OtherTeamLeaderToken);
+        string OtherTeamLeaderToken,
+        string GmToken);
 
     private sealed class ServerAppFactory : WebApplicationFactory<ServerEntryPointMarker>
     {
@@ -514,6 +604,7 @@ public sealed class GameHubTests
 
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Development");
             builder.UseSetting("ConnectionStrings:DefaultConnection", $"Data Source={_dbPath}");
             builder.ConfigureAppConfiguration((_, configurationBuilder) =>
             {

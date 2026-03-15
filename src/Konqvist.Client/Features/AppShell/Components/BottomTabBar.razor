@@ -1,3 +1,5 @@
+@using Konqvist.Client.Core.Models
+@using Konqvist.Client.Features.Game
 @using Microsoft.AspNetCore.Components.Routing
 @inject NavigationManager NavigationManager
 
@@ -36,8 +38,8 @@
                 return [];
             }
 
-            var isPreStart = string.Equals(GameStatus, "Pending", StringComparison.Ordinal)
-                             || string.Equals(GamePhase, "WaitingForPlayers", StringComparison.Ordinal);
+            var isPreStart = Enum.TryParse<GamePhase>(GamePhase, ignoreCase: true, out var currentPhase)
+                             && PhaseRouting.IsPreStartPhase(currentPhase);
             if (isPreStart && !string.Equals(Role, "GameMaster", StringComparison.Ordinal))
             {
                 return [];

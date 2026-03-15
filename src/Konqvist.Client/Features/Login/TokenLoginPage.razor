@@ -51,6 +51,9 @@
         }
 
         AuthenticationStateProvider.RefreshAuthenticationState();
-        NavigationManager.NavigateTo("/waiting");
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var role = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        NavigationManager.NavigateTo(
+            string.Equals(role, "GameMaster", StringComparison.Ordinal) ? "/gm" : "/waiting");
     }
 }

@@ -10,7 +10,7 @@ namespace Konqvist.Server.Domain.Aggregates;
 
 public sealed class GameAggregate(
     IDbContextFactory<KonqvistDbContext> dbContextFactory,
-    IGameEventWalWriter walWriter)
+    IGameEventRepository gameEventRepository)
 {
     private static readonly IReadOnlyDictionary<int, int> EmptyScores = new ConcurrentDictionary<int, int>();
     private static readonly IReadOnlyDictionary<int, int?> EmptyDistrictOwnership = new ConcurrentDictionary<int, int?>();
@@ -60,7 +60,7 @@ public sealed class GameAggregate(
                 actorPlayerSessionId,
                 DateTime.UtcNow);
 
-            await walWriter.AppendAsync([gameEvent], cancellationToken);
+            await gameEventRepository.AppendAsync([gameEvent], cancellationToken);
             Apply(gameEvent, state);
 
             return new GameAggregateCommandResult<DistrictClaimed>(gameEvent, [gameEvent]);
@@ -108,7 +108,7 @@ public sealed class GameAggregate(
                 voteValue,
                 DateTime.UtcNow);
 
-            await walWriter.AppendAsync([gameEvent], cancellationToken);
+            await gameEventRepository.AppendAsync([gameEvent], cancellationToken);
             Apply(gameEvent, state);
 
             return new GameAggregateCommandResult<VoteCast>(gameEvent, [gameEvent]);
@@ -137,7 +137,7 @@ public sealed class GameAggregate(
             var phaseChanged = CreatePhaseChangedEvent(state, GamePhase.Voting, actorPlayerSessionId, votingOpened.OccurredAt);
             var persistedEvents = BuildPersistedEvents(votingOpened, phaseChanged);
 
-            await walWriter.AppendAsync(persistedEvents, cancellationToken);
+            await gameEventRepository.AppendAsync(persistedEvents, cancellationToken);
             Apply(votingOpened, state);
             if (phaseChanged is not null)
             {
@@ -169,7 +169,7 @@ public sealed class GameAggregate(
             var phaseChanged = CreatePhaseChangedEvent(state, GamePhase.RoundResolution, actorPlayerSessionId, votingClosed.OccurredAt);
             var persistedEvents = BuildPersistedEvents(votingClosed, phaseChanged);
 
-            await walWriter.AppendAsync(persistedEvents, cancellationToken);
+            await gameEventRepository.AppendAsync(persistedEvents, cancellationToken);
             Apply(votingClosed, state);
             if (phaseChanged is not null)
             {
@@ -216,7 +216,7 @@ public sealed class GameAggregate(
             var phaseChanged = CreatePhaseChangedEvent(state, phaseAfterAdvance, actorPlayerSessionId, roundAdvanced.OccurredAt);
             var persistedEvents = BuildPersistedEvents(roundAdvanced, phaseChanged);
 
-            await walWriter.AppendAsync(persistedEvents, cancellationToken);
+            await gameEventRepository.AppendAsync(persistedEvents, cancellationToken);
             Apply(roundAdvanced, state);
             if (phaseChanged is not null)
             {
@@ -266,7 +266,7 @@ public sealed class GameAggregate(
                 return new GameAggregateCommandResult<RunnerLogout>(gameEvent, [], WasIdempotent: true);
             }
 
-            await walWriter.AppendAsync([gameEvent], cancellationToken);
+            await gameEventRepository.AppendAsync([gameEvent], cancellationToken);
             playerSession.IsLoggedIn = false;
             await dbContext.SaveChangesAsync(cancellationToken);
             Apply(gameEvent, state);

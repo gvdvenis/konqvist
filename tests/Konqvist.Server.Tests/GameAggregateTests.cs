@@ -150,8 +150,8 @@ public sealed class GameAggregateTests
 
         public GameAggregate CreateAggregate()
         {
-            var walWriter = new EfGameEventWalWriter(DbFactory);
-            return new GameAggregate(DbFactory, walWriter);
+            var gameEventRepository = new GameEventRepository(DbFactory);
+            return new GameAggregate(DbFactory, gameEventRepository);
         }
 
         public static async Task<GameAggregateFixture> CreateAsync()

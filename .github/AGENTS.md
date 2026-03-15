@@ -12,6 +12,7 @@ following a structured build plan.
 - One slice at a time, in the order defined in BUILD_PLAN.md
 - Each slice is self-contained and ends at a verifiable state
 - Do not implement ahead of the current slice
+- Do not commit code to GIT, that is the job of the human developer. The exception is when the developer is explicitly instructing the agent to do so.
 
 ## Code style
 - C# with nullable reference types enabled

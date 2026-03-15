@@ -43,7 +43,7 @@ try
         options.SerializerOptions.TypeInfoResolverChain.Insert(0, AuthJsonSerializerContext.Default);
         options.SerializerOptions.TypeInfoResolverChain.Insert(0, GameAggregateJsonSerializerContext.Default);
     });
-    builder.Services.AddSingleton<IGameEventWalWriter, EfGameEventWalWriter>();
+    builder.Services.AddSingleton<IGameEventRepository, GameEventRepository>();
     builder.Services.AddSingleton<GameAggregate>();
     builder.Services.AddAuthentication(AuthConstants.AuthenticationScheme)
         .AddCookie(AuthConstants.AuthenticationScheme, options =>

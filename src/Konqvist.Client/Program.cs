@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Fluxor;
 using Fluxor.Blazor.Web.ReduxDevTools;
 using Konqvist.Client;
+using Konqvist.Client.Core.SignalR;
 using Konqvist.Client.Features.Auth;
 using Konqvist.Client.Features.Login;
 using MudBlazor.Services;
@@ -30,6 +31,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<ClientAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(services =>
     services.GetRequiredService<ClientAuthenticationStateProvider>());
+builder.Services.AddScoped<GameHubService>();
 builder.Services.AddMudServices(config =>
 {
     config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.BottomRight;

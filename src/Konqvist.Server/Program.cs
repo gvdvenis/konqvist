@@ -4,6 +4,7 @@ using Konqvist.Server.Domain.Persistence;
 using Konqvist.Server.Domain.Serialization;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.Admin;
+using Konqvist.Server.Features.SessionState;
 using Konqvist.Server.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,7 @@ try
     {
         options.SerializerOptions.TypeInfoResolverChain.Insert(0, AuthJsonSerializerContext.Default);
         options.SerializerOptions.TypeInfoResolverChain.Insert(0, GameAggregateJsonSerializerContext.Default);
+        options.SerializerOptions.TypeInfoResolverChain.Insert(0, SessionStateJsonSerializerContext.Default);
     });
     builder.Services.AddSingleton<IGameEventRepository, GameEventRepository>();
     builder.Services.AddSingleton<GameAggregate>();
@@ -120,6 +122,7 @@ try
     app.UseAuthorization();
 
     app.MapAuthEndpoints();
+    app.MapSessionStateEndpoints();
     app.MapHub<GameHub>("/hubs/game");
 
     app.Run();

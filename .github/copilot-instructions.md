@@ -139,3 +139,6 @@ GM interface lives at `/gm/*` within `Konqvist.Client` — role-based routing, n
 
 ## Build plan context
 The project is built milestone-by-milestone per `/docs/BUILD_PLAN.md`. **Never implement ahead of the current slice.** Each slice ends at a verifiable state. When starting a session, establish the current milestone/slice from the build plan before making changes.
+
+## Git workflow
+- Do not create git commits unless the developer explicitly asks for one.

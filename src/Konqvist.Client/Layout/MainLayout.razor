@@ -1,10 +1,14 @@
 @using Konqvist.Client.Theme
 @using System.Security.Claims
+@using Konqvist.Client.Core.SignalR
 @using Konqvist.Client.Features.Auth
 @using Konqvist.Client.Features.Login
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject LoginApiClient LoginApiClient
+@inject GameHubService GameHubService
+@implements IAsyncDisposable
 @inherits LayoutComponentBase
 
 <MudThemeProvider Theme="KonqvistClientTheme.Instance" @bind-IsDarkMode="_isDarkMode" />
@@ -19,7 +23,6 @@
             IsConnected="@EffectiveIsConnected"
             OnRoleIconClick="ToggleThemeAsync"
             OnHeaderDoubleClick="OpenDebugPanel" />
-    <OfflineBanner Visible="@(!EffectiveIsConnected)" />
     <MudMainContent Class="app-content">
         @Body
     </MudMainContent>
@@ -56,8 +59,7 @@
     private bool _isAuthenticated;
     private bool _isDarkMode;
 
-    // Stub for Slice 3.4 until SignalR state is wired.
-    private bool _isSignalRConnected = true;
+    private bool _isSignalRConnected;
     private bool _isDebugPanelOpen;
     private bool? _debugIsAuthenticated;
     private bool? _debugIsConnected;
@@ -78,6 +80,13 @@
     private string EffectiveRole => _debugRole ?? _role;
     private string EffectiveGameStatus => _debugGameStatus ?? _gameStatus;
     private string EffectiveGamePhase => _debugGamePhase ?? _gamePhase;
+    private IDisposable? _connectionStateSubscription;
+
+    protected override void OnInitialized()
+    {
+        _isSignalRConnected = GameHubService.CurrentConnectionState == HubConnectionState.Connected;
+        _connectionStateSubscription = GameHubService.ConnectionState.Subscribe(new ConnectionStateObserver(this));
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -92,6 +101,15 @@
         _teamName = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.Team)?.Value ?? "No Team";
         _gameStatus = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GameStatus)?.Value ?? "Pending";
         _gamePhase = authState.User.FindFirst(ClientAuthenticationStateProvider.ClaimTypes.GamePhase)?.Value ?? "WaitingForPlayers";
+
+        if (_isAuthenticated)
+        {
+            await GameHubService.StartAsync();
+        }
+        else
+        {
+            await GameHubService.StopAsync();
+        }
 
         if (ShouldForceWaitingRoute())
         {
@@ -219,5 +237,28 @@
         }
 #endif
         return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _connectionStateSubscription?.Dispose();
+        await GameHubService.StopAsync();
+    }
+
+    private sealed class ConnectionStateObserver(MainLayout owner) : IObserver<HubConnectionState>
+    {
+        public void OnCompleted()
+        {
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnNext(HubConnectionState value)
+        {
+            owner._isSignalRConnected = value == HubConnectionState.Connected;
+            _ = owner.InvokeAsync(owner.StateHasChanged);
+        }
     }
 }

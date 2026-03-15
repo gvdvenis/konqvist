@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Konqvist.Server.Tests;
 
+[Collection(ServerAppFactoryCollection.Name)]
 public sealed class AuthEndpointsTests
 {
     [Fact]
@@ -200,6 +201,7 @@ public sealed class AuthEndpointsTests
 
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
+            builder.UseSetting("ConnectionStrings:DefaultConnection", $"Data Source={_dbPath}");
             builder.ConfigureAppConfiguration((_, configurationBuilder) =>
             {
                 configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
@@ -212,9 +214,15 @@ public sealed class AuthEndpointsTests
         public override async ValueTask DisposeAsync()
         {
             await base.DisposeAsync();
-            if (File.Exists(_dbPath))
+            try
             {
-                File.Delete(_dbPath);
+                if (File.Exists(_dbPath))
+                {
+                    File.Delete(_dbPath);
+                }
+            }
+            catch (IOException)
+            {
             }
         }
     }

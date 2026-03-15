@@ -16,6 +16,7 @@ public sealed class GameAggregate(
     private static readonly IReadOnlyDictionary<int, int?> EmptyDistrictOwnership = new ConcurrentDictionary<int, int?>();
 
     private readonly SemaphoreSlim _mutex = new(1, 1);
+    private readonly ConcurrentDictionary<int, SemaphoreSlim> _locationMutexes = [];
     private AggregateState? _state;
 
     public GamePhase CurrentPhase => _state?.CurrentPhase ?? GamePhase.WaitingForPlayers;
@@ -116,6 +117,115 @@ public sealed class GameAggregate(
         finally
         {
             _mutex.Release();
+        }
+    }
+
+    public async Task<GameAggregateCommandResult<LocationUpdated>> UpdateLocation(
+        int actorPlayerSessionId,
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default)
+    {
+        var locationMutex = _locationMutexes.GetOrAdd(actorPlayerSessionId, _ => new SemaphoreSlim(1, 1));
+        await locationMutex.WaitAsync(cancellationToken);
+        try
+        {
+            AggregateState state;
+            int teamSessionId;
+            int roundSessionId;
+            DateTime occurredAt;
+            DateTime? lastLocationUpdateAt;
+            DateTime? lastBroadcastAt;
+            bool isThrottled;
+            bool shouldBroadcastToOpponents;
+
+            await _mutex.WaitAsync(cancellationToken);
+            try
+            {
+                state = await EnsureInitializedAsync(cancellationToken);
+                teamSessionId = GetActorTeamSessionId(state, actorPlayerSessionId);
+                roundSessionId = state.CurrentRoundSessionId;
+                EnsureActorRole(state, actorPlayerSessionId, PlayerRole.Runner, "update location");
+
+                occurredAt = DateTime.UtcNow;
+                lastLocationUpdateAt = state.LastLocationUpdateAt.TryGetValue(actorPlayerSessionId, out var trackedLastLocationUpdateAt)
+                    ? trackedLastLocationUpdateAt
+                    : null;
+                lastBroadcastAt = state.LastOpponentLocationBroadcastAt.TryGetValue(actorPlayerSessionId, out var trackedLastBroadcastAt)
+                    ? trackedLastBroadcastAt
+                    : null;
+                isThrottled = lastLocationUpdateAt.HasValue
+                    && occurredAt - lastLocationUpdateAt.Value < TimeSpan.FromSeconds(state.MinLocationUpdateIntervalSeconds);
+                shouldBroadcastToOpponents = !lastBroadcastAt.HasValue
+                    || occurredAt - lastBroadcastAt.Value >= TimeSpan.FromSeconds(state.LocationBroadcastIntervalSeconds);
+            }
+            finally
+            {
+                _mutex.Release();
+            }
+
+            if (isThrottled)
+            {
+                var throttledLocationUpdated = new LocationUpdated(
+                    state.GameSessionId,
+                    roundSessionId,
+                    actorPlayerSessionId,
+                    teamSessionId,
+                    latitude,
+                    longitude,
+                    Accepted: false,
+                    BroadcastToOpponents: false,
+                    occurredAt);
+
+                return new GameAggregateCommandResult<LocationUpdated>(throttledLocationUpdated, [], WasIdempotent: true);
+            }
+
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var playerSession = await dbContext.PlayerSessions
+                .SingleOrDefaultAsync(
+                    entity => entity.Id == actorPlayerSessionId && entity.GameSessionId == state.GameSessionId,
+                    cancellationToken)
+                ?? throw new InvalidOperationException(
+                    $"Player session '{actorPlayerSessionId}' does not exist in the active game.");
+
+            playerSession.LocationLat = latitude;
+            playerSession.LocationLng = longitude;
+            playerSession.LocationUpdatedAt = occurredAt;
+            playerSession.LastSeen = occurredAt;
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            await _mutex.WaitAsync(cancellationToken);
+            try
+            {
+                roundSessionId = state.CurrentRoundSessionId;
+                state.LastLocationUpdateAt[actorPlayerSessionId] = occurredAt;
+                if (shouldBroadcastToOpponents)
+                {
+                    state.LastOpponentLocationBroadcastAt[actorPlayerSessionId] = occurredAt;
+                }
+            }
+            finally
+            {
+                _mutex.Release();
+            }
+
+            var locationUpdated = new LocationUpdated(
+                state.GameSessionId,
+                roundSessionId,
+                actorPlayerSessionId,
+                teamSessionId,
+                latitude,
+                longitude,
+                Accepted: true,
+                shouldBroadcastToOpponents,
+                occurredAt);
+
+            return new GameAggregateCommandResult<LocationUpdated>(locationUpdated, []);
+        }
+        finally
+        {
+            locationMutex.Release();
         }
     }
 
@@ -398,6 +508,7 @@ public sealed class GameAggregate(
         }
 
         var session = await dbContext.GameSessions
+            .Include(entity => entity.GameTemplate)
             .Include(entity => entity.Teams)
             .Include(entity => entity.Districts)
             .Include(entity => entity.Players)
@@ -433,7 +544,9 @@ public sealed class GameAggregate(
             CurrentPhase = session.CurrentPhase,
             CurrentRoundSessionId = currentRound.Id,
             CurrentRoundNumber = currentRound.RoundTemplate.RoundNumber,
-            VotingEnabled = currentRound.VotingEnabled
+            VotingEnabled = currentRound.VotingEnabled,
+            MinLocationUpdateIntervalSeconds = session.GameTemplate.MinLocationUpdateIntervalSeconds,
+            LocationBroadcastIntervalSeconds = session.GameTemplate.LocationUpdateIntervalSeconds
         };
 
         foreach (var team in session.Teams)
@@ -477,6 +590,11 @@ public sealed class GameAggregate(
             state.PlayerLoggedIn[player.Id] = player.IsLoggedIn;
         }
 
+        if (_state is not null && _state.GameSessionId != state.GameSessionId)
+        {
+            _locationMutexes.Clear();
+        }
+
         _state = state;
         return state;
     }
@@ -510,5 +628,14 @@ public sealed class GameAggregate(
         public List<int> OrderedRoundSessionIds { get; } = [];
 
         public Dictionary<int, int> RoundNumbers { get; } = [];
+
+        public Dictionary<int, DateTime> LastOpponentLocationBroadcastAt { get; } = [];
+
+        public Dictionary<int, DateTime> LastLocationUpdateAt { get; } = [];
+
+        public int MinLocationUpdateIntervalSeconds { get; init; }
+
+        public int LocationBroadcastIntervalSeconds { get; init; }
     }
+
 }

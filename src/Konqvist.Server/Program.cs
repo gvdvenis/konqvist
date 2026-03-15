@@ -4,6 +4,7 @@ using Konqvist.Server.Domain.Persistence;
 using Konqvist.Server.Domain.Serialization;
 using Konqvist.Server.Features.Auth;
 using Konqvist.Server.Features.Admin;
+using Konqvist.Server.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,7 @@ try
     });
     builder.Services.AddSingleton<IGameEventRepository, GameEventRepository>();
     builder.Services.AddSingleton<GameAggregate>();
+    builder.Services.AddSingleton<IPlayerConnectionTracker, PlayerConnectionTracker>();
     builder.Services.AddAuthentication(AuthConstants.AuthenticationScheme)
         .AddCookie(AuthConstants.AuthenticationScheme, options =>
         {
@@ -74,6 +76,11 @@ try
                 .AllowCredentials();
         });
     });
+    builder.Services.AddSignalR()
+        .AddJsonProtocol(options =>
+        {
+            options.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, GameHubJsonSerializerContext.Default);
+        });
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
@@ -113,6 +120,7 @@ try
     app.UseAuthorization();
 
     app.MapAuthEndpoints();
+    app.MapHub<GameHub>("/hubs/game");
 
     app.Run();
 }

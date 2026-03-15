@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
+using Fluxor;
+using Fluxor.Blazor.Web.ReduxDevTools;
 using Konqvist.Client;
 using Konqvist.Client.Features.Auth;
 using Konqvist.Client.Features.Login;
@@ -13,6 +15,16 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<LoginApiClient>();
+builder.Services.AddFluxor(options =>
+{
+    options.ScanAssemblies(typeof(Program).Assembly);
+#if DEBUG
+    options.UseReduxDevTools(redux =>
+    {
+        redux.Name = "Konqvist.Client";
+    });
+#endif
+});
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<ClientAuthenticationStateProvider>();

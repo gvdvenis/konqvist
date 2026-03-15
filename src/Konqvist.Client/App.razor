@@ -1,5 +1,7 @@
 ﻿@inject NavigationManager NavigationManager
 
+<Fluxor.Blazor.Web.StoreInitializer />
+
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
         <Found Context="routeData">

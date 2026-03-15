@@ -16,4 +16,8 @@
     <PackageReference Include="MudBlazor" Version="*" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageReference Include="Fluxor.Blazor.Web.ReduxDevTools" Version="*" />
+  </ItemGroup>
+
 </Project>

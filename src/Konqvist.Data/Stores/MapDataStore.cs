@@ -81,10 +81,10 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             List<TeamData> result = [];
             foreach (var td in teams)
             {
-                td.Location = td.Location == Coordinate.Empty
+                var location = td.Location == Coordinate.Empty
                     ? GetDefaultLocation()
                     : td.Location;
-                result.Add(td);
+                result.Add(td.CloneForRead(location));
             }
             
             return result;
@@ -456,12 +456,11 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
 
     public async Task ResetGame()
     {
-        await ProtectedInvoke(() =>
+        await ProtectedInvoke(async () =>
         {
             _stateSnapshotStore.Clear();
+            await InitializeAsync();
         });
-
-        await InitializeAsync();
     }
 
     /// <summary>
@@ -625,7 +624,43 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             _semaphore.Release();
         }
     }
-    
+
+    private async Task<T> ProtectedInvoke<T>(Func<Task<T>> callback)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            return await callback().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EXCEPTION: {ex.Message}\nDetails: {ex}");
+            throw;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    private async Task ProtectedInvoke(Func<Task> callback)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            await callback().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EXCEPTION: {ex.Message}\nDetails: {ex}");
+            throw;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     private async Task ProtectedInvoke(Action callback)
     {
         await _semaphore.WaitAsync();

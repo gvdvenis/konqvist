@@ -80,6 +80,30 @@ public class TeamData(string name, string color) : ActorData(name, color)
         castVoteList.Clear();
         castVoteList.AddRange(castVotes);
     }
+
+    internal TeamData CloneForRead(Coordinate location)
+    {
+        var clone = new TeamData(Name, Color)
+        {
+            IsDisabled = IsDisabled
+        };
+
+        clone.RestoreMatchState(
+            location,
+            PlayerLoggedIn,
+            new ResourcesData
+            {
+                R1 = AdditionalResources.R1,
+                R2 = AdditionalResources.R2,
+                R3 = AdditionalResources.R3,
+                R4 = AdditionalResources.R4
+            },
+            Scores.ToList(),
+            Votes.ToList(),
+            CastVotes.ToList());
+
+        return clone;
+    }
 }
 
 public enum TeamMemberRole

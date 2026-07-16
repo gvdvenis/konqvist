@@ -2,10 +2,9 @@
 
 namespace Konqvist.Data.Stores;
 
-public class RoundDataStore(List<RoundData> rounds)
+public class RoundDataStore(List<RoundData> rounds, int currentRoundNumber = 0)
 {
-
-    public int CurrentRoundNumber { get; private set; }
+    public int CurrentRoundNumber { get; private set; } = currentRoundNumber;
 
     public List<RoundData> Rounds { get; } = rounds;
 

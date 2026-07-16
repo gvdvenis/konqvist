@@ -1,13 +1,22 @@
 using Konqvist.Data.Contracts;
 using Konqvist.Data.Models;
 using Konqvist.Data.Stores;
+using OpenLayers.Blazor;
 using Xunit.Abstractions;
 
 namespace Konqvist.Data.Tests;
 
-public class MapDataStoreTests(ITestOutputHelper testOutputHelper) : IAsyncLifetime
+public class MapDataStoreTests : IAsyncLifetime
 {
-    private readonly MapDataStore _mapDataStore = new(new GameDataLoader());
+    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly InMemoryGameStateSnapshotStore _snapshotStore = new();
+    private readonly MapDataStore _mapDataStore;
+
+    public MapDataStoreTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+        _mapDataStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+    }
 
     [Fact]
     public async Task GetAllTeams_Should_Only_Include_Enabled_Teams()
@@ -21,6 +30,76 @@ public class MapDataStoreTests(ITestOutputHelper testOutputHelper) : IAsyncLifet
         // Assert
         Assert.False(containsDisabledTeams, "Only enabled teams should be returned");
         Assert.Equal(4, teams.Count);
+    }
+
+    [Fact]
+    public async Task Mutations_Should_Be_Captured_In_The_Persisted_Snapshot()
+    {
+        // Arrange
+        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
+
+        await _mapDataStore.NextRound();
+        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.UpdateTeamPosition("Bravo", new Coordinate(12, 24));
+        await _mapDataStore.SetAdditionalTeamResource("Bravo", new ResourcesData { R1 = 1, R2 = 2, R3 = 3, R4 = 4 });
+        await _mapDataStore.TryLoginTeamMember("br");
+        await _mapDataStore.NextRound();
+        await _mapDataStore.CastVoteFor("Bravo", "Delta");
+
+        // Act
+        var snapshot = _snapshotStore.Read();
+
+        // Assert
+        Assert.NotNull(snapshot);
+        Assert.Equal(2, snapshot!.CurrentRoundNumber);
+
+        var bravoSnapshot = snapshot.Teams.Single(t => t.Name == "Bravo");
+        Assert.Equal(12, bravoSnapshot.Location.X);
+        Assert.Equal(24, bravoSnapshot.Location.Y);
+        Assert.True(bravoSnapshot.PlayerLoggedIn);
+        Assert.Equal(1, bravoSnapshot.AdditionalResources.R1);
+        Assert.Single(bravoSnapshot.Votes);
+        Assert.Empty(bravoSnapshot.CastVotes);
+
+        var districtSnapshot = snapshot.Districts.Single(d => d.Name == districtName);
+        Assert.Equal("Bravo", districtSnapshot.OwnerTeamName);
+        Assert.False(districtSnapshot.IsClaimable);
+    }
+
+    [Fact]
+    public async Task A_Fresh_Store_Should_Restore_The_Last_Persisted_Match_State()
+    {
+        // Arrange
+        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
+
+        await _mapDataStore.NextRound();
+        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.UpdateTeamPosition("Bravo", new Coordinate(12, 24));
+        await _mapDataStore.SetAdditionalTeamResource("Bravo", new ResourcesData { R1 = 1, R2 = 2, R3 = 3, R4 = 4 });
+        await _mapDataStore.TryLoginTeamMember("br");
+        await _mapDataStore.NextRound();
+        await _mapDataStore.CastVoteFor("Bravo", "Delta");
+        await _mapDataStore.NextRound();
+
+        int expectedScore = (await _mapDataStore.GetTeamScore("Bravo")).Amount;
+
+        var restoredStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+
+        // Act
+        await restoredStore.InitializeAsync();
+
+        // Assert
+        var restoredDistrict = await restoredStore.GetDistrictOwner(districtName);
+        var restoredBravo = await restoredStore.GetTeamByName("Bravo");
+        int restoredScore = (await restoredStore.GetTeamScore("Bravo")).Amount;
+
+        Assert.Equal("Bravo", restoredDistrict.TeamName);
+        Assert.Equal(12, restoredBravo.Location.X);
+        Assert.Equal(24, restoredBravo.Location.Y);
+        Assert.True(restoredBravo.PlayerLoggedIn);
+        Assert.Single(restoredBravo.Votes);
+        Assert.Empty(restoredBravo.CastVotes);
+        Assert.Equal(expectedScore, restoredScore);
     }
 
     [Fact]
@@ -182,7 +261,7 @@ public class MapDataStoreTests(ITestOutputHelper testOutputHelper) : IAsyncLifet
         Assert.Equal(217 + 110 + 120, bravoScore);
         Assert.Equal(325 + 120, charlyScore);
 
-        testOutputHelper.WriteLine($"Bravo: {bravoScore}, Charly: {charlyScore}");
+        _testOutputHelper.WriteLine($"Bravo: {bravoScore}, Charly: {charlyScore}");
     }
 
     #region Implementation of IAsyncLifetime

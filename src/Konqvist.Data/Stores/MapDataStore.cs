@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Konqvist.Data.Stores;
 
-public class MapDataStore(IMapDataLoader mapDataLoader)
+public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore? stateSnapshotStore = null)
 {
 
     // Singleton instance
@@ -18,6 +18,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
     private MapData _mapData = MapData.Empty;
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
+    private readonly IGameStateSnapshotStore _stateSnapshotStore = stateSnapshotStore ?? new InMemoryGameStateSnapshotStore();
 
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
     
@@ -32,7 +33,13 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         _teamsData = [.. teamsData];
 
         var roundsData = await mapDataLoader.GetRoundsData();
-        _roundsDataStore = new RoundDataStore(roundsData);
+        var snapshot = _stateSnapshotStore.Read();
+        _roundsDataStore = new RoundDataStore(roundsData, snapshot?.CurrentRoundNumber ?? 0);
+
+        if (snapshot is not null)
+            ApplySnapshot(snapshot);
+
+        PersistSnapshot();
     }
 
     #endregion
@@ -246,6 +253,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
             var newOwner = TeamByName(newOwnerName);
 
             district.AssignDistrictOwner(newOwner);
+            PersistSnapshot();
 
             return true;
         });
@@ -256,7 +264,10 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         await ProtectedInvoke(() =>
         {
             if (TeamByName(teamName) is { } team)
+            {
                 team.Location = coordinate;
+                PersistSnapshot();
+            }
         });
     }
 
@@ -324,6 +335,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
             if (teamData.PlayerLoggedIn) return false;
 
             teamData.PlayerLoggedIn = true;
+            PersistSnapshot();
             return true;
         });
     }
@@ -337,6 +349,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         {
             var team = TeamByName(teamName);
             team.PlayerLoggedIn = false;
+            PersistSnapshot();
             return true;
         });
     }
@@ -355,6 +368,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
                 team.PlayerLoggedIn = false;
             }
 
+            PersistSnapshot();
             return loggedOutPlayerTeamNames;
         });
     }
@@ -366,7 +380,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
             var currentRound = _roundsDataStore.GetCurrentRound();
 
             // we only want to reset our resources when we're exiting a voting round
-            if (currentRound.Kind != RoundKind.Voting) return _roundsDataStore.NextRound();
+            if (currentRound.Kind != RoundKind.Voting)
+            {
+                var nextRound = _roundsDataStore.NextRound();
+                PersistSnapshot();
+                return nextRound;
+            }
 
             // calculate the scores based on the resources gathered
             AssignTeamResourceScores(currentRound);
@@ -380,7 +399,9 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
             // reset all trigger circles 
             ClearClaimsInternal(null);
 
-            return _roundsDataStore.NextRound();
+            var round = _roundsDataStore.NextRound();
+            PersistSnapshot();
+            return round;
         });
     }
 
@@ -435,10 +456,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
 
     public async Task ResetGame()
     {
-        await ProtectedInvoke(async () =>
+        await ProtectedInvoke(() =>
         {
-            await InitializeAsync();
+            _stateSnapshotStore.Clear();
         });
+
+        await InitializeAsync();
     }
 
     /// <summary>
@@ -453,6 +476,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
         {
             var team = TeamByName(teamName);
             team.LogAdditionalResource(resourcesReplacement);
+            PersistSnapshot();
             return Task.CompletedTask;
         });
     }
@@ -472,6 +496,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
 
             receiver.LogReceivedVote(voter.Name, voteWeight, roundNumber);
             voter.LogCastVote(receiver.Name, roundNumber);
+            PersistSnapshot();
             return true;
         });
     }
@@ -497,6 +522,73 @@ public class MapDataStore(IMapDataLoader mapDataLoader)
     }
 
     #endregion
+
+    private void PersistSnapshot()
+    {
+        _stateSnapshotStore.Write(CreateSnapshot());
+    }
+
+    private GameStateSnapshot CreateSnapshot()
+    {
+        return new GameStateSnapshot(
+            _roundsDataStore.CurrentRoundNumber,
+            _mapData.Districts
+                .Select(d => new DistrictStateSnapshot(d.Name, d.Owner?.Name, d.IsClaimable))
+                .ToList(),
+            _teamsData
+                .Select(team => new TeamStateSnapshot(
+                    team.Name,
+                    new Coordinate(team.Location.X, team.Location.Y),
+                    team.PlayerLoggedIn,
+                    CopyResources(team.AdditionalResources),
+                    team.Scores.ToList(),
+                    team.Votes.ToList(),
+                    team.CastVotes.ToList()))
+                .ToList());
+    }
+
+    private void ApplySnapshot(GameStateSnapshot snapshot)
+    {
+        var teamsByName = _teamsData.ToDictionary(team => team.Name);
+
+        foreach (var teamSnapshot in snapshot.Teams)
+        {
+            if (!teamsByName.TryGetValue(teamSnapshot.Name, out var team))
+                continue;
+
+            team.RestoreMatchState(
+                new Coordinate(teamSnapshot.Location.X, teamSnapshot.Location.Y),
+                teamSnapshot.PlayerLoggedIn,
+                CopyResources(teamSnapshot.AdditionalResources),
+                teamSnapshot.Scores,
+                teamSnapshot.Votes,
+                teamSnapshot.CastVotes);
+        }
+
+        foreach (var districtSnapshot in snapshot.Districts)
+        {
+            var district = _mapData.Districts.FirstOrDefault(d => d.Name == districtSnapshot.Name);
+            if (district is null)
+                continue;
+
+            TeamData? owner = districtSnapshot.OwnerTeamName is null
+                ? null
+                : teamsByName.GetValueOrDefault(districtSnapshot.OwnerTeamName);
+
+            district.RestoreMatchState(owner, districtSnapshot.IsClaimable);
+        }
+    }
+
+    private static ResourcesData CopyResources(ResourcesData source)
+    {
+        return new ResourcesData
+        {
+            R1 = source.R1,
+            R2 = source.R2,
+            R3 = source.R3,
+            R4 = source.R4
+        };
+    }
 
     /// <summary>
     ///     Resets all trigger circles to be reclaimable. If a teamName is provided,

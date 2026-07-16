@@ -22,6 +22,12 @@ public class DistrictData : IShapeData
         IsClaimable = false;
     }
 
+    internal void RestoreMatchState(TeamData? owner, bool isClaimable)
+    {
+        Owner = owner;
+        IsClaimable = isClaimable;
+    }
+
     public void ReleaseClaim()
     {
         IsClaimable = true;

@@ -1,4 +1,6 @@
-﻿namespace Konqvist.Data.Models;
+﻿using OpenLayers.Blazor;
+
+namespace Konqvist.Data.Models;
 
 public class TeamData(string name, string color) : ActorData(name, color)
 {
@@ -52,6 +54,31 @@ public class TeamData(string name, string color) : ActorData(name, color)
     internal void LogAdditionalResource(ResourcesData resourceData)
     {
         AdditionalResources += resourceData;
+    }
+
+    internal void RestoreMatchState(
+        Coordinate location,
+        bool playerLoggedIn,
+        ResourcesData additionalResources,
+        IEnumerable<ScoreData> scores,
+        IEnumerable<VoteData> votes,
+        IEnumerable<VoterData> castVotes)
+    {
+        Location = location;
+        PlayerLoggedIn = playerLoggedIn;
+        AdditionalResources = additionalResources;
+
+        var scoreList = (List<ScoreData>)Scores;
+        scoreList.Clear();
+        scoreList.AddRange(scores);
+
+        var voteList = (List<VoteData>)Votes;
+        voteList.Clear();
+        voteList.AddRange(votes);
+
+        var castVoteList = (List<VoterData>)CastVotes;
+        castVoteList.Clear();
+        castVoteList.AddRange(castVotes);
     }
 }
 

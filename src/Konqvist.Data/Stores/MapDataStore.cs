@@ -1,13 +1,26 @@
-﻿using Konqvist.Data.Contracts;
+using Konqvist.Data;
+using Konqvist.Data.Contracts;
 using Konqvist.Data.Models;
 using OpenLayers.Blazor;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Konqvist.Data.Stores;
 
 public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore? stateSnapshotStore = null)
 {
+    private static readonly JsonSerializerOptions SnapshotSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        Converters = { new CoordinateConverter(), new CoordinateArrayConverter() }
+    };
+
 
     // Singleton instance
 
@@ -19,6 +32,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly IGameStateSnapshotStore _stateSnapshotStore = stateSnapshotStore ?? new InMemoryGameStateSnapshotStore();
+    private string _gameDefinitionHash = string.Empty;
 
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
     
@@ -33,10 +47,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
         _teamsData = [.. teamsData];
 
         var roundsData = await mapDataLoader.GetRoundsData();
+        _gameDefinitionHash = ComputeGameDefinitionHash(mapData, teamsData, roundsData);
         var snapshot = _stateSnapshotStore.Read();
-        _roundsDataStore = new RoundDataStore(roundsData, snapshot?.CurrentRoundNumber ?? 0);
+        bool snapshotMatchesDefinition = snapshot?.GameDefinitionHash == _gameDefinitionHash;
+        _roundsDataStore = new RoundDataStore(roundsData, snapshotMatchesDefinition ? snapshot!.CurrentRoundNumber : 0);
 
-        if (snapshot is not null)
+        if (snapshotMatchesDefinition && snapshot is not null)
             ApplySnapshot(snapshot);
 
         PersistSnapshot();
@@ -530,6 +546,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
     private GameStateSnapshot CreateSnapshot()
     {
         return new GameStateSnapshot(
+            _gameDefinitionHash,
             _roundsDataStore.CurrentRoundNumber,
             _mapData.Districts
                 .Select(d => new DistrictStateSnapshot(d.Name, d.Owner?.Name, d.IsClaimable))
@@ -544,6 +561,16 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
                     team.Votes.ToList(),
                     team.CastVotes.ToList()))
                 .ToList());
+    }
+
+    private static string ComputeGameDefinitionHash(
+        MapData mapData,
+        IEnumerable<TeamData> teamsData,
+        IEnumerable<RoundData> roundsData)
+    {
+        var definition = new GameDefinitionSnapshot(mapData, teamsData.ToList(), roundsData.ToList());
+        string json = JsonSerializer.Serialize(definition, SnapshotSerializerOptions);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
     }
 
     private void ApplySnapshot(GameStateSnapshot snapshot)
@@ -588,6 +615,8 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             R4 = source.R4
         };
     }
+
+    private sealed record GameDefinitionSnapshot(MapData MapData, List<TeamData> Teams, List<RoundData> Rounds);
 
     /// <summary>
     ///     Resets all trigger circles to be reclaimable. If a teamName is provided,

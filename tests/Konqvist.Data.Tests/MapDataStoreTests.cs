@@ -103,6 +103,62 @@ public class MapDataStoreTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_Fresh_Store_Should_Reset_When_The_Game_Definition_Changes()
+    {
+        // Arrange
+        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
+
+        await _mapDataStore.NextRound();
+        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.TryLoginTeamMember("br");
+        var staleSnapshot = _snapshotStore.Read()!;
+        _snapshotStore.Write(staleSnapshot with { GameDefinitionHash = "stale" });
+
+        var restoredStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+
+        // Act
+        await restoredStore.InitializeAsync();
+
+        // Assert
+        var restoredDistrict = await restoredStore.GetDistrictOwner(districtName);
+        var restoredBravo = await restoredStore.GetTeamByName("Bravo");
+
+        Assert.Equal(DistrictOwner.Empty, restoredDistrict);
+        Assert.False(restoredBravo.PlayerLoggedIn);
+        Assert.Empty(restoredBravo.Votes);
+        Assert.Empty(restoredBravo.CastVotes);
+        Assert.Equal(0, restoredStore.GetCurrentRoundData().Index);
+    }
+
+    [Fact]
+    public async Task ResetGame_Should_Clear_Gameplay_State_Without_Removing_Game_Definition()
+    {
+        // Arrange
+        var initialDistrictCount = (await _mapDataStore.GetAllDistricts()).Count;
+        var initialTeamCount = (await _mapDataStore.GetTeams(includeDisabled: true)).Count;
+        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
+
+        await _mapDataStore.NextRound();
+        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.TryLoginTeamMember("br");
+
+        // Act
+        await _mapDataStore.ResetGame();
+
+        // Assert
+        var resetDistrict = await _mapDataStore.GetDistrictOwner(districtName);
+        var resetBravo = await _mapDataStore.GetTeamByName("Bravo");
+
+        Assert.Equal(initialDistrictCount, (await _mapDataStore.GetAllDistricts()).Count);
+        Assert.Equal(initialTeamCount, (await _mapDataStore.GetTeams(includeDisabled: true)).Count);
+        Assert.Equal(DistrictOwner.Empty, resetDistrict);
+        Assert.False(resetBravo.PlayerLoggedIn);
+        Assert.Empty(resetBravo.Votes);
+        Assert.Empty(resetBravo.CastVotes);
+        Assert.Equal(0, _mapDataStore.GetCurrentRoundData().Index);
+    }
+
+    [Fact]
     public async Task IsClaimable_Should_Be_Reset_On_Start_Of_New_Gathering_Rounds()
     {
         // Arrange: Use MapDataStore to simulate the scenario

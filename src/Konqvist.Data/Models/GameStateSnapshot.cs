@@ -3,11 +3,12 @@ using OpenLayers.Blazor;
 namespace Konqvist.Data.Models;
 
 public record GameStateSnapshot(
+    string? GameDefinitionHash,
     int CurrentRoundNumber,
     List<DistrictStateSnapshot> Districts,
     List<TeamStateSnapshot> Teams)
 {
-    public static GameStateSnapshot Empty { get; } = new(0, [], []);
+    public static GameStateSnapshot Empty { get; } = new(null, 0, [], []);
 }
 
 public record DistrictStateSnapshot(string Name, string? OwnerTeamName, bool IsClaimable);

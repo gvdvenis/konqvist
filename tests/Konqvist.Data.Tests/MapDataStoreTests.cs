@@ -134,12 +134,15 @@ public class MapDataStoreTests : IAsyncLifetime
     public async Task ResetGame_Should_Clear_Gameplay_State_Without_Removing_Game_Definition()
     {
         // Arrange
+        var initialDistrictNames = (await _mapDataStore.GetAllDistricts()).Select(d => d.Name).ToList();
+        var initialTeamNames = (await _mapDataStore.GetTeams(includeDisabled: true)).Select(t => t.Name).ToList();
         var initialDistrictCount = (await _mapDataStore.GetAllDistricts()).Count;
         var initialTeamCount = (await _mapDataStore.GetTeams(includeDisabled: true)).Count;
         string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
 
         await _mapDataStore.NextRound();
         await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.TryLoginTeamMember("ch");
         await _mapDataStore.TryLoginTeamMember("br");
 
         // Act
@@ -153,9 +156,12 @@ public class MapDataStoreTests : IAsyncLifetime
 
         Assert.Equal(initialDistrictCount, (await _mapDataStore.GetAllDistricts()).Count);
         Assert.Equal(initialTeamCount, (await _mapDataStore.GetTeams(includeDisabled: true)).Count);
+        Assert.Equal(initialDistrictNames, (await _mapDataStore.GetAllDistricts()).Select(d => d.Name).ToList());
+        Assert.Equal(initialTeamNames, (await _mapDataStore.GetTeams(includeDisabled: true)).Select(t => t.Name).ToList());
         Assert.NotNull(resetSnapshot);
         Assert.Equal(DistrictOwner.Empty, resetDistrict);
         Assert.False(resetBravo.PlayerLoggedIn);
+        Assert.False((await _mapDataStore.GetTeamByName("Charly")).PlayerLoggedIn);
         Assert.Empty(resetBravo.Votes);
         Assert.Empty(resetBravo.CastVotes);
         Assert.Equal(0, _mapDataStore.GetCurrentRoundData().Index);
@@ -165,8 +171,11 @@ public class MapDataStoreTests : IAsyncLifetime
 
         Assert.Equal(initialDistrictCount, (await restoredStore.GetAllDistricts()).Count);
         Assert.Equal(initialTeamCount, (await restoredStore.GetTeams(includeDisabled: true)).Count);
+        Assert.Equal(initialDistrictNames, (await restoredStore.GetAllDistricts()).Select(d => d.Name).ToList());
+        Assert.Equal(initialTeamNames, (await restoredStore.GetTeams(includeDisabled: true)).Select(t => t.Name).ToList());
         Assert.Equal(DistrictOwner.Empty, await restoredStore.GetDistrictOwner(districtName));
         Assert.False((await restoredStore.GetTeamByName("Bravo")).PlayerLoggedIn);
+        Assert.False((await restoredStore.GetTeamByName("Charly")).PlayerLoggedIn);
         Assert.Empty((await restoredStore.GetTeamByName("Bravo")).Votes);
         Assert.Empty((await restoredStore.GetTeamByName("Bravo")).CastVotes);
         Assert.Equal(0, restoredStore.GetCurrentRoundData().Index);

@@ -142,7 +142,7 @@ public class MapDataStoreTests : IAsyncLifetime
 
         await _mapDataStore.NextRound();
         await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
-        await _mapDataStore.TryLoginTeamMember("ch");
+        await _mapDataStore.TryLoginTeamMember("ctc");
         await _mapDataStore.TryLoginTeamMember("br");
 
         // Act

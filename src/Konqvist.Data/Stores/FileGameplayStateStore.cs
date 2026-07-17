@@ -5,7 +5,7 @@ using Konqvist.Data.Models;
 
 namespace Konqvist.Data.Stores;
 
-public sealed class FileGameStateSnapshotStore : IGameStateSnapshotStore
+public sealed class FileGameplayStateStore : IGameplayStateStore
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -17,7 +17,7 @@ public sealed class FileGameStateSnapshotStore : IGameStateSnapshotStore
 
     private readonly string _filePath;
 
-    public FileGameStateSnapshotStore(string? filePath = null)
+    public FileGameplayStateStore(string? filePath = null)
     {
         _filePath = filePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -25,22 +25,22 @@ public sealed class FileGameStateSnapshotStore : IGameStateSnapshotStore
             "game-state.json");
     }
 
-    public GameStateSnapshot? Read()
+    public GameplayState? Read()
     {
         if (!File.Exists(_filePath))
             return null;
 
         string json = File.ReadAllText(_filePath);
-        return JsonSerializer.Deserialize<GameStateSnapshot>(json, Options);
+        return JsonSerializer.Deserialize<GameplayState>(json, Options);
     }
 
-    public void Write(GameStateSnapshot snapshot)
+    public void Write(GameplayState gameplayState)
     {
         var directory = Path.GetDirectoryName(_filePath);
         if (!string.IsNullOrWhiteSpace(directory))
             Directory.CreateDirectory(directory);
 
-        string json = JsonSerializer.Serialize(snapshot, Options);
+        string json = JsonSerializer.Serialize(gameplayState, Options);
         File.WriteAllText(_filePath, json);
     }
 

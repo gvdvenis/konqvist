@@ -2,18 +2,18 @@ using OpenLayers.Blazor;
 
 namespace Konqvist.Data.Models;
 
-public record GameStateSnapshot(
+public record GameplayState(
     string? GameDefinitionHash,
     int CurrentRoundNumber,
-    List<DistrictStateSnapshot> Districts,
-    List<TeamStateSnapshot> Teams)
+    List<DistrictGameplayState> Districts,
+    List<TeamGameplayState> Teams)
 {
-    public static GameStateSnapshot Empty { get; } = new(null, 0, [], []);
+    public static GameplayState Empty { get; } = new(null, 0, [], []);
 }
 
-public record DistrictStateSnapshot(string Name, string? OwnerTeamName, bool IsClaimable);
+public record DistrictGameplayState(string Name, string? OwnerTeamName, bool IsClaimable);
 
-public record TeamStateSnapshot(
+public record TeamGameplayState(
     string Name,
     Coordinate Location,
     bool PlayerLoggedIn,

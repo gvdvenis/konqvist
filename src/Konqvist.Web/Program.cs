@@ -19,7 +19,7 @@ builder.Services.AddScoped<GameModeRoutingService>();
 builder.Services.AddScoped<IThemeService, ThemeService>();
 builder.Services.AddSingleton<SessionKeyProvider>();
 builder.Services.AddSingleton<IMapDataLoader, MapDataLoader>();
-builder.Services.AddSingleton<IGameStateSnapshotStore, FileGameStateSnapshotStore>();
+builder.Services.AddSingleton<IGameplayStateStore, FileGameplayStateStore>();
 builder.Services.AddSingleton<MapDataStore>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddFluentUIComponents();

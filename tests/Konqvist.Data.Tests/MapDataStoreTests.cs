@@ -9,13 +9,13 @@ namespace Konqvist.Data.Tests;
 public class MapDataStoreTests : IAsyncLifetime
 {
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly InMemoryGameStateSnapshotStore _snapshotStore = new();
+    private readonly InMemoryGameplayStateStore _gameplayStateStore = new();
     private readonly MapDataStore _mapDataStore;
 
     public MapDataStoreTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _mapDataStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+        _mapDataStore = new MapDataStore(new GameDataLoader(), _gameplayStateStore);
     }
 
     [Fact]
@@ -33,40 +33,40 @@ public class MapDataStoreTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Mutations_Should_Be_Captured_In_The_Persisted_Snapshot()
+    public async Task Mutations_Should_Be_Captured_In_The_Persisted_Gameplay_State()
     {
         // Arrange
-        string districtName = await ApplyPersistedSnapshotMutations();
+        string districtName = await ApplyPersistedGameplayStateMutations();
 
         // Act
-        var snapshot = _snapshotStore.Read();
+        var gameplayState = _gameplayStateStore.Read();
 
         // Assert
-        Assert.NotNull(snapshot);
-        Assert.Equal(2, snapshot!.CurrentRoundNumber);
+        Assert.NotNull(gameplayState);
+        Assert.Equal(2, gameplayState!.CurrentRoundNumber);
 
-        var bravoSnapshot = snapshot.Teams.Single(t => t.Name == "Bravo");
-        Assert.Equal(12, bravoSnapshot.Location.X);
-        Assert.Equal(24, bravoSnapshot.Location.Y);
-        Assert.True(bravoSnapshot.PlayerLoggedIn);
-        Assert.Equal(1, bravoSnapshot.AdditionalResources.R1);
-        Assert.Single(bravoSnapshot.Votes);
-        Assert.Empty(bravoSnapshot.CastVotes);
+        var bravoGameplayState = gameplayState.Teams.Single(t => t.Name == "Bravo");
+        Assert.Equal(12, bravoGameplayState.Location.X);
+        Assert.Equal(24, bravoGameplayState.Location.Y);
+        Assert.True(bravoGameplayState.PlayerLoggedIn);
+        Assert.Equal(1, bravoGameplayState.AdditionalResources.R1);
+        Assert.Single(bravoGameplayState.Votes);
+        Assert.Empty(bravoGameplayState.CastVotes);
 
-        var districtSnapshot = snapshot.Districts.Single(d => d.Name == districtName);
-        Assert.Equal("Bravo", districtSnapshot.OwnerTeamName);
-        Assert.False(districtSnapshot.IsClaimable);
+        var districtGameplayState = gameplayState.Districts.Single(d => d.Name == districtName);
+        Assert.Equal("Bravo", districtGameplayState.OwnerTeamName);
+        Assert.False(districtGameplayState.IsClaimable);
     }
 
     [Fact]
     public async Task A_Fresh_Store_Should_Restore_The_Last_Persisted_Gameplay_State()
     {
         // Arrange
-        string districtName = await ApplyPersistedSnapshotMutations(includeExtraRoundAfterVote: true);
+        string districtName = await ApplyPersistedGameplayStateMutations(includeExtraRoundAfterVote: true);
 
         int expectedScore = (await _mapDataStore.GetTeamScore("Bravo")).Amount;
 
-        var restoredStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+        var restoredStore = new MapDataStore(new GameDataLoader(), _gameplayStateStore);
 
         // Act
         await restoredStore.InitializeAsync();
@@ -85,7 +85,7 @@ public class MapDataStoreTests : IAsyncLifetime
         Assert.Equal(expectedScore, restoredScore);
     }
 
-    private async Task<string> ApplyPersistedSnapshotMutations(bool includeExtraRoundAfterVote = false)
+    private async Task<string> ApplyPersistedGameplayStateMutations(bool includeExtraRoundAfterVote = false)
     {
         string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
 
@@ -114,10 +114,10 @@ public class MapDataStoreTests : IAsyncLifetime
         await _mapDataStore.NextRound();
         await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
         await _mapDataStore.TryLoginTeamMember("br");
-        var staleSnapshot = _snapshotStore.Read()!;
-        _snapshotStore.Write(staleSnapshot with { GameDefinitionHash = "stale" });
+        var staleGameplayState = _gameplayStateStore.Read()!;
+        _gameplayStateStore.Write(staleGameplayState with { GameDefinitionHash = "stale" });
 
-        var restoredStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+        var restoredStore = new MapDataStore(new GameDataLoader(), _gameplayStateStore);
 
         // Act
         await restoredStore.InitializeAsync();
@@ -152,16 +152,16 @@ public class MapDataStoreTests : IAsyncLifetime
         await _mapDataStore.ResetGame();
 
         // Assert
-        var resetSnapshot = _snapshotStore.Read();
+        var resetGameplayState = _gameplayStateStore.Read();
         var resetDistrict = await _mapDataStore.GetDistrictOwner(districtName);
         var resetBravo = await _mapDataStore.GetTeamByName("Bravo");
-        var restoredStore = new MapDataStore(new GameDataLoader(), _snapshotStore);
+        var restoredStore = new MapDataStore(new GameDataLoader(), _gameplayStateStore);
 
         Assert.Equal(initialDistrictCount, (await _mapDataStore.GetAllDistricts()).Count);
         Assert.Equal(initialTeamCount, (await _mapDataStore.GetTeams(includeDisabled: true)).Count);
         Assert.Equal(initialDistrictNames, (await _mapDataStore.GetAllDistricts()).Select(d => d.Name).ToList());
         Assert.Equal(initialTeamNames, (await _mapDataStore.GetTeams(includeDisabled: true)).Select(t => t.Name).ToList());
-        Assert.NotNull(resetSnapshot);
+        Assert.NotNull(resetGameplayState);
         Assert.Equal(DistrictOwner.Empty, resetDistrict);
         Assert.False(resetBravo.PlayerLoggedIn);
         Assert.False((await _mapDataStore.GetTeamByName("Charly")).PlayerLoggedIn);
@@ -169,7 +169,7 @@ public class MapDataStoreTests : IAsyncLifetime
         Assert.Empty(resetBravo.CastVotes);
         Assert.Equal(0, _mapDataStore.GetCurrentRoundData().Index);
 
-        // A restarted store should see the reset snapshot, not the stale match state.
+        // A restarted store should see the reset gameplay state, not the stale match state.
         await restoredStore.InitializeAsync();
 
         Assert.Equal(initialDistrictCount, (await restoredStore.GetAllDistricts()).Count);

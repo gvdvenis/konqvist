@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 
 namespace Konqvist.Data.Stores;
 
-public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore? stateSnapshotStore = null)
+public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gameplayStateStore = null)
 {
     private static readonly JsonSerializerOptions SnapshotSerializerOptions = new()
     {
@@ -31,7 +31,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
     private MapData _mapData = MapData.Empty;
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
-    private readonly IGameStateSnapshotStore _stateSnapshotStore = stateSnapshotStore ?? new InMemoryGameStateSnapshotStore();
+    private readonly IGameplayStateStore _gameplayStateStore = gameplayStateStore ?? new InMemoryGameplayStateStore();
     private string _gameDefinitionHash = string.Empty;
 
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
@@ -48,14 +48,14 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
 
         var roundsData = await mapDataLoader.GetRoundsData();
         _gameDefinitionHash = ComputeGameDefinitionHash(mapData, teamsData, roundsData);
-        var snapshot = _stateSnapshotStore.Read();
-        bool snapshotMatchesDefinition = snapshot?.GameDefinitionHash == _gameDefinitionHash;
-        _roundsDataStore = new RoundDataStore(roundsData, snapshotMatchesDefinition ? snapshot!.CurrentRoundNumber : 0);
+        var gameplayState = _gameplayStateStore.Read();
+        bool gameplayStateMatchesDefinition = gameplayState?.GameDefinitionHash == _gameDefinitionHash;
+        _roundsDataStore = new RoundDataStore(roundsData, gameplayStateMatchesDefinition ? gameplayState!.CurrentRoundNumber : 0);
 
-        if (snapshotMatchesDefinition && snapshot is not null)
-            ApplySnapshot(snapshot);
+        if (gameplayStateMatchesDefinition && gameplayState is not null)
+            ApplyGameplayState(gameplayState);
 
-        PersistSnapshot();
+        PersistGameplayState();
     }
 
     #endregion
@@ -269,7 +269,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             var newOwner = TeamByName(newOwnerName);
 
             district.AssignDistrictOwner(newOwner);
-            PersistSnapshot();
+            PersistGameplayState();
 
             return true;
         });
@@ -282,7 +282,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             if (TeamByName(teamName) is { } team)
             {
                 team.Location = coordinate;
-                PersistSnapshot();
+                PersistGameplayState();
             }
         });
     }
@@ -351,7 +351,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             if (teamData.PlayerLoggedIn) return false;
 
             teamData.PlayerLoggedIn = true;
-            PersistSnapshot();
+            PersistGameplayState();
             return true;
         });
     }
@@ -365,7 +365,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
         {
             var team = TeamByName(teamName);
             team.PlayerLoggedIn = false;
-            PersistSnapshot();
+            PersistGameplayState();
             return true;
         });
     }
@@ -384,7 +384,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
                 team.PlayerLoggedIn = false;
             }
 
-            PersistSnapshot();
+            PersistGameplayState();
             return loggedOutPlayerTeamNames;
         });
     }
@@ -399,7 +399,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             if (currentRound.Kind != RoundKind.Voting)
             {
                 var nextRound = _roundsDataStore.NextRound();
-                PersistSnapshot();
+                PersistGameplayState();
                 return nextRound;
             }
 
@@ -416,7 +416,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
             ClearClaimsInternal(null);
 
             var round = _roundsDataStore.NextRound();
-            PersistSnapshot();
+            PersistGameplayState();
             return round;
         });
     }
@@ -474,7 +474,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
     {
         await ProtectedInvoke(async () =>
         {
-            _stateSnapshotStore.Clear();
+            _gameplayStateStore.Clear();
             await InitializeAsync();
         });
     }
@@ -491,7 +491,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
         {
             var team = TeamByName(teamName);
             team.LogAdditionalResource(resourcesReplacement);
-            PersistSnapshot();
+            PersistGameplayState();
             return Task.CompletedTask;
         });
     }
@@ -511,7 +511,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
 
             receiver.LogReceivedVote(voter.Name, voteWeight, roundNumber);
             voter.LogCastVote(receiver.Name, roundNumber);
-            PersistSnapshot();
+            PersistGameplayState();
             return true;
         });
     }
@@ -538,21 +538,21 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
 
     #endregion
 
-    private void PersistSnapshot()
+    private void PersistGameplayState()
     {
-        _stateSnapshotStore.Write(CreateSnapshot());
+        _gameplayStateStore.Write(CreateGameplayState());
     }
 
-    private GameStateSnapshot CreateSnapshot()
+    private GameplayState CreateGameplayState()
     {
-        return new GameStateSnapshot(
+        return new GameplayState(
             _gameDefinitionHash,
             _roundsDataStore.CurrentRoundNumber,
             _mapData.Districts
-                .Select(d => new DistrictStateSnapshot(d.Name, d.Owner?.Name, d.IsClaimable))
+                .Select(d => new DistrictGameplayState(d.Name, d.Owner?.Name, d.IsClaimable))
                 .ToList(),
             _teamsData
-                .Select(team => new TeamStateSnapshot(
+                .Select(team => new TeamGameplayState(
                     team.Name,
                     new Coordinate(team.Location.X, team.Location.Y),
                     team.PlayerLoggedIn,
@@ -573,11 +573,11 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
     }
 
-    private void ApplySnapshot(GameStateSnapshot snapshot)
+    private void ApplyGameplayState(GameplayState gameplayState)
     {
         var teamsByName = _teamsData.ToDictionary(team => team.Name);
 
-        foreach (var teamSnapshot in snapshot.Teams)
+        foreach (var teamSnapshot in gameplayState.Teams)
         {
             if (!teamsByName.TryGetValue(teamSnapshot.Name, out var team))
                 continue;
@@ -591,7 +591,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameStateSnapshotStore?
                 teamSnapshot.CastVotes);
         }
 
-        foreach (var districtSnapshot in snapshot.Districts)
+        foreach (var districtSnapshot in gameplayState.Districts)
         {
             var district = _mapData.Districts.FirstOrDefault(d => d.Name == districtSnapshot.Name);
             if (district is null)

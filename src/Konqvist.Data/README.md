@@ -7,8 +7,8 @@ This project provides the core data models and data store logic for the Konqvist
 ```
 Konqvist.Data/
 ??? Contracts/           # Shared contracts and records (e.g., TeamResources, DistrictOwner)
-??? Models/              # Core data models (e.g., TeamData, MapData, ResourcesData, SnapshotData)
-??? Stores/              # Data store classes (e.g., MapDataStore, VotingDataStore, SnapshotDataStore, RoundDataStore)
+??? Models/              # Core data models (e.g., TeamData, MapData, ResourcesData, GameplayState)
+??? Stores/              # Data store classes (e.g., MapDataStore, VotingDataStore, GameplayStateStore, RoundDataStore)
 ??? MapDataHelper.cs     # Static helpers for loading map and team data from JSON
 ??? KmlToMapDataConverter.cs # (Optional) KML conversion utilities
 ??? Konqvist.Data.csproj # Project file
@@ -16,8 +16,8 @@ Konqvist.Data/
 
 ## Main Components
 
-- **Models**: Represent the main entities in the game (teams, maps, resources, rounds, snapshots, etc).
-- **Stores**: Manage the state and logic for different aspects of the game (map, voting, rounds, snapshots).
+- **Models**: Represent the main entities in the game (teams, maps, resources, rounds, gameplay state, etc).
+- **Stores**: Manage the state and logic for different aspects of the game (map, voting, rounds, gameplay state).
 - **Contracts**: Define shared records and interfaces for use across stores and models.
 
 ## Data Store Dependency Graph
@@ -30,16 +30,16 @@ graph TD
     MapDataStore -->|uses| TeamData
     MapDataStore -->|uses| RoundDataStore
     MapDataStore -->|uses| VotingDataStore
-    MapDataStore -->|uses| SnapshotDataStore
+    MapDataStore -->|uses| GameplayStateStore
     MapDataStore -->|uses| ResourcesData
     MapDataStore -->|uses| DistrictData
     MapDataStore -->|uses| TeamResources
     MapDataStore -->|uses| DistrictOwner
-    SnapshotDataStore -->|uses| SnapshotData
-    SnapshotDataStore -->|uses| TeamResources
-    SnapshotDataStore -->|uses| DistrictOwner
-    SnapshotDataStore -->|uses| RoundData
-    SnapshotDataStore -->|uses| VotingData (Votes, Voters)
+    GameplayStateStore -->|uses| GameplayState
+    GameplayStateStore -->|uses| TeamResources
+    GameplayStateStore -->|uses| DistrictOwner
+    GameplayStateStore -->|uses| RoundData
+    GameplayStateStore -->|uses| VotingData (Votes, Voters)
     VotingDataStore -->|uses| VotingData (Votes, Voters)
     VotingDataStore -->|uses| TeamData
     VotingDataStore -->|uses| RoundData
@@ -52,9 +52,9 @@ graph TD
 
 ## Key Flows
 
-- **MapDataStore** orchestrates the main game state, delegating to other stores for voting, rounds, and snapshots.
+- **MapDataStore** orchestrates the main game state, delegating to other stores for voting, rounds, and gameplay state persistence.
 - **VotingDataStore** manages voting state per round.
-- **SnapshotDataStore** stores round-by-round snapshots and calculates team scores (including voting bonuses).
+- **GameplayStateStore** stores round-by-round gameplay state and calculates team scores (including voting bonuses).
 - **TeamResources** encapsulates resource calculations for teams.
 
 ---

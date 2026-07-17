@@ -36,15 +36,7 @@ public class MapDataStoreTests : IAsyncLifetime
     public async Task Mutations_Should_Be_Captured_In_The_Persisted_Snapshot()
     {
         // Arrange
-        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
-
-        await _mapDataStore.NextRound();
-        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
-        await _mapDataStore.UpdateTeamPosition("Bravo", new Coordinate(12, 24));
-        await _mapDataStore.SetAdditionalTeamResource("Bravo", new ResourcesData { R1 = 1, R2 = 2, R3 = 3, R4 = 4 });
-        await _mapDataStore.TryLoginTeamMember("br");
-        await _mapDataStore.NextRound();
-        await _mapDataStore.CastVoteFor("Bravo", "Delta");
+        string districtName = await ApplyPersistedSnapshotMutations();
 
         // Act
         var snapshot = _snapshotStore.Read();
@@ -67,19 +59,10 @@ public class MapDataStoreTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_Fresh_Store_Should_Restore_The_Last_Persisted_Match_State()
+    public async Task A_Fresh_Store_Should_Restore_The_Last_Persisted_Gameplay_State()
     {
         // Arrange
-        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
-
-        await _mapDataStore.NextRound();
-        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
-        await _mapDataStore.UpdateTeamPosition("Bravo", new Coordinate(12, 24));
-        await _mapDataStore.SetAdditionalTeamResource("Bravo", new ResourcesData { R1 = 1, R2 = 2, R3 = 3, R4 = 4 });
-        await _mapDataStore.TryLoginTeamMember("br");
-        await _mapDataStore.NextRound();
-        await _mapDataStore.CastVoteFor("Bravo", "Delta");
-        await _mapDataStore.NextRound();
+        string districtName = await ApplyPersistedSnapshotMutations(includeExtraRoundAfterVote: true);
 
         int expectedScore = (await _mapDataStore.GetTeamScore("Bravo")).Amount;
 
@@ -100,6 +83,26 @@ public class MapDataStoreTests : IAsyncLifetime
         Assert.Single(restoredBravo.Votes);
         Assert.Empty(restoredBravo.CastVotes);
         Assert.Equal(expectedScore, restoredScore);
+    }
+
+    private async Task<string> ApplyPersistedSnapshotMutations(bool includeExtraRoundAfterVote = false)
+    {
+        string districtName = (await _mapDataStore.GetAllDistricts())[0].Name;
+
+        await _mapDataStore.NextRound();
+        await _mapDataStore.SetDistrictOwner(new DistrictOwner("Bravo", districtName));
+        await _mapDataStore.UpdateTeamPosition("Bravo", new Coordinate(12, 24));
+        await _mapDataStore.SetAdditionalTeamResource("Bravo", new ResourcesData { R1 = 1, R2 = 2, R3 = 3, R4 = 4 });
+        await _mapDataStore.TryLoginTeamMember("br");
+        await _mapDataStore.NextRound();
+        await _mapDataStore.CastVoteFor("Bravo", "Delta");
+
+        if (includeExtraRoundAfterVote)
+        {
+            await _mapDataStore.NextRound();
+        }
+
+        return districtName;
     }
 
     [Fact]

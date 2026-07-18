@@ -70,6 +70,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_041E14311D8F429F875814BD4FB0C564 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F28600FA6B3A4C78884B45E995F7A86A }}
 
+      - name: Start Azure Web App
+        run: |
+          RESOURCE_GROUP=$(az webapp list --query "[?name=='${{ env.AZURE_WEBAPP_NAME }}'].resourceGroup" -o tsv)
+          if [ -z "$RESOURCE_GROUP" ]; then
+            echo "::error::Could not find resource group for web app '${{ env.AZURE_WEBAPP_NAME }}'"
+            exit 1
+          fi
+          az webapp start --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group "$RESOURCE_GROUP"
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3

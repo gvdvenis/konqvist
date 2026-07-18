@@ -54,7 +54,7 @@ namespace Konqvist.Data.Infrastructure.Migrations
                         .HasDatabaseName("IX_GameplayStates_Slot_GameDefinitionId");
 
                     b.ToTable("GameplayStates", t =>
-                        t.HasCheckConstraint("CK_GameplayStates_Payload_IsJson", "[ISJSON]([Payload]) = 1"));
+                        t.HasCheckConstraint("CK_GameplayStates_Payload_IsJson", "ISJSON([Payload]) = 1"));
                 });
 #pragma warning restore 612, 618
         }

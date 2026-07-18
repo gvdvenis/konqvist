@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Konqvist.Web</RootNamespace>
     <ApplicationIcon>wwwroot\icons\favicon.ico</ApplicationIcon>
+    <UserSecretsId>c132157f-f418-486b-bd75-ccbc27da660e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

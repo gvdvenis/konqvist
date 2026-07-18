@@ -45,7 +45,7 @@ public class GameplayStateDbContext : DbContext
 
             entity.ToTable(t => t.HasCheckConstraint(
                 "CK_GameplayStates_Payload_IsJson",
-                "[ISJSON]([Payload]) = 1"));
+                "ISJSON([Payload]) = 1"));
         });
     }
 }

@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "graphmind": {
+      "args": [
+        "mcp"
+      ],
+      "command": "C:\\Users\\g.vd.venis\\.graphmind\\bin\\graphmind.exe",
+      "env": {
+        "PATH": "C:\\Users\\g.vd.venis\\.graphmind\\bin:/usr/local/bin:/usr/bin:/bin"
+      },
+      "type": "stdio"
+    }
+  }
+}

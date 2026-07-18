@@ -24,7 +24,7 @@ namespace Konqvist.Data.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_GameplayStates", x => x.Id);
-                    table.CheckConstraint("CK_GameplayStates_Payload_IsJson", "[ISJSON]([Payload]) = 1");
+                    table.CheckConstraint("CK_GameplayStates_Payload_IsJson", "ISJSON([Payload]) = 1");
                 });
 
             migrationBuilder.CreateIndex(

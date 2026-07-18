@@ -13,7 +13,7 @@ public interface IMapDataLoader
     public Task<List<RoundData>> GetRoundsData();
 }
 
-public class MapDataLoader: IMapDataLoader
+public class MapDataLoader : IMapDataLoader
 {
     private static readonly string DataFolder =
         Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)!, "Data");
@@ -64,13 +64,13 @@ public class MapDataLoader: IMapDataLoader
         [
             RoundData.WaitForStartRound(0, "Waiting for Game Start"),
             RoundData.RunningRound(1, "Running 1", nameof(ResourcesData.R1)),
-            RoundData.VoteRound(2, "Voting 1", nameof(ResourcesData.R1), "The winner of this voting round will get a free pass to enter the toilet tent before anyone waiting in line."),
+            RoundData.VoteRound(2, "Voting 1", nameof(ResourcesData.R1), "Dit groepje voert vanavond na het eten een bonte avondstukje op. All out!"),
             RoundData.RunningRound(3, "Running 2", nameof(ResourcesData.R4)),
-            RoundData.VoteRound(4, "Voting 2", nameof(ResourcesData.R4), "The winner of this voting round will have to scrub the toilets tonight"),
+            RoundData.VoteRound(4, "Voting 2", nameof(ResourcesData.R4), "Dit groepje krijg vanavond tijdens de maaltijd een gebakken ei!"),
             RoundData.RunningRound(5, "Running 3", nameof(ResourcesData.R2)),
-            RoundData.VoteRound(6, "Voting 3", nameof(ResourcesData.R2), "The winner of this voting round get's a candellight supper"),
+            RoundData.VoteRound(6, "Voting 3", nameof(ResourcesData.R2), "Dit groepje maakt morgen alle 3 de wc’s schoon, onder leiding van de hoofdleider."),
             RoundData.RunningRound(7, "Running 4", nameof(ResourcesData.R3)),
-            RoundData.VoteRound(8, "Voting 4", nameof(ResourcesData.R3), "The winner of this voting round have to orchestrate a vocal harmony choir with all those present at the meal tonightr"),
+            RoundData.VoteRound(8, "Voting 4", nameof(ResourcesData.R3), "Dit groepje schuift zijn terreincorvee af op een groepje naar keuze."),
             RoundData.GameOverRound(9, "Game Over")
         ]);
 }

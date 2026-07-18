@@ -1,4 +1,3 @@
-using Konqvist.Data;
 using Konqvist.Data.Contracts;
 using Konqvist.Data.Infrastructure;
 using Konqvist.Data.Models;
@@ -8,7 +7,6 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Konqvist.Data.Stores;
 
@@ -21,7 +19,6 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
         ReadCommentHandling = JsonCommentHandling.Skip,
         Converters = { new CoordinateConverter(), new CoordinateArrayConverter() }
     };
-
 
     // Singleton instance
 
@@ -46,7 +43,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
     public string GameDefinitionHash => _gameDefinitionHash;
 
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
-    
+
     #region Initializers
 
     public async Task InitializeAsync()
@@ -113,7 +110,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
                     : td.Location;
                 result.Add(td.CloneForRead(location));
             }
-            
+
             return result;
         });
 
@@ -188,9 +185,9 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
     public async Task<List<TeamScore>> GetAllTeamScores()
     {
         var teams = await GetTeams();
-        
+
         return await ProtectedInvoke(() => teams
-            .Select(team => new TeamScore(team.Name,  team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber)))
+            .Select(team => new TeamScore(team.Name, team.GetScoreTotalForRound(_roundsDataStore.CurrentRoundNumber)))
             .ToList()
         );
     }
@@ -274,7 +271,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
             var district = _mapData.Districts.FirstOrDefault(d => d.Name == districtName);
 
             // if the district is not found or is not claimable, we return false
-            if (district is null || district.IsClaimable == false) 
+            if (district is null || district.IsClaimable == false)
                 return false;
 
             var newOwner = TeamByName(newOwnerName);
@@ -346,7 +343,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
             : null;
     }
 
-    private TeamData TeamByName(string name) => _teamsData.FirstOrDefault(t => t.Name == name) 
+    private TeamData TeamByName(string name) => _teamsData.FirstOrDefault(t => t.Name == name)
         ?? TeamData.Empty;
 
     public async Task<bool> TryLoginTeamMember(
@@ -422,7 +419,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
 
             // additional resource scores are only assigned once during the voting round
             FlushAllTeamsAdditionalResources();
-            
+
             // reset all trigger circles 
             ClearClaimsInternal(null);
 
@@ -450,7 +447,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
         int maxVotesAmount = _teamsData
             .Max(td => td.GetTotalVotesAmount(roundNumber));
 
-        if (maxVotesAmount == 0 ) return;
+        if (maxVotesAmount == 0) return;
 
         // first get the team or teams that received the most votes
         var teamsWithMostVotes = _teamsData
@@ -458,8 +455,8 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
 
         // now determine the teams that voted for those winning teams
         var teamsThatVotedForWinner = teamsWithMostVotes
-            .SelectMany(tmv=> tmv.Votes
-                .Select(v=>TeamByName(v.Voter)))
+            .SelectMany(tmv => tmv.Votes
+                .Select(v => TeamByName(v.Voter)))
             .ToList();
 
         // next we divide the bonus of 150 points between teams that voted for the winner

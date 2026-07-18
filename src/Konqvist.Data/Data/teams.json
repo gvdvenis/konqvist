@@ -18,7 +18,8 @@
   },
   {
     "name": "Echo",
-    "color": "#a2130b" // red
+    "color": "#a2130b", // red
+    "isDisabled": true
   },
   {
     "name": "Foxtrot",

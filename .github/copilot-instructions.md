@@ -34,6 +34,7 @@ Local HTTPS on other devices requires an elevated terminal and `src\setup-local-
 
 ## Repository conventions
 
+- Communicate in plain, direct language. Avoid unnecessary jargon and technically bloated terminology; explain unfamiliar technical choices simply when they are needed.
 - Keep authoritative gameplay rules and mutations in `Konqvist.Data`; web map models/layers are projections of `*Data` models and refresh from the store after hub events.
 - When adding a synchronized action, update the complete SignalR contract: `IGameHubServer` for browser-to-server calls, `GameHubServer` for mutation/broadcast, `IGameHubClient` for server-to-browser notifications, and `GameHubClient`/`IBindableHubClient` for handler registration and component callbacks. Use `nameof(...)` for SignalR method names.
 - Components subscribe to `IBindableHubClient.On...` callbacks during initialization and marshal UI refreshes through `InvokeAsync(StateHasChanged)`.

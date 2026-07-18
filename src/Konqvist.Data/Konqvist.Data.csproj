@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Konqvist.Web" />
+    <InternalsVisibleTo Include="Konqvist.Data.Tests" />
   </ItemGroup>
 
 </Project>

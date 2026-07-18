@@ -1,8 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
 using Konqvist.Data.Models;
 using Konqvist.Data.Stores;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Konqvist.Data.Infrastructure;
 
@@ -37,15 +35,14 @@ internal sealed class LazyGameplayStateStore : IGameplayStateStore
 {
     private readonly IServiceProvider _services;
     private readonly string _slot;
-    private readonly Lazy<SqlGameplayStateStore> _realStore;
+    private readonly Lazy<(string gameDefinitionId, IServiceScopeFactory scopeFactory)> _init;
 
     /// <summary>
-    ///   Creates the wrapper. The <see cref="GameplayStateDbContext"/> is
-    ///   resolved lazily (not captured eagerly) so the wrapper itself does not
-    ///   trigger DbContext construction at DI-build time.
+    ///   Creates the wrapper. MapDataStore and the DbContext scope factory are
+    ///   resolved lazily so the wrapper itself does not trigger DbContext
+    ///   construction at DI-build time, and the scoped DbContext is never
+    ///   captured in this singleton — a fresh scope is created per operation.
     /// </summary>
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope",
-        Justification = "DbContext is owned by DI and disposed by the container; SqlGameplayStateStore does not own it.")]
     public LazyGameplayStateStore(
         IServiceProvider services,
         string slot)
@@ -54,25 +51,37 @@ internal sealed class LazyGameplayStateStore : IGameplayStateStore
         if (string.IsNullOrWhiteSpace(slot))
             throw new ArgumentException("Persistence slot must be configured.", nameof(slot));
         _slot = slot;
-        _realStore = new Lazy<SqlGameplayStateStore>(CreateRealStore, LazyThreadSafetyMode.ExecutionAndPublication);
+        _init = new Lazy<(string, IServiceScopeFactory)>(ResolveKey, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
-    public GameplayState? Read() => _realStore.Value.Read();
-
-    public void Write(GameplayState gameplayState) => _realStore.Value.Write(gameplayState);
-
-    public void Clear() => _realStore.Value.Clear();
-
-    private SqlGameplayStateStore CreateRealStore()
+    public GameplayState? Read()
     {
-        // Resolve MapDataStore from the root provider so the singleton is reused
-        // (this wrapper itself is a singleton). The DbContext is a scoped
-        // service; resolve it from the root scope — EF Core registers the
-        // context with a DI lifetime where resolving the singleton instance
-        // directly is supported, matching the rest of the app's startup
-        // pattern (e.g. the migration scope also resolves it this way).
-        var db = _services.GetRequiredService<GameplayStateDbContext>();
+        var (gameDefinitionId, scopeFactory) = _init.Value;
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GameplayStateDbContext>();
+        return new SqlGameplayStateStore(db, _slot, gameDefinitionId).Read();
+    }
+
+    public void Write(GameplayState gameplayState)
+    {
+        var (gameDefinitionId, scopeFactory) = _init.Value;
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GameplayStateDbContext>();
+        new SqlGameplayStateStore(db, _slot, gameDefinitionId).Write(gameplayState);
+    }
+
+    public void Clear()
+    {
+        var (gameDefinitionId, scopeFactory) = _init.Value;
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GameplayStateDbContext>();
+        new SqlGameplayStateStore(db, _slot, gameDefinitionId).Clear();
+    }
+
+    private (string gameDefinitionId, IServiceScopeFactory scopeFactory) ResolveKey()
+    {
         var map = _services.GetRequiredService<MapDataStore>();
+        var scopeFactory = _services.GetRequiredService<IServiceScopeFactory>();
 
         if (string.IsNullOrWhiteSpace(map.GameDefinitionHash))
         {
@@ -82,6 +91,6 @@ internal sealed class LazyGameplayStateStore : IGameplayStateStore
                 "has run before any gameplay-state store operation.");
         }
 
-        return new SqlGameplayStateStore(db, _slot, map.GameDefinitionHash);
+        return (map.GameDefinitionHash, scopeFactory);
     }
 }

@@ -485,6 +485,12 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
     {
         await ProtectedInvoke(async () =>
         {
+            // Clear the existing gameplay state so InitializeAsync starts fresh
+            // rather than restoring the prior state. The fresh state produced by
+            // InitializeAsync is then written through the buffered save path
+            // (spec #15: "reset follows the same buffered save path as other
+            // changes"). The Clear is a direct store operation that deletes the
+            // old row; the subsequent fresh-state write is buffered.
             _gameplayStateStore.Clear();
             await InitializeAsync();
         });

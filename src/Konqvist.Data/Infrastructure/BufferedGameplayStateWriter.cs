@@ -106,9 +106,7 @@ public class BufferedGameplayStateWriter
 
     /// <summary>
     ///   Graceful-shutdown path. Stops the timer, then attempts one final
-    ///   flush bounded by <paramref name="cancellationToken"/> (or the
-    ///   configured <see cref="GameplayStatePersistenceOptions.ShutdownFlushTimeout"/>
-    ///   of 5s when the token has no deadline).
+    ///   flush bounded by the spec's fixed 5-second timeout (#15).
     /// </summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
@@ -120,7 +118,7 @@ public class BufferedGameplayStateWriter
 
         try
         {
-            await FlushCoreAsync(_options.ShutdownFlushTimeout, cancellationToken).ConfigureAwait(false);
+            await FlushCoreAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

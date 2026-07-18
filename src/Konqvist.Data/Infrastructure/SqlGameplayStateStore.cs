@@ -39,9 +39,15 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
 
             return JsonSerializer.Deserialize<GameplayState>(row.Payload, GameplayStateJsonOptions.Instance);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Error reading gameplay state from database: {ex.Message}");
+            // Swallow and return null so restart falls back to a fresh game
+            // rather than crashing. Do not log the raw exception message: a
+            // SqlException may embed connection details that bypass the
+            // allowlisted-fields logging rule (spec #15). The startup
+            // availability check (CanConnectAsync/MigrateAsync) handles
+            // fail-fast for unreachable databases; this path is the runtime
+            // restore fallback.
             return null;
         }
     }

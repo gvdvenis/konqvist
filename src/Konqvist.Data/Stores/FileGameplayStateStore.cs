@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Konqvist.Data;
@@ -30,8 +31,28 @@ public sealed class FileGameplayStateStore : IGameplayStateStore
         if (!File.Exists(_filePath))
             return null;
 
-        string json = File.ReadAllText(_filePath);
-        return JsonSerializer.Deserialize<GameplayState>(json, Options);
+        string json;
+        try
+        {
+            json = File.ReadAllText(_filePath);
+        }
+        catch (IOException ex)
+        {
+            // Log the exception or handle it as appropriate
+            Console.WriteLine($"Error reading game state file: {ex.Message}");
+            return null; 
+        }
+        
+        try
+        {
+            return JsonSerializer.Deserialize<GameplayState>(json, Options);
+        }
+        catch (JsonException ex)
+        {
+            // Log the exception or handle it as appropriate
+            Console.WriteLine($"Error deserializing game state: {ex.Message}");
+            return null;
+        }
     }
 
     public void Write(GameplayState gameplayState)
@@ -41,7 +62,34 @@ public sealed class FileGameplayStateStore : IGameplayStateStore
             Directory.CreateDirectory(directory);
 
         string json = JsonSerializer.Serialize(gameplayState, Options);
-        File.WriteAllText(_filePath, json);
+        
+        // Use a temporary file for atomic writes
+        string tempFilePath = _filePath + ".tmp";
+        try
+        {
+            File.WriteAllText(tempFilePath, json);
+            File.Move(tempFilePath, _filePath, true); // Overwrite the original file
+        }
+        catch (IOException ex)
+        {
+            // Log the exception or handle it as appropriate
+            Console.WriteLine($"Error writing game state to file: {ex.Message}");
+            // Clean up the temporary file if it exists
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
+        }
+        catch (JsonException ex)
+        {
+            // Log the exception or handle it as appropriate
+            Console.WriteLine($"Error serializing game state: {ex.Message}");
+             // Clean up the temporary file if it exists
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
+        }
     }
 
     public void Clear()

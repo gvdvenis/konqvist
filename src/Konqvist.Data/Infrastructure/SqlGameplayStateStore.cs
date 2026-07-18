@@ -32,9 +32,7 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
     {
         try
         {
-            var row = _db.GameplayStates
-                .AsNoTracking()
-                .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
+            var row = FindRow(asNoTracking: true);
 
             if (row is null)
                 return null;
@@ -53,8 +51,7 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
         string payload = JsonSerializer.Serialize(gameplayState, GameplayStateJsonOptions.Instance);
         var nowUtc = DateTime.UtcNow;
 
-        var existing = _db.GameplayStates
-            .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
+        var existing = FindRow(asNoTracking: false);
 
         if (existing is not null)
         {
@@ -80,8 +77,7 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
 
     public void Clear()
     {
-        var existing = _db.GameplayStates
-            .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
+        var existing = FindRow(asNoTracking: false);
 
         if (existing is not null)
         {
@@ -90,4 +86,11 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
             _db.SaveChanges();
         }
     }
+
+    private GameplayStateEntity? FindRow(bool asNoTracking) =>
+        asNoTracking
+            ? _db.GameplayStates.AsNoTracking()
+                .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId)
+            : _db.GameplayStates
+                .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
 }

@@ -10,6 +10,12 @@ namespace Konqvist.Data.Infrastructure;
 /// </summary>
 public sealed class GameplayStatePersistenceOptions
 {
+    /// <summary>Minimum allowed save interval.</summary>
+    public static readonly TimeSpan MinInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>Maximum allowed save interval.</summary>
+    public static readonly TimeSpan MaxInterval = TimeSpan.FromSeconds(60);
+
     private TimeSpan _saveInterval = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -40,10 +46,8 @@ public sealed class GameplayStatePersistenceOptions
     /// </summary>
     public TimeSpan ClampInterval()
     {
-        var min = TimeSpan.FromSeconds(1);
-        var max = TimeSpan.FromSeconds(60);
-        if (_saveInterval < min) return min;
-        if (_saveInterval > max) return max;
+        if (_saveInterval < MinInterval) return MinInterval;
+        if (_saveInterval > MaxInterval) return MaxInterval;
         return _saveInterval;
     }
 
@@ -53,7 +57,7 @@ public sealed class GameplayStatePersistenceOptions
     /// </summary>
     public bool IsValid(out string error)
     {
-        if (_saveInterval < TimeSpan.FromSeconds(1) || _saveInterval > TimeSpan.FromSeconds(60))
+        if (_saveInterval < MinInterval || _saveInterval > MaxInterval)
         {
             error = $"GameplayStatePersistence:SaveInterval must be between 1s and 60s (inclusive), but was '{_saveInterval}'.";
             return false;

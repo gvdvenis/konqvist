@@ -22,9 +22,9 @@ namespace Konqvist.Data.Infrastructure;
 ///     the heavy work happens outside the caller's lock by construction.
 ///   </para>
 ///   <para>
-///     Logging seam: <see cref="OnWriteSucceeded"/> / <see cref="OnWriteFailed"/>
-///     are empty <see langword="protected virtual"/> hooks so #21 can add
-///     transition-based logging without rewriting the writer.
+///     Logging is handled by an injected <see cref="IGameplayStateWriteLogger"/>
+///     that emits transition-based logs (first failure / recovery) and
+///     suppresses repeats (#21).
 ///   </para>
 /// </summary>
 public class BufferedGameplayStateWriter
@@ -234,14 +234,14 @@ public class BufferedGameplayStateWriter
         try
         {
             _store.Write(pendingState);
-            OnWriteSucceeded();
+            _writeLogger.LogSuccess();
             return true;
         }
         catch (Exception ex)
         {
-            // Surface the failure through the logging seam (#21 transition-based
-            // logging). Return false so DrainPendingAsync retries on the next tick.
-            OnWriteFailed(ex);
+            // Surface the failure through the transition-based logging seam (#21).
+            // Return false so DrainPendingAsync retries on the next tick.
+            _writeLogger.LogFailure(ex);
             return false;
         }
     }
@@ -287,25 +287,5 @@ public class BufferedGameplayStateWriter
         {
             _writerGate.Release();
         }
-    }
-
-    /// <summary>
-    ///   Logging / telemetry seam for #21. Default: forwards to the injected
-    ///   <see cref="IGameplayStateWriteLogger"/>, which emits transition-based
-    ///   logs (first failure / recovery) and suppresses repeats.
-    /// </summary>
-    protected virtual void OnWriteSucceeded()
-    {
-        _writeLogger.LogSuccess();
-    }
-
-    /// <summary>
-    ///   Logging / telemetry seam for #21. Default: forwards to the injected
-    ///   <see cref="IGameplayStateWriteLogger"/>, which emits transition-based
-    ///   logs (first failure / recovery) and suppresses repeats.
-    /// </summary>
-    protected virtual void OnWriteFailed(Exception ex)
-    {
-        _writeLogger.LogFailure(ex);
     }
 }

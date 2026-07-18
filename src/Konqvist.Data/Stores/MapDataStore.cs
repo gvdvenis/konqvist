@@ -34,6 +34,15 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
     private readonly IGameplayStateStore _gameplayStateStore = gameplayStateStore ?? new InMemoryGameplayStateStore();
     private string _gameDefinitionHash = string.Empty;
 
+    /// <summary>
+    ///   Read-only accessor for the computed game-definition hash. Used by the
+    ///   SQL gameplay-state store (#19) to scope persistence to the composite
+    ///   key (Slot, GameDefinitionId). The hash is computed during
+    ///   <see cref="InitializeAsync"/> from the loaded map/teams/rounds
+    ///   definition and does not change for the application's lifetime.
+    /// </summary>
+    public string GameDefinitionHash => _gameDefinitionHash;
+
     public bool TestmodeEnabled { get; set; } = Debugger.IsAttached;
     
     #region Initializers

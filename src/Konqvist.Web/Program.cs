@@ -3,6 +3,7 @@ using Konqvist.Data.Infrastructure;
 using Konqvist.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Konqvist.Web.Core;
 
@@ -43,7 +44,21 @@ builder.Services.AddScoped<GameModeRoutingService>();
 builder.Services.AddScoped<IThemeService, ThemeService>();
 builder.Services.AddSingleton<SessionKeyProvider>();
 builder.Services.AddSingleton<IMapDataLoader, MapDataLoader>();
-builder.Services.AddSingleton<IGameplayStateStore, FileGameplayStateStore>();
+builder.Services.AddSingleton<IGameplayStateStore>(sp =>
+{
+    // Register the SQL-backed gameplay-state store as a lazily-initialized
+    // adapter. SqlGameplayStateStore needs the GameDefinitionId, which comes
+    // from MapDataStore.GameDefinitionHash; but MapDataStore's constructor
+    // takes IGameplayStateStore?, so resolving the SQL store eagerly to satisfy
+    // MapDataStore would form a DI cycle. LazyGameplayStateStore defers the
+    // resolution of MapDataStore (and the DbContext) to the first
+    // Read/Write/Clear call, by which time the DI graph is fully built and
+    // MapDataStore.InitializeAsync() has computed the hash. Persistence is then
+    // scoped to (Slot, GameDefinitionId): Slot from config, GameDefinitionId
+    // from MapDataStore.GameDefinitionHash. (#19)
+    var slot = sp.GetRequiredService<IOptions<GameplayStatePersistenceOptions>>().Value.Slot;
+    return new LazyGameplayStateStore(sp, slot);
+});
 builder.Services.AddSingleton<MapDataStore>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddFluentUIComponents();

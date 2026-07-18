@@ -20,4 +20,8 @@
     <PackageReference Include="OpenLayers.Blazor" Version="2.4.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Konqvist.Web" />
+  </ItemGroup>
+
 </Project>

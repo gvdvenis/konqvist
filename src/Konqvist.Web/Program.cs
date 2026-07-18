@@ -73,6 +73,20 @@ builder.Services.AddSingleton<IGameplayStateStore>(sp =>
     return new LazyGameplayStateStore(sp, slot);
 });
 builder.Services.AddSingleton<MapDataStore>();
+
+// Buffered, coalesced gameplay-state writer (#18). Wraps the
+// IGameplayStateStore and coalesces burst mutations into at most one write
+// per configured interval. Registered as a singleton so MapDataStore can
+// route PersistGameplayState through ScheduleSave.
+builder.Services.AddSingleton<BufferedGameplayStateWriter>(sp =>
+{
+    var store = sp.GetRequiredService<IGameplayStateStore>();
+    var options = sp.GetRequiredService<IOptions<GameplayStatePersistenceOptions>>();
+    var logger = sp.GetRequiredService<ILogger<BufferedGameplayStateWriter>>();
+    var writeLogger = sp.GetRequiredService<IGameplayStateWriteLogger>();
+    return new BufferedGameplayStateWriter(store, options, logger, writeLogger: writeLogger);
+});
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddFluentUIComponents();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -178,5 +192,14 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapHub<GameHubServer>(GameHubServer.HubUrl);
+
+// Graceful shutdown: flush any pending buffered gameplay state before the
+// host stops, bounded by the configured 5-second shutdown flush timeout (#18/#15).
+var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+var bufferedWriter = app.Services.GetRequiredService<BufferedGameplayStateWriter>();
+lifetime.ApplicationStopping.Register(() =>
+{
+    bufferedWriter.ShutdownAsync(CancellationToken.None).GetAwaiter().GetResult();
+});
 
 app.Run();

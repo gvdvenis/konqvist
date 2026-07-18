@@ -1,5 +1,6 @@
 using Konqvist.Data;
 using Konqvist.Data.Contracts;
+using Konqvist.Data.Infrastructure;
 using Konqvist.Data.Models;
 using OpenLayers.Blazor;
 using System.Collections.Concurrent;
@@ -11,7 +12,7 @@ using System.Text.Json.Serialization;
 
 namespace Konqvist.Data.Stores;
 
-public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gameplayStateStore = null)
+public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gameplayStateStore = null, BufferedGameplayStateWriter? bufferedWriter = null)
 {
     private static readonly JsonSerializerOptions SnapshotSerializerOptions = new()
     {
@@ -32,6 +33,7 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
     private ConcurrentBag<TeamData> _teamsData = [];
     private RoundDataStore _roundsDataStore = RoundDataStore.Empty;
     private readonly IGameplayStateStore _gameplayStateStore = gameplayStateStore ?? new InMemoryGameplayStateStore();
+    private readonly BufferedGameplayStateWriter? _bufferedWriter = bufferedWriter;
     private string _gameDefinitionHash = string.Empty;
 
     /// <summary>
@@ -549,7 +551,11 @@ public class MapDataStore(IMapDataLoader mapDataLoader, IGameplayStateStore? gam
 
     private void PersistGameplayState()
     {
-        _gameplayStateStore.Write(CreateGameplayState());
+        var state = CreateGameplayState();
+        if (_bufferedWriter is not null)
+            _bufferedWriter.ScheduleSave(state);
+        else
+            _gameplayStateStore.Write(state);
     }
 
     private GameplayState CreateGameplayState()

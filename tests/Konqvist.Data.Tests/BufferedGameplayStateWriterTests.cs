@@ -24,6 +24,7 @@ internal sealed class FakeGameplayStateStore : IGameplayStateStore
     private TimeSpan _writeDelay = TimeSpan.Zero;
     private Exception? _writeException;
     private GameplayState? _current;
+    private int _writeAttempts;
 
     public IReadOnlyList<GameplayState> Writes
     {
@@ -42,6 +43,12 @@ internal sealed class FakeGameplayStateStore : IGameplayStateStore
             return _writes.Count;
         }
     }
+
+    /// <summary>
+    ///   Total number of Write calls attempted (including failed ones), for
+    ///   verifying retry behavior.
+    /// </summary>
+    public int WriteAttempts => Volatile.Read(ref _writeAttempts);
 
     public GameplayState? LastWritten => _current;
 
@@ -76,6 +83,8 @@ internal sealed class FakeGameplayStateStore : IGameplayStateStore
 
     public void Write(GameplayState gameplayState)
     {
+        Interlocked.Increment(ref _writeAttempts);
+
         // Simulate a slow store: wait for the gate (if blocked) then sleep.
         _writeGate.Wait();
         if (_writeDelay > TimeSpan.Zero)
@@ -303,30 +312,30 @@ public class BufferedGameplayStateWriterTests : IAsyncLifetime
     ///   </para>
     /// </summary>
     [Fact]
-    public async Task Write_Failure_Loses_Pending_State_No_Auto_Retry_GAP()
+    public async Task Write_Failure_Should_Retry_On_Next_Interval()
     {
-        // Arrange: a store that always fails writes.
+        // Arrange: a store that fails the first two writes, then succeeds.
         var store = new FakeGameplayStateStore();
-        store.FailNextWrites(int.MaxValue);
+        store.FailNextWrites(2);
         _writer = CreateWriter(store);
 
-        // Act
-        _writer.ScheduleSave(MakeState("will-be-lost", round: 1));
+        // Act: schedule a state. The first write attempt fails (attempt #1).
+        _writer.ScheduleSave(MakeState("pending", round: 1));
 
-        // Wait well past the save interval + tick.
-        await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(200));
+        // Wait for the first interval (first attempt fails) plus a buffer.
+        await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(150));
+        Assert.True(store.WriteAttempts >= 1, "First write attempt should have occurred.");
 
-        // Assert (CURRENT behavior): no successful write landed; the snapshot was
-        // dropped on failure and is NOT retried by subsequent ticks.
-        Assert.Empty(store.Writes);
-        Assert.Null(store.LastWritten);
+        // Wait for a second interval (retry attempt #2, also fails).
+        await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(150));
+        Assert.True(store.WriteAttempts >= 2, "Retry write attempt should have occurred.");
 
-        // Re-scheduling recovers: the caller must re-arm the pending state.
-        store.FailNextWrites(0); // store is healthy again
-        _writer.ScheduleSave(MakeState("recovered", round: 2));
-        await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(200));
+        // Wait for a third interval (retry attempt #3, now succeeds).
+        await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(150));
 
-        Assert.Equal("recovered", store.LastWritten?.GameDefinitionHash);
+        // Assert: the writer retried after failures and eventually wrote the state.
+        Assert.True(store.WriteAttempts >= 3, "Third retry write attempt should have occurred.");
+        Assert.Equal("pending", store.LastWritten?.GameDefinitionHash);
     }
 
     /// <summary>
@@ -353,7 +362,8 @@ public class BufferedGameplayStateWriterTests : IAsyncLifetime
         // Assert: the failure was forwarded to the transition logger (ERROR logged).
         Assert.Contains(capture.Entries, e => e.Level == LogLevel.Error);
 
-        // The failed snapshot was lost (documented gap); re-schedule to recover.
+        // The failed write is retried on the next interval; after the store
+        // recovers, the retry succeeds and recovery is logged.
         _writer.ScheduleSave(MakeState("recovered", round: 2));
         await Task.Delay(EffectiveInterval + TimeSpan.FromMilliseconds(150));
 

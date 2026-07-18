@@ -67,7 +67,7 @@ public class BufferedGameplayStateWriter
 
     /// <summary>
     ///   Buffered entry point for gameplay mutations. Captures the latest
-    ///   <paramref name="state"/> as the single pending snapshot and arms the
+    ///   <paramref name="state"/> as the single pending gameplay state and arms the
     ///   delayed-save timer exactly once per cycle. Does not block on the
     ///   store or on any gameplay-domain lock.
     /// </summary>
@@ -76,7 +76,7 @@ public class BufferedGameplayStateWriter
         if (state is null) throw new ArgumentNullException(nameof(state));
         if (Interlocked.Exchange(ref _disposed, _disposed) != 0) return;
 
-        // Replace the pending snapshot atomically. Only one slot exists; the
+        // Replace the pending gameplay state atomically. Only one slot exists; the
         // latest mutation always wins and earlier pending states are dropped.
         Interlocked.Exchange(ref _pendingState, state);
         Interlocked.Exchange(ref _dirty, 1);
@@ -95,7 +95,7 @@ public class BufferedGameplayStateWriter
     /// <summary>
     ///   Attempts one final flush of any pending state, waiting up to
     ///   <paramref name="timeout"/> for the in-flight write (if any) to finish
-    ///   and the pending snapshot to be written. Safe to call from graceful
+    ///   and the pending gameplay state to be written. Safe to call from graceful
     ///   shutdown; never hangs the host beyond <paramref name="timeout"/>.
     /// </summary>
     public Task FlushAsync(TimeSpan timeout)
@@ -118,17 +118,9 @@ public class BufferedGameplayStateWriter
         _timer = null;
         timer?.Dispose();
 
-        TimeSpan timeout = _options.ShutdownFlushTimeout;
-        if (cancellationToken.CanBeCanceled)
-        {
-            // Use the token's remaining time as the upper bound if available,
-            // otherwise fall back to the configured shutdown flush timeout.
-            timeout = _options.ShutdownFlushTimeout;
-        }
-
         try
         {
-            await FlushCoreAsync(timeout, cancellationToken).ConfigureAwait(false);
+            await FlushCoreAsync(_options.ShutdownFlushTimeout, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -181,63 +173,82 @@ public class BufferedGameplayStateWriter
 
     private async Task DrainPendingAsync(CancellationToken cancellationToken)
     {
-        // Loop in case a mutation arrives during an in-flight write: that
-        // mutation re-sets the dirty signal, and we loop to flush it. Each
-        // iteration waits the full interval before the next write by yielding
-        // (the timer model) — here we simply write the latest snapshot once
-        // per tick; subsequent ticks handle further mutations.
-        while (Interlocked.CompareExchange(ref _dirty, 0, 1) == 1)
+        // Take the latest pending state. We do NOT clear _dirty yet: clearing
+        // only after a successful write is what lets us retry on failure.
+        // If there is no pending state, there is nothing to do this tick.
+        GameplayState? pending = Interlocked.Exchange(ref _pendingState, null);
+        if (pending is null)
+            return;
+
+        // Serialize writes through the single-writer gate. We do NOT hold any
+        // gameplay-domain lock here; the pending state is an immutable record
+        // copy, so serialization + DB I/O happen entirely outside the caller's
+        // lock.
+        await _writerGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            // Take the latest pending snapshot and clear the slot. Reads of
-            // _pendingState are only ever racing with ScheduleSave's atomic
-            // Exchange, which is fine: we always pick up whichever snapshot
-            // is current at this instant.
-            GameplayState? snapshot = Interlocked.Exchange(ref _pendingState, null);
-            if (snapshot is null)
+            bool succeeded = WriteToStore(pending);
+
+            if (!succeeded)
             {
-                // Dirty was set but state was cleared concurrently; nothing to do.
+                // Write failed: restore the pending state and re-arm the timer
+                // so the next interval retries it (spec #15: "keep retrying the
+                // latest state on the configured interval"). Leave _dirty set.
+                Interlocked.Exchange(ref _pendingState, pending);
+                ReArmTimerForRetry();
                 return;
             }
+        }
+        finally
+        {
+            _writerGate.Release();
+        }
 
-            // Serialize writes through the single-writer gate. We do NOT hold
-            // any gameplay-domain lock here; the snapshot is an immutable record
-            // copy, so serialization + DB I/O happen entirely outside the
-            // caller's lock.
-            await _writerGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                WriteToStore(snapshot);
-            }
-            finally
-            {
-                _writerGate.Release();
-            }
+        // Write succeeded. Clear the dirty signal. If a mutation arrived
+        // during the write, ScheduleSave already set _dirty=1 and placed a new
+        // state in _pendingState; the CompareExchange below won't clear it in
+        // that case. We re-arm the timer if there is still pending work so the
+        // next interval flushes it — honoring "after a slow write, wait a full
+        // interval before the next write" (no immediate re-loop).
+        Interlocked.CompareExchange(ref _dirty, 0, 1);
 
-            // If a mutation arrived during the write, _dirty is 1 again and the
-            // loop continues to write it. If not, we exit. This naturally keeps
-            // at most one pending state between writes (the loop re-reads the
-            // single slot).
+        if (Volatile.Read(ref _pendingState) is not null)
+        {
+            ReArmTimerForRetry();
         }
     }
 
-    private void WriteToStore(GameplayState snapshot)
+    /// <summary>
+    ///   Re-arms the one-shot timer for the next interval so a failed or
+    ///   still-dirty write is retried after a full interval, not immediately.
+    /// </summary>
+    private void ReArmTimerForRetry()
+    {
+        // Reset the armed signal so ScheduleSave/StartTimer can re-arm, then arm.
+        Interlocked.Exchange(ref _timerScheduled, 1);
+        StartTimer();
+    }
+
+    private bool WriteToStore(GameplayState pendingState)
     {
         try
         {
-            _store.Write(snapshot);
+            _store.Write(pendingState);
             OnWriteSucceeded();
+            return true;
         }
         catch (Exception ex)
         {
-            // Surface anything that escaped the wrapped store through the
-            // logging seam (#21 transition-based logging).
+            // Surface the failure through the logging seam (#21 transition-based
+            // logging). Return false so DrainPendingAsync retries on the next tick.
             OnWriteFailed(ex);
+            return false;
         }
     }
 
     private async Task FlushCoreAsync(TimeSpan timeout, CancellationToken cancellationToken)
     {
-        // If no snapshot is pending, there is nothing to flush. If a write is
+        // If no pending state exists, there is nothing to flush. If a write is
         // currently in flight (dirty bit cleared but writer gate held), we still
         // wait for the gate below to honour the "at most one write at a time"
         // contract and ensure the in-flight write completes within the timeout.
@@ -258,11 +269,11 @@ public class BufferedGameplayStateWriter
             return;
         }
 
-        // Take the latest pending snapshot.
-        GameplayState? snapshot = Interlocked.Exchange(ref _pendingState, null);
+        // Take the latest pending gameplay state.
+        GameplayState? pendingState = Interlocked.Exchange(ref _pendingState, null);
         Interlocked.Exchange(ref _dirty, 0);
 
-        if (snapshot is null) return;
+        if (pendingState is null) return;
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(timeout);
@@ -270,7 +281,7 @@ public class BufferedGameplayStateWriter
         await _writerGate.WaitAsync(cts.Token).ConfigureAwait(false);
         try
         {
-            WriteToStore(snapshot);
+            WriteToStore(pendingState);
         }
         finally
         {

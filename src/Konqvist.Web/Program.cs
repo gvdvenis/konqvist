@@ -1,10 +1,34 @@
 using Konqvist.Data;
+using Konqvist.Data.Infrastructure;
 using Konqvist.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Konqvist.Web.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- Gameplay state persistence (Azure SQL) configuration ---
+// Required connection string for the GameplayStateDatabase. Set via
+// user-secrets or environment variable; never commit credentials.
+var gameplayStateConnectionString = builder.Configuration.GetConnectionString("GameplayStateDatabase");
+if (string.IsNullOrWhiteSpace(gameplayStateConnectionString))
+{
+    throw new InvalidOperationException(
+        "Required connection string 'ConnectionStrings:GameplayStateDatabase' is missing or empty. " +
+        "Configure it via user-secrets (e.g. 'dotnet user-secrets set ConnectionStrings:GameplayStateDatabase \"...\"') " +
+        "or the GameplayStateDatabase environment variable. Never commit credentials to the repository.");
+}
+
+// EF Core DbContext for the Azure SQL gameplay-state persistence layer.
+builder.Services.AddDbContext<GameplayStateDbContext>(
+    options => options.UseSqlServer(gameplayStateConnectionString));
+
+// Bind and validate gameplay-state persistence options (SaveInterval, Slot).
+builder.Services
+    .Configure<GameplayStatePersistenceOptions>(
+        builder.Configuration.GetSection("GameplayStatePersistence"));
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -44,6 +68,59 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.AddLocalDevCertificate(7040);
 
 var app = builder.Build();
+
+// --- Validate gameplay-state persistence options at startup (fail-fast) ---
+var persistenceOptions = app.Services
+    .GetRequiredService<Microsoft.Extensions.Options.IOptions<GameplayStatePersistenceOptions>>()
+    .Value;
+if (!persistenceOptions.IsValid(out var persistenceOptionsError))
+{
+    throw new InvalidOperationException(persistenceOptionsError);
+}
+
+// --- Apply EF Core migrations and verify database availability at startup ---
+using (var scope = app.Services.CreateScope())
+{
+    var dbLogger = scope.ServiceProvider
+        .GetRequiredService<ILogger<GameplayStateDbContext>>();
+    var context = scope.ServiceProvider
+        .GetRequiredService<GameplayStateDbContext>();
+
+    try
+    {
+        if (!await context.Database.CanConnectAsync())
+        {
+            throw new InvalidOperationException(
+                "Unable to connect to the GameplayStateDatabase. Check the " +
+                "'ConnectionStrings:GameplayStateDatabase' configuration, network " +
+                "access, and that the Azure SQL database exists and is reachable.");
+        }
+    }
+    catch (Exception ex) when (ex is not InvalidOperationException)
+    {
+        throw new InvalidOperationException(
+            "Failed to reach the GameplayStateDatabase during startup availability " +
+            "check. See the inner exception for details.", ex);
+    }
+
+    try
+    {
+        dbLogger.LogInformation(
+            "Applying EF Core migrations for GameplayStateDbContext...");
+        await context.Database.MigrateAsync();
+        dbLogger.LogInformation(
+            "EF Core migrations for GameplayStateDbContext applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        dbLogger.LogError(ex,
+            "Failed to apply EF Core migrations for GameplayStateDbContext at startup.");
+        throw new InvalidOperationException(
+            "Failed to apply EF Core migrations for the GameplayStateDatabase at " +
+            "startup. The application will not start until migrations can be applied. " +
+            "See the inner exception for details.", ex);
+    }
+}
 
 // Initialize the main application datastore
 var mapDataSource = app.Services.GetRequiredService<MapDataStore>();

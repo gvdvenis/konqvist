@@ -34,6 +34,7 @@ public class BufferedGameplayStateWriter
     private readonly GameplayStatePersistenceOptions _options;
     private readonly ILogger<BufferedGameplayStateWriter> _logger;
     private readonly TimeProvider _timeProvider;
+    private readonly IGameplayStateWriteLogger _writeLogger;
 
     // ---- Pending-state slot (touched under Interlocked / lock) -----------------
     private GameplayState? _pendingState;
@@ -52,12 +53,14 @@ public class BufferedGameplayStateWriter
         IGameplayStateStore store,
         IOptions<GameplayStatePersistenceOptions> options,
         ILogger<BufferedGameplayStateWriter> logger,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IGameplayStateWriteLogger? writeLogger = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _writeLogger = writeLogger ?? NullGameplayStateWriteLogger.Instance;
 
         _saveInterval = _options.ClampInterval();
     }
@@ -226,9 +229,8 @@ public class BufferedGameplayStateWriter
         }
         catch (Exception ex)
         {
-            // The wrapped SqlGameplayStateStore already swallows DB errors, but
-            // surface anything that escaped it through the logging seam.
-            _logger.LogError(ex, "Gameplay-state store write failed.");
+            // Surface anything that escaped the wrapped store through the
+            // logging seam (#21 transition-based logging).
             OnWriteFailed(ex);
         }
     }
@@ -277,20 +279,22 @@ public class BufferedGameplayStateWriter
     }
 
     /// <summary>
-    ///   Logging / telemetry seam for #21. Override (or hook via an injected
-    ///   ILogger subclass) to emit transition-based logging. Default: no-op.
+    ///   Logging / telemetry seam for #21. Default: forwards to the injected
+    ///   <see cref="IGameplayStateWriteLogger"/>, which emits transition-based
+    ///   logs (first failure / recovery) and suppresses repeats.
     /// </summary>
     protected virtual void OnWriteSucceeded()
     {
-        _logger.LogTrace("Gameplay state write succeeded.");
+        _writeLogger.LogSuccess();
     }
 
     /// <summary>
-    ///   Logging / telemetry seam for #21. Override (or hook via an injected
-    ///   ILogger subclass) to emit transition-based logging on failure. Default: no-op.
+    ///   Logging / telemetry seam for #21. Default: forwards to the injected
+    ///   <see cref="IGameplayStateWriteLogger"/>, which emits transition-based
+    ///   logs (first failure / recovery) and suppresses repeats.
     /// </summary>
     protected virtual void OnWriteFailed(Exception ex)
     {
-        _logger.LogTrace(ex, "Gameplay state write failed.");
+        _writeLogger.LogFailure(ex);
     }
 }

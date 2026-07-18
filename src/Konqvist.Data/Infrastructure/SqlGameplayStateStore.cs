@@ -53,51 +53,41 @@ public sealed class SqlGameplayStateStore : IGameplayStateStore
         string payload = JsonSerializer.Serialize(gameplayState, GameplayStateJsonOptions.Instance);
         var nowUtc = DateTime.UtcNow;
 
-        try
-        {
-            var existing = _db.GameplayStates
-                .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
+        var existing = _db.GameplayStates
+            .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
 
-            if (existing is not null)
-            {
-                existing.Payload = payload;
-                existing.UpdatedAtUtc = nowUtc;
-            }
-            else
-            {
-                _db.GameplayStates.Add(new GameplayStateEntity
-                {
-                    Slot = _slot,
-                    GameDefinitionId = _gameDefinitionId,
-                    Payload = payload,
-                    UpdatedAtUtc = nowUtc
-                });
-            }
-
-            _db.SaveChanges();
-        }
-        catch (Exception ex)
+        if (existing is not null)
         {
-            Console.WriteLine($"Error writing gameplay state to database: {ex.Message}");
+            existing.Payload = payload;
+            existing.UpdatedAtUtc = nowUtc;
         }
+        else
+        {
+            _db.GameplayStates.Add(new GameplayStateEntity
+            {
+                Slot = _slot,
+                GameDefinitionId = _gameDefinitionId,
+                Payload = payload,
+                UpdatedAtUtc = nowUtc
+            });
+        }
+
+        // Let exceptions propagate to BufferedGameplayStateWriter so #21's
+        // transition-based logging can observe write failures. Read() still
+        // swallows-and-returns-null to preserve restart/restore fallback.
+        _db.SaveChanges();
     }
 
     public void Clear()
     {
-        try
-        {
-            var existing = _db.GameplayStates
-                .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
+        var existing = _db.GameplayStates
+            .FirstOrDefault(e => e.Slot == _slot && e.GameDefinitionId == _gameDefinitionId);
 
-            if (existing is not null)
-            {
-                _db.GameplayStates.Remove(existing);
-                _db.SaveChanges();
-            }
-        }
-        catch (Exception ex)
+        if (existing is not null)
         {
-            Console.WriteLine($"Error clearing gameplay state in database: {ex.Message}");
+            _db.GameplayStates.Remove(existing);
+            // Let exceptions propagate (see Write above).
+            _db.SaveChanges();
         }
     }
 }

@@ -30,6 +30,19 @@ builder.Services
     .Configure<GameplayStatePersistenceOptions>(
         builder.Configuration.GetSection("GameplayStatePersistence"));
 
+// --- Transition-based gameplay-state write logging (#21) ---
+// Singleton: outage state must persist across write calls. Parses the
+// allowlisted connection-target fields (DataSource, InitialCatalog, Encrypt)
+// once from the connection string; credentials and the full connection
+// string are never stored or logged by the logger.
+builder.Services.AddSingleton<IGameplayStateWriteLogger>(sp =>
+{
+    var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("GameplayStateDatabase");
+    var slot = sp.GetRequiredService<IOptions<GameplayStatePersistenceOptions>>().Value.Slot;
+    var logger = sp.GetRequiredService<ILogger<TransitionGameplayStateWriteLogger>>();
+    return new TransitionGameplayStateWriteLogger(connectionString, slot, logger);
+});
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

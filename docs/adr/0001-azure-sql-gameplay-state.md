@@ -1,0 +1,3 @@
+# Store gameplay state as a buffered aggregate in Azure SQL
+
+Konqvist uses Azure SQL Database through EF Core migrations as the durable store for gameplay state. Each configured game slot and game-definition identity has one row whose validated JSON payload is replaced as a whole; writes are buffered so only the latest pending state is retained. This keeps persistence aligned with the existing in-memory aggregate while avoiding a database write for every location update. The application runs as a single active instance for now; normalized gameplay tables and multi-instance write coordination are deferred until they are needed.
